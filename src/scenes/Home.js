@@ -6,12 +6,12 @@ import { EXTINCTION } from '../data/extinction.js';
 import { text } from '../ui/font.js';
 import { panel } from '../ui/pixel.js';
 import { Button } from '../ui/button.js';
-import { meta, persist, applySettings, resetMeta, runSetup, extUnlocked, maxExtChoice } from '../systems/meta.js';
+import { meta, persist, applySettings, resetMeta, runSetup, extUnlocked, maxExtChoice, owned } from '../systems/meta.js';
 import { goalsDone } from '../systems/goals.js';
 import { choose } from '../ui/popup.js';
 import { sfx } from '../systems/sfx.js';
 
-const DEX_ORDER = ['compy', 'raptor', 'trike', 'rex', 'pachy', 'sarco', 'spino'];
+const DEX_ORDER = ['compy', 'raptor', 'trike', 'rex', 'pachy', 'sarco', 'spino', 'ankylo', 'ptera', 'stego', 'carno'];
 const DEX_PAGE = 4;
 
 // Home / Nest hub: Amber, Dino-dex, the Nest menus (unlocks, goals, family
@@ -94,11 +94,12 @@ export class Home extends Phaser.Scene {
         this.dexCells.push(this.add.image(cx + 30, top + 3, 'crown').setOrigin(1, 0));
         if (entry.wins > 1) this.dexCells.push(text(this, cx + 30, top + 10, `X${entry.wins}`, { color: '#fff096', origin: [1, 0], small: true }));
       }
+      const locked = !entry && SPECIES[id].unlock && !owned(SPECIES[id].unlock); // an egg still to buy in the Nest
       const best = entry?.best ? `BEST LV${entry.best}${entry.ext ? `  EXT ${entry.ext}` : ''}` : null;
       this.dexCells.push(
         img,
         text(this, cx, top + 32, entry ? SPECIES[id].name : '???', { origin: [0.5, 0], color: entry ? rar.color : COLORS.textDim, shadow: false }),
-        text(this, cx, top + 41, best ?? (entry ? 'NO RUNS YET' : rar.name), { origin: [0.5, 0], color: COLORS.textDim, small: true })
+        text(this, cx, top + 41, best ?? (entry ? 'NO RUNS YET' : locked ? 'NEST EGG' : rar.name), { origin: [0.5, 0], color: locked ? rar.color : COLORS.textDim, small: true })
       );
     });
   }

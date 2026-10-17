@@ -75,5 +75,23 @@ export const PAL = {
   u: '#c0cbdc', // spino belly
   f: '#be4a2f', // spino sail
   g: '#733e39', // spino sail spines
+  a: '#b86f50', // ankylo clay
+  b: '#733e39', // ankylo shade / club
+  e: '#e4a672', // ankylo osteoderms
+  h: '#ead4aa', // ankylo belly
+  i: '#c0cbdc', // ptera body
+  j: '#5a6988', // ptera shade / wing bones
+  l: '#b55088', // ptera wing membrane
+  r: '#e43b44', // ptera crest
+  v: '#68386c', // stego plum
+  w: '#3e2731', // stego shade
+  x: '#f77622', // stego plates
+  z: '#b55088', // stego belly
+  1: '#a22633', // carno crimson
+  2: '#3e2731', // carno shade
+  3: '#e8b796', // carno belly
+  4: '#5a6988', // dimetrodon slate
+  5: '#3a4466', // dimetrodon shade
+  6: '#c0cbdc', // dimetrodon belly
   '.': null      // transparent
 };

@@ -24,7 +24,18 @@ export const RELICS = {
   bloodAmber:   { name: 'Blood Amber',     desc: 'KILLS HEAL 5 HP' },
   tailSpike:    { name: 'Tail Spike',      desc: 'TAIL WHIP POISONS 1' },
   echoRock:     { name: 'Echo Rock',       desc: 'ROAR DEALS 4 TO ALL' },
-  glowShard:    { name: 'Glow Shard',      desc: 'CRIT STREAK NEEDS 2' }
+  glowShard:    { name: 'Glow Shard',      desc: 'CRIT STREAK NEEDS 2' },
+  // v2 Phase 5 (Volcano / Meteor packs and goals).
+  emberCore:    { name: 'Ember Core',      desc: '+2 DAMAGE ON EVERY HIT' },
+  obsidianScale:{ name: 'Obsidian Scale',  desc: 'TAKE 2 LESS DAMAGE PER HIT' },
+  lavaFang:     { name: 'Lava Fang',       desc: 'CRITS POISON 2' },
+  ashCloak:     { name: 'Ash Cloak',       desc: 'FIRST HIT EACH FIGHT DEALS 0' },
+  starShard:    { name: 'Star Shard',      desc: '+1 ENERGY EVERY 3RD TURN' },
+  crystalHeart: { name: 'Crystal Heart',   desc: '+15 MAX HP' },
+  meteorIron:   { name: 'Meteor Iron',     desc: 'BRACE COSTS 0' },
+  amberGeode:   { name: 'Amber Geode',     desc: '+50% AMBER FROM FIGHTS' },
+  twinHorn:     { name: 'Twin Horn',       desc: 'TAIL WHIP DEALS +60%' },
+  pteraBone:    { name: 'Ptera Bone',      desc: 'PERFECT DODGES HEAL 4' }
 };
 
 // Evolution perks use the same hook system (see data/forms.js), but never drop.
@@ -42,12 +53,23 @@ export const PERKS = {
   perkDeathjaw:  { name: 'Deathjaw',      desc: 'DEATH ROLL POISONS 2' },
   perkBogTyrant: { name: 'Bog Tyrant',    desc: 'START EACH FIGHT BRACED' },
   perkSailback:  { name: 'Sailback',      desc: '+1 MAX ENERGY' },
-  perkTidelord:  { name: 'Tidelord',      desc: 'SWAMP SURGE HITS ALL' }
+  perkTidelord:  { name: 'Tidelord',      desc: 'SWAMP SURGE HITS ALL' },
+  perkClubber:   { name: 'Euoplo',        desc: 'CLUB SMASH COSTS 1' },
+  perkBastion:   { name: 'Bastion',       desc: 'BRACE ALSO GIVES DEF UP' },
+  perkSky:       { name: 'Skyhunter',     desc: 'DODGE WINDOW +20%' },
+  perkStorm:     { name: 'Stormwing',     desc: 'DIVE BOMB HITS ALL' },
+  perkSpikes:    { name: 'Spikeback',     desc: 'BRACED BLOCKS REFLECT 30%' },
+  perkThago:     { name: 'Thunderspike',  desc: 'THAGOMIZER HITS ALL' },
+  perkBullhorn:  { name: 'Bullhorn',      desc: 'GORE RUSH COSTS 1' },
+  perkDoom:      { name: 'Doomhorn',      desc: 'KILLS GIVE +1 ENERGY' }
 };
 
 export const RELIC_TUNING = {
   amberFangHeal: 4, raptorClawMult: 1.0, tarPitPoison: 2, volcanicDmg: 2, packTotemDmg: 3,
   oldEggHp: 0.3, thickSkullReflect: 0.3, huntersBelow: 0.3, huntersMult: 1.25, fernHeal: 4,
   sharpStoneMult: 1.3, mossyBlock: 0.35, swiftMult: 1.25, venomGlandBonus: 2, bloodAmberHeal: 5,
-  echoDmg: 4, feathersMult: 1.2, shadowMult: 1.5, frillBlock: 0.3, ghostBite: 3
+  echoDmg: 4, feathersMult: 1.2, shadowMult: 1.5, frillBlock: 0.3, ghostBite: 3,
+  emberDmg: 2, obsidianArmor: 2, lavaPoison: 2, starEvery: 3, crystalHp: 15, geodeMult: 1.5,
+  twinHornMult: 1.6, pteraHeal: 4, bastionTurns: 2, spikesReflect: 0.3, skyMult: 1.2, thornsFrac: 0.3,
+  baskHeal: 0.2
 };

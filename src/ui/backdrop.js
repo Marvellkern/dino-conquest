@@ -2,13 +2,15 @@ import { W, H } from '../config.js';
 import { zoneBackdrop } from './zoneArt.js';
 
 // Battle / title backdrops are layered and animated: see ui/zoneArt.js.
-export const drawZone = (scene, zone) => zoneBackdrop(scene, zone);
+export const drawZone = (scene, zone, opts) => zoneBackdrop(scene, zone, opts);
 export const drawJungle = (scene) => zoneBackdrop(scene, 'jungle');
 
 // Zone-map background: dark bands plus scattered tufts, tinted per zone.
 const MAP_TINT = {
   jungle: { bands: [0x101c16, 0x13221a, 0x16281e, 0x13221a], tuft: 0x1c3424 },
-  swamp: { bands: [0x111a18, 0x14201e, 0x172624, 0x14201e], tuft: 0x24403a }
+  swamp: { bands: [0x111a18, 0x14201e, 0x172624, 0x14201e], tuft: 0x24403a },
+  volcano: { bands: [0x181425, 0x1e1620, 0x24181c, 0x1e1620], tuft: 0x3e2731 },
+  crater: { bands: [0x181425, 0x1c1830, 0x201a38, 0x1c1830], tuft: 0x3a4466 }
 };
 export function drawMapBackground(scene, zone) {
   const t = MAP_TINT[zone] ?? MAP_TINT.jungle;

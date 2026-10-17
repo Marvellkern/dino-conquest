@@ -136,6 +136,28 @@ export const FORM_ART = {
     { pad: { top: 2 }, spikes: [{ x0: 4, x1: 21, every: 2, key: 'k' }], stretch: { cols: [12, 13, 26, 27, 28], rows: [5, 6] },
       colors: { c: '#3a5a3a', k: '#203a24', y: '#8a9a60', E: '#ffd040' } }
   ],
+  ankylo: [
+    { spikes: [{ x0: 7, x1: 27, every: 2, key: 'W' }], stretch: { cols: [17] }, colors: { a: '#3e8948', b: '#265c42', e: '#63c74d', h: '#ead4aa' } },
+    { pad: { top: 2, right: 2 }, spikes: [{ x0: 6, x1: 27, every: 2, key: 'W' }], rays: [{ x: 33, y: 7, dx: 1, dy: -1, len: 2 }],
+      stretch: { cols: [16, 17, 18], rows: [8] },
+      colors: { a: '#5a6988', b: '#3a4466', e: '#c0cbdc', h: '#8b9bb4' } }
+  ],
+  ptera: [
+    { pad: { top: 2 }, rays: [{ x: 18, y: 1, dx: -1, dy: -1, len: 2, key: 'r' }], stretch: { cols: [8, 9] } },
+    { pad: { top: 3 }, rays: [{ x: 18, y: 1, dx: -1, dy: -1, len: 3, key: 'r' }, { x: 3, y: 0, dx: -1, dy: -1, len: 2, key: 'j' }],
+      stretch: { cols: [7, 8, 9], rows: [12] },
+      colors: { i: '#262b44', j: '#3a4466', l: '#e43b44', r: '#feae34' } }
+  ],
+  stego: [
+    { pad: { top: 2 }, spikes: [{ x0: 6, x1: 27, every: 2, key: 'x' }], stretch: { cols: [16, 17] }, colors: { v: '#124e89', w: '#262b44', x: '#feae34', z: '#0099db' } },
+    { pad: { top: 3 }, spikes: [{ x0: 5, x1: 28, every: 2, key: 'x' }], stretch: { cols: [15, 16, 17], rows: [13] },
+      colors: { v: '#265c42', w: '#193c3e', x: '#2ce8f5', z: '#63c74d' } }
+  ],
+  carno: [
+    { spikes: [{ x0: 5, x1: 16, every: 3, key: 'W' }], stretch: { cols: [9] } },
+    { spikes: [{ x0: 4, x1: 17, every: 2, key: 'W' }], stretch: { cols: [8, 9], rows: [17] },
+      colors: { 1: '#3e2731', 2: '#181425', 3: '#a22633', E: '#fee761' } }
+  ],
   spino: [
     { pad: { top: 4 }, grow: [{ x0: 6, x1: 17, h: 3, key: 'f', topKey: 'g' }], stretch: { cols: [14, 15], rows: [13] } },
     { pad: { top: 6 }, grow: [{ x0: 5, x1: 18, h: 5, key: 'f', topKey: 'g' }], stretch: { cols: [14, 15, 16], rows: [12, 13] },

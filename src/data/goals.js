@@ -35,7 +35,7 @@ export const GOALS = {
     test: (ev, run) => n(run, 'tailHits') >= 20 },
   warCry:       { name: 'War Cry',       desc: 'ROAR 12 TIMES IN ONE RUN', reward: { mutation: 'roar:rally' },
     test: (ev, run) => n(run, 'roars') >= 12 },
-  flawless:     { name: 'Flawless',      desc: 'WIN 3 FIGHTS WITHOUT A SCRATCH IN ONE RUN', reward: { amber: 60 },
+  flawless:     { name: 'Flawless',      desc: 'WIN 3 FIGHTS WITHOUT A SCRATCH IN ONE RUN', reward: { relic: 'pteraBone' },
     test: (ev, run) => n(run, 'cleanFights') >= 3 },
   eliteHunter:  { name: 'Elite Hunter',  desc: 'BEAT 3 ELITES IN ONE RUN', reward: { amber: 80 },
     test: (ev, run) => n(run, 'elites') >= 3 },
@@ -54,7 +54,11 @@ export const GOALS = {
   eggCollector: { name: 'Egg Collector', desc: `HATCH ALL ${HATCHABLE.length} SPECIES`, reward: { amber: 100 },
     test: (ev, run, meta) => HATCHABLE.every((id) => meta.dex[id]) },
   extinct:      { name: 'Survivor',      desc: 'CLEAR EXTINCTION LEVEL 1', reward: { amber: 200 },
-    test: (ev, run) => zoneClear(ev, 'swamp') && run.ext >= 1 }
+    test: (ev, run) => zoneClear(ev, 'swamp') && run.ext >= 1 },
+  firewalker:   { name: 'Firewalker',    desc: 'CLEAR THE VOLCANO', reward: { relic: 'twinHorn' },
+    test: (ev) => zoneClear(ev, 'volcano') },
+  titanSlayer:  { name: 'Titan Slayer',  desc: 'BEAT THE METEOR TITAN', reward: { amber: 300 },
+    test: (ev) => zoneClear(ev, 'crater') }
 };
 
 export const GOAL_ORDER = Object.keys(GOALS);

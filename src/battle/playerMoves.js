@@ -130,6 +130,12 @@ function strikeOne(scene, id, v, qte, k, evaders, ctx) {
   if (r.fx.poisoned) scene.fx.pop(t.x, t.y - 4, 'POISON', '#80d060', 1, 700);
   if (r.fx.stunned) scene.fx.pop(t.x, t.y - 14, 'STUNNED!', '#fff096', 1, 900);
   if (r.fx.chain) ctx.chained = true;
+  if (r.recoil) { // Stego spikes prick the attacker
+    const pt = st.player.rig.hitPoint();
+    scene.fx.number(pt.x, pt.y - 10, r.recoil, { color: '#f77622' });
+    scene.fx.pop(t.x, t.y - 24, 'SPIKES!', '#f77622', 1, 700);
+    st.player.rig.flash(40);
+  }
   if (r.kill?.healed) healPop(scene, r.kill.healed);
   if (r.kill?.energy) { const pt = st.player.rig.top(); scene.fx.pop(pt.x, pt.y - 12, '+1 ENERGY', '#fff096', 1, 800); }
   scene.afterDamage(v, r);

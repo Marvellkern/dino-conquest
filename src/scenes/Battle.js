@@ -3,6 +3,7 @@ import { TRAITS } from '../data/traits.js';
 import { REWARDS, ZONES } from '../data/zones.js';
 import { RETRY_HP } from '../data/progression.js';
 import { checkGoals, goalLines } from '../systems/goals.js';
+import { amberMult } from '../systems/build.js';
 import { drawZone } from '../ui/backdrop.js';
 import { text } from '../ui/font.js';
 import { panel } from '../ui/pixel.js';
@@ -66,7 +67,9 @@ export class Battle extends Phaser.Scene {
     this.planning = false;
     this.cameras.main.fadeIn(150);
     this.zone = this.node ? session.run.zone : this.cfg.zone;
-    this.backdrop = drawZone(this, this.zone);
+    // progress: how far into the zone (the Meteor Crater's meteor grows with it).
+    const progress = this.node ? this.node.row / ZONES[this.zone].rows : 0;
+    this.backdrop = drawZone(this, this.zone, { progress });
 
     let player, enemies, pSkin, build;
     if (this.node) {
@@ -316,9 +319,9 @@ export class Battle extends Phaser.Scene {
     }
     d.hp = Math.max(1, this.st.player.hp);
     this.levelBefore = d.level;
-    const rw = REWARDS[type];
-    run.amber += rw.amber;
-    const lines = [`+${rw.xp} XP   +${rw.amber} AMBER`];
+    const rw = REWARDS[type], amber = Math.round(rw.amber * amberMult(buildOf(run))); // Amber Geode
+    run.amber += amber;
+    const lines = [`+${rw.xp} XP   +${amber} AMBER`];
     if (gainXp(d, rw.xp)) { lines.push(`LEVEL UP! LV${d.level}`); sfx('levelup'); }
     const goals = checkGoals(run, this.fightEvents(run));
     const next = type === 'boss' ? advanceZone(run) : null;

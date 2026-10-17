@@ -88,11 +88,12 @@ export class Nest extends Phaser.Scene {
     const u = UNLOCKS[id], lv = owned(id), max = levelsOf(id), maxed = lv >= max;
     const price = maxed ? 0 : priceOf(id, lv);
     const tag = max > 1 ? ` ${lv}/${max}` : '';
+    const locked = u.needs && !owned(u.needs);
     const b = new Button(this, 4, TOP + i * 26, 312, 24, {
-      label: `${u.name.toUpperCase()}${tag}${maxed || u.soon ? '' : `  ${price} AMBER`}`,
-      sub: u.soon ? 'COMING SOON' : maxed ? 'OWNED' : u.desc,
+      label: `${u.name.toUpperCase()}${tag}${maxed ? '' : `  ${price} AMBER`}`,
+      sub: maxed ? 'OWNED' : locked ? `NEEDS ${UNLOCKS[u.needs].name.toUpperCase()}` : u.desc,
       onClick: () => this.buy(id)
-    }).setEnabled(!u.soon && !maxed && meta.amber >= price);
+    }).setEnabled(!locked && !maxed && meta.amber >= price);
     this.rows.push(b);
     if (maxed) b.label.label.setTint(0x7fe0ff);
   }

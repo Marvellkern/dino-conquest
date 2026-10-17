@@ -75,5 +75,32 @@ export const EVENTS = [
       { label: 'WALLOW', sub: 'HEAL 30%, -10 AMBER (DIRTY)', run: (c) => ['AAAAH.', c.heal(0.3), c.amber(-10)] },
       { label: 'ROLL AND PLAY', sub: '+1 SPD, +20 XP', run: (c) => ['YOU FEEL NIMBLE.', c.stat('spd', 1), ...c.xp(20)] }
     ]
+  },
+  {
+    title: 'LAVA VENT',
+    lines: ['A CRACK BREATHES FIRE.', 'SOMETHING GLINTS INSIDE.'],
+    options: [
+      { label: 'REACH IN', sub: '-35% HP, +1 ATK, GAIN A FOSSIL', run: async (c) => ['OUCH! WORTH IT.', c.hurt(0.35), c.stat('atk', 1), await c.relic()] },
+      { label: 'WARM UP', sub: 'HEAL 20%', run: (c) => ['TOASTY.', c.heal(0.2)] }
+    ]
+  },
+  {
+    title: 'FALLEN STAR',
+    lines: ['A TINY METEOR STILL', 'GLOWS IN THE GRASS.'],
+    options: [
+      { label: 'SWALLOW IT', sub: '+1 MUTATION, -1 DEF', run: async (c) => ['IT BURNS ON THE WAY DOWN.', c.stat('def', -1), await c.mutation()] },
+      { label: 'SELL THE SHINE', sub: '+25 AMBER', run: (c) => ['SOMEONE WILL WANT THIS.', c.amber(25)] },
+      { label: 'LEAVE IT', sub: 'NOTHING HAPPENS', run: () => ['IT FADES OUT.'] }
+    ]
+  },
+  {
+    title: 'CRYSTAL GROVE',
+    lines: ['HUMMING CRYSTALS GROW', 'FROM THE BROKEN ROCK.'],
+    options: [
+      { label: 'LISTEN', sub: '+40 XP', run: (c) => ['YOU LEARN SOMETHING.', ...c.xp(40)] },
+      { label: 'BREAK ONE', sub: '+15 MAX HP, -20 AMBER', need: (c) => (c.amberLeft() >= 20 ? null : 'NEED 20 AMBER'),
+        run: (c) => ['THE SHARD SINKS IN.', c.maxHp(15), c.amber(-20)] },
+      { label: 'LEAVE', sub: 'NOTHING HAPPENS', run: () => ['YOU MOVE ON.'] }
+    ]
   }
 ];

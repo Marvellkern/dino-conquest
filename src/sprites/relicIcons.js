@@ -1,5 +1,15 @@
 // 8x8 fossil (relic) icons, keyed `relic_<id>`. Evolution perks share `relic_perk`.
 export const RELIC_ICONS = {
+  emberCore:     ['...OO...', '..OxxO..', '.OxSSxO.', 'OxSWWSxO', 'OxSWWSxO', '.OxSSxO.', '..OxxO..', '...OO...'],
+  obsidianScale: ['..OOOO..', '.OttttO.', 'OtwwwwtO', 'OtwiiwtO', 'OtwwwwtO', '.OtwwtO.', '..OttO..', '...OO...'],
+  lavaFang:      ['..OOOO..', '.OxxxxO.', '.OWWWWO.', '.OWWWWO.', '..OWxO..', '..OxxO..', '...OO...', '........'],
+  ashCloak:      ['.OOOOOO.', 'O555555O', 'O5PPPP5O', 'O5P55P5O', 'O555555O', '.O5555O.', '.O5OO5O.', '..O..O..'],
+  starShard:     ['...O....', '..OSO...', '.OSSSO..', 'OSSWSSO.', '.OSSSO..', '..OSO...', '...O....', '........'],
+  crystalHeart:  ['.OO..OO.', 'OllOOllO', 'OlWllllO', 'OllllllO', '.OllllO.', '..OllO..', '...OO...', '........'],
+  meteorIron:    ['..OOOO..', '.O4444O.', 'O4S4444O', 'O444544O', 'O454444O', '.O4444O.', '..OOOO..', '........'],
+  amberGeode:    ['..OOOO..', '.ObbbbO.', 'ObFFFFbO', 'ObFSFFbO', 'ObFFFFbO', '.ObbbbO.', '..OOOO..', '........'],
+  twinHorn:      ['O.....O.', 'WO...OW.', 'OWO.OWO.', '.OWOWO..', '..OWO...', '..OVO...', '..OVO...', '...O....'],
+  pteraBone:     ['......OO', '....OOjO', '..OOjjO.', '.OjjjO..', 'OjjWO...', 'OjWO....', '.OO.....', '........'],
   amberFang:     ['..OOOO..', '.OFFFFO.', '.OWWWWO.', '.OWWWWO.', '..OWWO..', '..OWWO..', '...OO...', '........'],
   raptorClaw:    ['......O.', '.....OWO', '....OWO.', '...OWO..', '..OWWO..', '.OWWO...', 'OWWO....', 'OOO.....'],
   tarPitStone:   ['..OOOO..', '.OBBBBO.', 'OBKBBKBO', 'OBBBBBBO', 'OBKBBBBO', '.OBBKBO.', '..OOOO..', '........'],

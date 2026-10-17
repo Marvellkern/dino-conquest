@@ -3,7 +3,7 @@ import { MOVES, MOVE_UP } from '../data/moves.js';
 import { TRAITS } from '../data/traits.js';
 import { ZONES, ENEMY_SCALE, ZONE_HEAL, nextZone } from '../data/zones.js';
 import { PROGRESSION, xpToNext, EVO_SUFFIX } from '../data/progression.js';
-import { RELICS, PERKS } from '../data/relics.js';
+import { RELICS, PERKS, RELIC_TUNING } from '../data/relics.js';
 import { MUTATIONS } from '../data/mutations.js';
 import { FORMS } from '../data/forms.js';
 import { makeFighter } from '../systems/combat.js';
@@ -21,7 +21,7 @@ export const session = { run: null };
 //   heir: { kind, id, move? } inherited from the last dino. skin: 'alpha' look.
 export function newRun({
   species, trait, seed, zone = 'jungle', bonus = {}, lives = 3, ext = 0, pool = null, mutLock = [],
-  shopMult = 1, discount = 0, heir = null, skin = null
+  shopMult = 1, discount = 0, heir = null, skin = null, zones = ['jungle', 'swamp']
 }) {
   const rng = makeRng(seed);
   const dino = {
@@ -33,7 +33,7 @@ export function newRun({
   const run = {
     seed, rng, zone, dino, at: null, amber: 0, cause: null, lives, maxLives: lives,
     relics: [], perks: [], mutations: {}, eggUsed: false,
-    ext, mods, pool: pool ?? Object.keys(RELICS), mutLock, discount, heir, stats: {}
+    ext, mods, pool: pool ?? Object.keys(RELICS), mutLock, discount, heir, stats: {}, zones
   };
   run.map = generateMap(rng, zone, mods);
   if (heir?.kind === 'relic' && RELICS[heir.id]) addRelic(run, heir.id);
@@ -171,13 +171,20 @@ export function relicOffers(run, n = 3) {
   return out;
 }
 
+// Fossils with an effect the moment they are picked up.
+const ON_PICKUP = { crystalHeart: (run, k) => addStat(run.dino, 'hp', k * RELIC_TUNING.crystalHp) };
+
 export function addRelic(run, id) {
-  if (!run.relics.includes(id)) run.relics.push(id);
+  if (run.relics.includes(id)) return;
+  run.relics.push(id);
+  ON_PICKUP[id]?.(run, 1);
 }
 
 export function removeRandomRelic(run) {
   if (!run.relics.length) return null;
-  return run.relics.splice(Math.floor(run.rng.next() * run.relics.length), 1)[0];
+  const id = run.relics.splice(Math.floor(run.rng.next() * run.relics.length), 1)[0];
+  ON_PICKUP[id]?.(run, -1);
+  return id;
 }
 
 // A mutation choice for one not-yet-mutated base move: { move, options: [id...] }, or null.
@@ -206,7 +213,7 @@ export function heirOptions(run) {
 // After a zone boss: moves the run into the next zone (fresh map, a rest heal).
 // Returns the new zone id, or null when that was the final zone.
 export function advanceZone(run) {
-  const id = nextZone(run.zone);
+  const id = nextZone(run.zone, run.zones);
   if (!id) return null;
   run.zone = id;
   run.map = generateMap(run.rng, id, run.mods);

@@ -1,20 +1,22 @@
 // Permanent Nest unlocks, bought with banked Amber (scenes/Nest.js).
 // cost: a number, or one price per level for the stackable stat bonuses.
-// soon: content that lands in Phase 5 (listed, not buyable yet).
+// needs: another unlock that has to be owned first.
 export const UNLOCKS = {
   packPrimal:  { name: 'Primal Fossils',  desc: 'METEOR CHIP, BONE DRUM, ECHO ROCK, VENOM GLAND', short: '+4 FOSSILS', cost: 80 },
   packDeep:    { name: 'Deep Time Fossils', desc: 'OLD EGG, VOLCANIC HEART, TAR PIT, SWIFT FEATHER', short: '+4 FOSSILS', cost: 80 },
+  packVolcano: { name: 'Volcanic Fossils', desc: 'EMBER CORE, OBSIDIAN SCALE, LAVA FANG, ASH CLOAK', short: '+4 FOSSILS', cost: 100 },
+  packStar:    { name: 'Star Fossils',     desc: 'STAR SHARD, CRYSTAL HEART, METEOR IRON, AMBER GEODE', short: '+4 FOSSILS', cost: 100 },
   twinClutch:  { name: 'Twin Clutch',     desc: 'PICK 1 OF 2 EGGS WHEN YOU HATCH', short: 'PICK 1 OF 2 EGGS', cost: 120 },
   traderTrail: { name: 'Trader Trails',   desc: 'SHOPS APPEAR TWICE AS OFTEN', short: 'MORE SHOPS', cost: 100 },
   sturdy:      { name: 'Sturdy Blood',    desc: '+5 BASE HP PER LEVEL', short: '+5 HP', cost: [40, 70, 100] },
   whisper:     { name: 'Egg Whisper',     desc: '+1 FREE REROLL EACH HATCH', short: '+1 FREE REROLL', cost: [50, 90] },
   nineLives:   { name: 'Nine Lives',      desc: '+1 LIFE EACH RUN', short: '+1 LIFE', cost: [150] },
-  eggAnkylo:   { name: 'Ankylo Egg',      desc: 'NEW SPECIES', short: 'NEW SPECIES', cost: 60, soon: true },
-  eggPtera:    { name: 'Pteranodon Egg',  desc: 'NEW SPECIES', short: 'NEW SPECIES', cost: 90, soon: true },
-  eggStego:    { name: 'Stego Egg',       desc: 'NEW SPECIES', short: 'NEW SPECIES', cost: 120, soon: true },
-  eggCarno:    { name: 'Carno Egg',       desc: 'NEW SPECIES', short: 'NEW SPECIES', cost: 150, soon: true },
-  zoneVolcano: { name: 'The Volcano',     desc: 'ZONE 3', short: 'ZONE 3', cost: 200, soon: true },
-  zoneCrater:  { name: 'Meteor Crater',   desc: 'ZONE 4 + FINAL BOSS', short: 'ZONE 4', cost: 400, soon: true }
+  eggAnkylo:   { name: 'Ankylo Egg',      desc: 'COMMON: ARMORED, CLUB SMASH STUNS ON CRIT', short: 'NEW SPECIES', cost: 60 },
+  eggPtera:    { name: 'Pteranodon Egg',  desc: 'RARE: FAST FLIER, DIVE BOMB NEVER MISSES', short: 'NEW SPECIES', cost: 90 },
+  eggStego:    { name: 'Stego Egg',       desc: 'EPIC: SPIKED TAIL POISONS', short: 'NEW SPECIES', cost: 120 },
+  eggCarno:    { name: 'Carno Egg',       desc: 'LEGENDARY: GORE RUSH FINISHES THE WOUNDED', short: 'NEW SPECIES', cost: 150 },
+  zoneVolcano: { name: 'The Volcano',     desc: 'ZONE 3 AFTER THE SWAMP: CINDER STEGO', short: 'ZONE 3', cost: 200 },
+  zoneCrater:  { name: 'Meteor Crater',   desc: 'ZONE 4: THE FINAL BOSS', short: 'ZONE 4', cost: 400, needs: 'zoneVolcano' }
 };
 
 export const UNLOCK_ORDER = Object.keys(UNLOCKS);
@@ -28,9 +30,11 @@ export const STURDY_HP = 5;
 export const BASE_RELICS = ['amberFang', 'sharpStone', 'fernCushion', 'stormEgg', 'bloodAmber', 'huntersEye', 'tailSpike', 'mossyShell'];
 export const PACK_RELICS = {
   packPrimal: ['meteorChip', 'boneDrum', 'echoRock', 'venomGland'],
-  packDeep: ['oldEgg', 'volcanicHeart', 'tarPitStone', 'swiftFeather']
+  packDeep: ['oldEgg', 'volcanicHeart', 'tarPitStone', 'swiftFeather'],
+  packVolcano: ['emberCore', 'obsidianScale', 'lavaFang', 'ashCloak'],
+  packStar: ['starShard', 'crystalHeart', 'meteorIron', 'amberGeode']
 };
-export const GOAL_RELICS = ['raptorClaw', 'packTotem', 'thickSkull', 'glowShard'];
+export const GOAL_RELICS = ['raptorClaw', 'packTotem', 'thickSkull', 'glowShard', 'twinHorn', 'pteraBone'];
 
 // Mutations that start locked ("move:id"); goals unlock them.
 export const LOCKED_MUTATIONS = ['bite:chain', 'tail:stun', 'roar:rally'];

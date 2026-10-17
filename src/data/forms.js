@@ -7,5 +7,9 @@ export const FORMS = {
   rex:    [{ name: 'T-Rex' },  { name: 'Tyrant',     perk: 'perkTyrant' },    { name: 'Alpha Rex',     perk: 'perkAlpha' }],
   pachy:  [{ name: 'Pachy' },  { name: 'Bonehead',   perk: 'perkBonehead' },  { name: 'Skullcrusher',  perk: 'perkCrusher' }],
   sarco:  [{ name: 'Sarco' },  { name: 'Deathjaw',   perk: 'perkDeathjaw' },  { name: 'Bog Tyrant',    perk: 'perkBogTyrant' }],
-  spino:  [{ name: 'Spino' },  { name: 'Sailback',   perk: 'perkSailback' },  { name: 'Tidelord',      perk: 'perkTidelord' }]
+  spino:  [{ name: 'Spino' },  { name: 'Sailback',   perk: 'perkSailback' },  { name: 'Tidelord',      perk: 'perkTidelord' }],
+  ankylo: [{ name: 'Ankylo' }, { name: 'Euoplo',     perk: 'perkClubber' },   { name: 'Bastion',       perk: 'perkBastion' }],
+  ptera:  [{ name: 'Pteranodon' }, { name: 'Skyhunter', perk: 'perkSky' },    { name: 'Stormwing',     perk: 'perkStorm' }],
+  stego:  [{ name: 'Stego' },  { name: 'Spikeback',  perk: 'perkSpikes' },    { name: 'Thunderspike',  perk: 'perkThago' }],
+  carno:  [{ name: 'Carno' },  { name: 'Bullhorn',   perk: 'perkBullhorn' },  { name: 'Doomhorn',      perk: 'perkDoom' }]
 };

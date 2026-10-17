@@ -1,5 +1,5 @@
 import { W, COLORS } from '../config.js';
-import { SPECIES, HATCHABLE } from '../data/species.js';
+import { SPECIES } from '../data/species.js';
 import { MOVES } from '../data/moves.js';
 import { TRAITS } from '../data/traits.js';
 import { RARITIES, REROLL_COST, SPIN_MS } from '../data/hatch.js';
@@ -10,7 +10,7 @@ import { Button } from '../ui/button.js';
 import { Reel } from '../ui/reel.js';
 import { createRig } from '../sprites/rig.js';
 import { makeRng, randomSeed } from '../systems/rng.js';
-import { meta, persist, markHatched, owned, runSetup } from '../systems/meta.js';
+import { meta, persist, markHatched, owned, runSetup, hatchable } from '../systems/meta.js';
 import { GOLDEN_EGG_COST } from '../data/unlocks.js';
 import { checkGoals } from '../systems/goals.js';
 import { showGoals } from '../ui/bloodline.js';
@@ -90,7 +90,8 @@ export class Hatch extends Phaser.Scene {
       if (r < v.odds) { rarity = k; break; }
       r -= v.odds;
     }
-    return this.rng.pick(HATCHABLE.filter((id) => SPECIES[id].rarity === rarity));
+    const pool = hatchable();
+    return this.rng.pick(pool.filter((id) => SPECIES[id].rarity === rarity));
   }
 
   rollTrait(not) {
@@ -164,7 +165,7 @@ export class Hatch extends Phaser.Scene {
     });
     this.trait = this.rollTrait();
     this.wobble = 2;
-    const spin = this.speciesReel.spin(this.strip(HATCHABLE, this.species, 14), SPIN_MS.species);
+    const spin = this.speciesReel.spin(this.strip(hatchable(), this.species, 14), SPIN_MS.species);
     for (let s = 1; s <= 3; s++) {
       await this.nap(SPIN_MS.species / 4);
       this.egg.setTexture(`egg_crack${s}`);
@@ -249,7 +250,7 @@ export class Hatch extends Phaser.Scene {
     this.species = this.rollSpecies();
     this.stats.setText('');
     this.special.setText('');
-    await this.speciesReel.spin(this.strip(HATCHABLE, this.species, 14), SPIN_MS.species);
+    await this.speciesReel.spin(this.strip(hatchable(), this.species, 14), SPIN_MS.species);
     this.flash();
     this.fx.shake(2, 160);
     await this.reveal();

@@ -1,4 +1,5 @@
-// Zone layouts, enemy groups and scaling. A run goes through ZONE_ORDER; RunEnd after the last boss.
+// Zone layouts, enemy groups and scaling. A run goes through the zones it has
+// (ZONE_ORDER, minus zones still locked in the Nest); RunEnd after the last boss.
 // fights / elites: weighted groups of 1–3 enemies. A member is [species, opts]:
 //   opts.hp / opts.atk scale that member (on top of ENEMY_SCALE), opts.elite makes
 //   it the elite (level +1, evolved skin, random trait). minRow / maxRow: map columns it can appear in.
@@ -48,11 +49,63 @@ export const ZONES = {
       raptor: { hp: 60, atk: 13, def: 4, spd: 8 },
       compy: { hp: 52, atk: 10, def: 4, spd: 9 }
     }
+  },
+  volcano: {
+    name: 'VOLCANO',
+    rows: 7,
+    unlock: 'zoneVolcano',
+    scale: { hp: 2.0, atk: 1.85 },
+    fights: [
+      { w: 3, members: [['dimetro']] },
+      { w: 3, members: [['ankylo']] },
+      { w: 2, members: [['ptera'], ['ptera', SMALL]] },
+      { w: 2, minRow: 3, members: [['ankylo'], ['ptera', SMALL]] },
+      { w: 2, minRow: 3, members: [['dimetro'], ['compy', SMALL], ['compy', SMALL]] }
+    ],
+    elites: [
+      { w: 1, members: [['ankylo', { elite: true }], ['ptera', SMALL]] },
+      { w: 1, members: [['dimetro', { elite: true }], ['ptera', SMALL]] }
+    ],
+    boss: { species: 'stego', skin: 'cinderstego', name: 'Cinder Stego', brain: 'cinderStego', level: 10, base: { hp: 110, atk: 17, def: 8, spd: 3 } },
+    levelAt: (row) => 9 + Math.floor(row / 2),
+    enemyBase: {
+      ankylo: { hp: 70, atk: 10, def: 9, spd: 3 },
+      dimetro: { hp: 66, atk: 12, def: 5, spd: 4 },
+      ptera: { hp: 52, atk: 12, def: 3, spd: 10 },
+      compy: { hp: 52, atk: 10, def: 4, spd: 9 }
+    }
+  },
+  crater: {
+    name: 'METEOR CRATER',
+    rows: 7,
+    unlock: 'zoneCrater',
+    scale: { hp: 2.4, atk: 2.1 },
+    fights: [
+      { w: 3, members: [['carno']] },
+      { w: 3, members: [['stego']] },
+      { w: 2, members: [['raptor'], ['raptor', SMALL]] },
+      { w: 2, minRow: 3, members: [['stego'], ['ptera', SMALL]] },
+      { w: 2, minRow: 3, members: [['carno'], ['raptor', SMALL]] }
+    ],
+    elites: [
+      { w: 1, members: [['carno', { elite: true }], ['raptor', SMALL]] },
+      { w: 1, members: [['stego', { elite: true }], ['ptera', SMALL]] }
+    ],
+    // The final boss: a crystal-grown Tyrant.
+    boss: { species: 'rex', skin: 'titanrex', name: 'Meteor Titan', brain: 'meteorTitan', level: 14, base: { hp: 125, atk: 18, def: 8, spd: 5 } },
+    levelAt: (row) => 13 + Math.floor(row / 2),
+    enemyBase: {
+      carno: { hp: 72, atk: 14, def: 5, spd: 6 },
+      stego: { hp: 76, atk: 12, def: 7, spd: 3 },
+      raptor: { hp: 60, atk: 13, def: 4, spd: 8 },
+      ptera: { hp: 52, atk: 12, def: 3, spd: 10 }
+    }
   }
 };
 
-export const ZONE_ORDER = ['jungle', 'swamp'];
-export const nextZone = (id) => ZONE_ORDER[ZONE_ORDER.indexOf(id) + 1] ?? null;
+export const ZONE_ORDER = ['jungle', 'swamp', 'volcano', 'crater'];
+// zones: the run's zone list (unlocked ones), see run/run.js.
+export const nextZone = (id, zones = ZONE_ORDER) => zones[zones.indexOf(id) + 1] ?? null;
 
 // Clearing a zone boss heals this much before the next zone starts.
 export const ZONE_HEAL = 0.5;

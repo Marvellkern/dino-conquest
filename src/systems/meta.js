@@ -4,6 +4,8 @@ import { RELICS } from '../data/relics.js';
 import { UNLOCKS, levelsOf, priceOf, BASE_RELICS, PACK_RELICS, GOAL_RELICS, LOCKED_MUTATIONS, STURDY_HP } from '../data/unlocks.js';
 import { EXT_AMBER, MAX_EXT, extMods } from '../data/extinction.js';
 import { BASE_LIVES } from '../data/progression.js';
+import { ZONES, ZONE_ORDER } from '../data/zones.js';
+import { SPECIES, HATCHABLE } from '../data/species.js';
 
 // Meta progression (Amber, unlocks, goals, bloodline, Dino-dex, settings),
 // loaded once at startup and written back with persist() after every change.
@@ -17,7 +19,7 @@ export const owned = (id) => meta.unlocks[id] ?? 0;
 // Buy the next level of a Nest unlock. Returns false if it can't be bought.
 export function buyUnlock(id) {
   const u = UNLOCKS[id], lv = owned(id);
-  if (!u || u.soon || lv >= levelsOf(id) || meta.amber < priceOf(id, lv)) return false;
+  if (!u || (u.needs && !owned(u.needs)) || lv >= levelsOf(id) || meta.amber < priceOf(id, lv)) return false;
   meta.amber -= priceOf(id, lv);
   meta.unlocks[id] = lv + 1;
   persist();
@@ -31,6 +33,9 @@ export function relicPool() {
   for (const id of GOAL_RELICS) if (owned(`relic:${id}`)) pool.push(id);
   return pool.filter((id) => RELICS[id]);
 }
+
+// Species that can hatch: the base 7 plus bought eggs.
+export const hatchable = () => HATCHABLE.filter((id) => !SPECIES[id].unlock || owned(SPECIES[id].unlock));
 
 export const lockedMutations = () => LOCKED_MUTATIONS.filter((k) => !owned(`mut:${k}`));
 export const extUnlocked = () => !!owned('ext');
@@ -47,7 +52,8 @@ export function runSetup() {
     mutLock: lockedMutations(),
     shopMult: owned('traderTrail') ? 2 : 1,
     discount: owned('discount') ? 0.2 : 0,
-    heir: meta.heir
+    heir: meta.heir,
+    zones: ZONE_ORDER.filter((z) => !ZONES[z].unlock || owned(ZONES[z].unlock))
   };
 }
 

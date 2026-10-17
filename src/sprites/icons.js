@@ -8,6 +8,8 @@ export const ICONS = {
   int_debuff:   ['..OOOO..', '..OEEO..', '..OEEO..', 'OOOEEOOO', 'OEEEEEEO', '.OEEEEO.', '..OEEO..', '...OO...'],
   int_stun:     ['OOOOOOO.', 'OSSSSSO.', 'OOOOSO..', '...OSO..', '..OSO...', '.OSOOOO.', 'OSSSSSO.', 'OOOOOOO.'],
   int_submerge: ['........', '.OO..OO.', 'OQQOOQQO', 'QOOQQOOQ', '........', '.OO..OO.', 'OQQOOQQO', 'QOOQQOOQ'],
+  int_heal:     ['...OO...', '..OSSO..', 'OOOSSOOO', 'OSSSSSSO', 'OSSSSSSO', 'OOOSSOOO', '..OSSO..', '...OO...'],
+  int_spikes:   ['O..O..O.', 'xO.xO.xO', 'xOOxOOxO', 'OTTTTTTO', 'OTTTTTTO', '.OTTTTO.', '..OTTO..', '...OO...'],
   int_flood:    ['...OO...', '..OQQO..', '..OQQO..', '.OQQQQO.', 'OQQQQWQO', 'OQQQQWQO', '.OQQQQO.', '..OOOO..'],
   target_arrow: ['OOOOOOO', 'OSSSSSO', '.OSSSO.', '..OSO..', '...O...'],
   heart: ['.OO.OO.', 'OEEOEEO', 'OEEEEEO', '.OEEEO.', '..OEO..', '...O...'],

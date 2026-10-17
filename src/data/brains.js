@@ -6,6 +6,8 @@
 //   'roar'            lower the player's ATK
 //   'submerge'        dive: untargetable, next action is an Ambush (tight ring)
 //   'flood'           muddy the player's next attack bar unless they braced
+//   'bask'            heal 20% of max HP (Dimetrodon soaking up heat)
+//   'spikes'          guard, and hitting it while guarded pricks the attacker (30%)
 // Options: armorCharging (half damage while charging), evadeMiss (a missed
 // attack QTE is evaded and answered with a free Pounce), phase2 (from 50% HP).
 export const BRAINS = {
@@ -14,6 +16,12 @@ export const BRAINS = {
   trike:  { cycle: ['bite', 'bite', 'charge:hornRam'], armorCharging: true },
   pachy:  { cycle: ['headbutt', 'headbutt', 'defend'] },
   sarco:  { cycle: ['bite', 'deathRoll', 'submerge'] },
+  ankylo: { cycle: ['bite', 'defend', 'charge:clubSwing'], armorCharging: true },
+  ptera:  { cycle: ['dive', 'bite'], evadeMiss: true },
+  dimetro: { cycle: ['bite', 'bask', 'bite'] },
+  stego:  { cycle: ['bite', 'spikes', 'tail'] },
+  // Carno: a regular enemy that enrages at half HP.
+  carno:  { cycle: ['bite', 'bite', 'charge:goreCharge'], phase2: { cycle: ['bite', 'charge:goreCharge'], tellMult: 0.8, line: 'THE CARNO RAGES!' } },
 
   alphaRex: {
     cycle: ['bite', 'roar', 'charge:primalChomp'],
@@ -22,6 +30,14 @@ export const BRAINS = {
   bogSpino: {
     cycle: ['bite', 'deathRoll', 'flood'],
     phase2: { cycle: ['flood', 'charge:bogSurge', 'bite'], tellMult: 0.8, line: 'THE BOG RISES!' }
+  },
+  cinderStego: {
+    cycle: ['bite', 'spikes', 'charge:magmaTail'],
+    phase2: { cycle: ['charge:magmaTail', 'spikes', 'bite'], summon: 'ptera', tellMult: 0.75, line: 'THE VOLCANO ERUPTS!' }
+  },
+  meteorTitan: {
+    cycle: ['bite', 'roar', 'charge:starfall'],
+    phase2: { cycle: ['starfall', 'bite', 'charge:starfall'], summon: 'raptor', tellMult: 0.65, line: 'THE METEOR FALLS!' }
   }
 };
 
@@ -31,7 +47,7 @@ export const DEFAULT_BRAIN = { cycle: ['bite', 'bite', 'tail'] };
 export const INTENT_ICONS = {
   attack: 'int_attack', multi: 'int_attack', charge: 'int_charge', defend: 'int_defend',
   debuff: 'int_debuff', stunned: 'int_stun', submerge: 'int_submerge', ambush: 'int_submerge',
-  flood: 'int_flood'
+  flood: 'int_flood', heal: 'int_heal', spikes: 'int_spikes'
 };
 
 // When a boss hits phase 2.

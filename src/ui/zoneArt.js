@@ -1,50 +1,13 @@
 import { W, H, GROUND_Y } from '../config.js';
 import { E32 as C } from '../data/palette.js';
+import { PAD, LW, rnd, dither, bands, disc, layer } from './artKit.js';
+import { VOLCANO, CRATER } from './zoneArt2.js';
 
 // Layered zone backdrops (Endesga 32 only). Each zone has 4 layers (sky, far,
 // mid, near/FG), pre-rendered to a texture once and reused. Layers sway by a
 // pixel or two, shift a little with `backdrop.shift` (the battle sets it from
 // lunges), and ambient particles keep something moving.
 //   depth 0 sky, 1 far, 2 mid (+ ground), 3 ambient, 4-5 dinos, 8 near/FG
-const PAD = 8, LW = W + PAD * 2;
-const rnd = (i, n) => ((i * 9301 + 49297) % 233280) / 233280 * n; // stable pseudo-random
-
-// Checkerboard dither between two colors (a gradient step without new colors).
-function dither(g, x, y, w, h, a, b) {
-  g.fillStyle(a).fillRect(x, y, w, h);
-  g.fillStyle(b);
-  for (let yy = y; yy < y + h; yy++) for (let xx = x + ((yy + x) % 2); xx < x + w; xx += 2) g.fillRect(xx, yy, 1, 1);
-}
-
-// Vertical bands with a 2px dithered seam between each pair.
-function bands(g, colors, y0, y1) {
-  const bh = (y1 - y0) / colors.length;
-  colors.forEach((c, i) => {
-    const y = Math.round(y0 + i * bh);
-    g.fillStyle(c).fillRect(0, y, LW, Math.ceil(bh));
-    if (i > 0) dither(g, 0, y - 1, LW, 2, colors[i - 1], c);
-  });
-}
-
-// Stepped filled disc.
-function disc(g, cx, cy, r, color) {
-  g.fillStyle(color);
-  for (let dy = -r; dy <= r; dy++) {
-    const w = Math.round(Math.sqrt(r * r - dy * dy));
-    g.fillRect(cx - w, cy + dy, w * 2 + 1, 1);
-  }
-}
-
-function layer(scene, key, depth, draw) {
-  if (!scene.textures.exists(key)) {
-    const g = scene.make.graphics({ add: false });
-    draw(g);
-    g.generateTexture(key, LW, H);
-    g.destroy();
-  }
-  return scene.add.image(-PAD, 0, key).setOrigin(0).setDepth(depth);
-}
-
 /* ---------- Jungle: warm golden-green, volcano far off, big trees, giant ferns ---------- */
 
 const JUNGLE = {
@@ -293,12 +256,13 @@ function dragonfly(scene, i) {
 
 /* ---------- assembly ---------- */
 
-const ZONES = { jungle: JUNGLE, swamp: SWAMP };
+const ZONES = { jungle: JUNGLE, swamp: SWAMP, volcano: VOLCANO, crater: CRATER };
 // Sway amplitude (px) and period (ms), parallax factor per layer.
 const MOTION = { far: [1, 5200, 0.03], mid: [1, 4100, 0.08], near: [2, 2600, 0.2] };
 
 // Returns { shift } — set shift (px, signed) each frame for the lunge parallax.
-export function zoneBackdrop(scene, zoneId) {
+// opts.progress (0-1): how far into the zone (the Crater's meteor grows).
+export function zoneBackdrop(scene, zoneId, opts = {}) {
   const z = ZONES[zoneId] ?? JUNGLE, id = ZONES[zoneId] ? zoneId : 'jungle';
   layer(scene, `bg_${id}_sky`, 0, z.sky);
   const layers = {
@@ -307,7 +271,7 @@ export function zoneBackdrop(scene, zoneId) {
     near: layer(scene, `bg_${id}_near`, 8, z.near)
   };
   const ambient = [];
-  z.ambient(scene, (fn) => ambient.push(fn));
+  z.ambient(scene, (fn) => ambient.push(fn), opts);
   const bd = { shift: 0 };
   let t = 0;
   const tick = (_, dt) => {

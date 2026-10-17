@@ -42,6 +42,15 @@ export async function enemyAction(scene, e) {
     scene.say(`${e.name} ROARS`);
     await roar(scene, rig, () => { const t = p.rig.top(); scene.fx.pop(t.x, t.y, 'ATK DOWN', '#e06060', 1, 900); });
   } else if (i.kind === 'flood') { scene.say(`${e.name} FLOODS THE ARENA`); await floodAnim(scene, !!p.status.braced); }
+  else if (i.kind === 'spikes') { scene.say(`${e.name} RAISES ITS SPIKES`); await defendAnim(scene, rig); }
+  else if (i.kind === 'heal') {
+    scene.say(`${e.name} BASKS IN THE HEAT`);
+    const t = rig.top();
+    scene.fx.sparks(t.x, t.y + 8, { count: 12, big: true, gold: true });
+    if (e.healed) scene.fx.number(t.x, t.y, `+${e.healed}`, { color: '#80d060' });
+    sfx('levelup');
+    await wait(scene, 650);
+  }
   else {
     if (i.kind === 'ambush') { scene.say(`${e.name} AMBUSHES!`); await surfaceAnim(scene, rig); }
     else scene.say(`${e.name}: ${MOVES[i.move].name.toUpperCase()}`);
@@ -99,6 +108,8 @@ function defendCtx(scene, e, moveId, h, feint, onHit) {
       if (r.drained) { const t = p.rig.top(); scene.fx.pop(t.x, t.y - 12, '-1 ENERGY', '#e0a040', 1, 900); }
       if (r.reflect) { const t = e.rig.hitPoint(); scene.fx.number(t.x, t.y - 8, r.reflect, { color: '#9ab8ff' }); e.rig.flash(40); scene.afterDamage(e, { killed: e.hp <= 0 }); }
       if (r.revived) scene.revivePop();
+      if (r.stunned) { const t = p.rig.top(); scene.fx.pop(t.x, t.y - 12, 'STUNNED!', '#fff096', 1, 900); }
+      if (r.healed) { const t = p.rig.top(); scene.fx.number(t.x, t.y, `+${r.healed}`, { color: '#80d060' }); }
       onHit(r);
     }
   };

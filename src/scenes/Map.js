@@ -38,7 +38,7 @@ export class MapScene extends Phaser.Scene {
     for (const n of Object.values(this.run.map.nodes)) this.addNode(n);
     this.marker = this.add.image(0, 0, dinoSkin(this.d)).setOrigin(0.5, 1).setDepth(6);
     const here = this.pos(this.run.at);
-    this.marker.setPosition(here.x, here.y - 6);
+    this.marker.setPosition(Math.max(here.x, Math.ceil(this.marker.width / 2) + 1), here.y - 6); // wide dinos stay on screen at the start
 
     this.buildHud();
     panel(this.add.graphics().setDepth(10), 4, 160, W - 8, 16);
@@ -56,6 +56,10 @@ export class MapScene extends Phaser.Scene {
   pos(id) {
     if (!id) return { x: 10, y: LANE_Y[1] };
     const n = this.run.map.nodes[id];
+    if (id === 'boss') { // wide boss sprites stay on screen
+      const w = this.textures.get(n.enemies[0].skin ?? n.enemies[0].species).getSourceImage().width;
+      return { x: Math.min(colX(n.row), W - 3 - Math.ceil(w / 2)), y: LANE_Y[n.lane] };
+    }
     return { x: colX(n.row), y: LANE_Y[n.lane] };
   }
 

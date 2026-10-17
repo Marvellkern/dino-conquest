@@ -1,4 +1,5 @@
 import { MOVES, ENERGY, STREAK } from '../data/moves.js';
+import { RELIC_TUNING as RT } from '../data/relics.js';
 import * as BLD from './build.js';
 import { BRAINS, DEFAULT_BRAIN, INTENT_ICONS, PHASE2_AT } from '../data/brains.js';
 import {
@@ -17,7 +18,7 @@ import {
 export function createBattle({ player, enemies, rng, spawn = null, build = null }) {
   const st = {
     player, enemies: [], rng, spawn, build: build ?? BLD.emptyBuild(),
-    energy: 0, energyNext: 0, streak: 0, empowered: false, pendingEmpower: false, activeEmpower: false, firstTurn: true,
+    energy: 0, energyNext: 0, streak: 0, turn: 0, empowered: false, pendingEmpower: false, activeEmpower: false, firstTurn: true,
     fight: { braces: 0, dmg: 0, moveKills: 0 } // this fight's tallies (goals)
   };
   for (const e of enemies) addEnemy(st, e);
@@ -64,6 +65,8 @@ function fromToken(token) {
   if (token === 'roar') return { kind: 'debuff', move: 'roar' };
   if (token === 'submerge') return { kind: 'submerge' };
   if (token === 'flood') return { kind: 'flood', move: 'flood' };
+  if (token === 'bask') return { kind: 'heal' };
+  if (token === 'spikes') return { kind: 'spikes' };
   return atkIntent(token);
 }
 
@@ -103,7 +106,8 @@ export function intentView(st, e) {
 export function beginPlayerTurn(st) {
   const p = st.player, first = st.firstTurn;
   const fast = first && alive(st).every((e) => p.spd > e.spd);
-  const bonus = (fast ? ENERGY.fastStart : 0) + (first ? BLD.firstTurnBonus(st) : 0) + st.energyNext;
+  st.turn++;
+  const bonus = (fast ? ENERGY.fastStart : 0) + (first ? BLD.firstTurnBonus(st) : 0) + st.energyNext + BLD.turnBonus(st, st.turn);
   const gain = Math.max(0, ENERGY.perTurn + bonus - p.status.drain);
   st.energy = Math.min(BLD.maxEnergy(st), st.energy + gain);
   st.energyNext = 0;
@@ -179,7 +183,10 @@ export function playerStrike(st, id, target, qte) {
   const killed = target.hp <= 0;
   noteKill(st, killed);
   if (id === 'tail' && dmg > 0) tally(st, 'tailHits');
-  return { dmg, killed, trait, fx, kill: killed ? BLD.onKill(st) : null, phase: checkPhase(st, target) };
+  // Spiky guard (Stego): the attacker is pricked, but never killed by it.
+  const recoil = target.thorns && dmg > 0 ? Math.min(p.hp - 1, Math.max(1, Math.round(dmg * RT.thornsFrac))) : 0;
+  p.hp -= recoil;
+  return { dmg, killed, trait, fx, recoil, kill: killed ? BLD.onKill(st) : null, phase: checkPhase(st, target) };
 }
 
 // Free riposte after a perfect dodge (no energy, no QTE, no streak).
@@ -235,6 +242,7 @@ export function endPlayerTurn(st) { endTurn(st.player); }
 // Start of an enemy's action: poison and stun. Returns { poison, stunned }.
 export function beginEnemyAction(st, e) {
   e.status.guard = 0;
+  e.thorns = false;
   const tick = startTurn(e);
   if (tick.poison && e.hp <= 0) tally(st, 'poisonKills');
   if (tick.stunned) e.intent = { kind: 'stunned' };
@@ -249,6 +257,11 @@ export function enemyAct(st, e) {
   else if (i.kind === 'submerge') e.status.submerged = 1;
   else if (i.kind === 'debuff') applyStatus(p, { stat: 'atkDown', turns: 2 });
   else if (i.kind === 'flood' && !p.status.braced) p.status.muddy = 1;
+  else if (i.kind === 'spikes') { e.status.guard = 1; e.thorns = true; }
+  else if (i.kind === 'heal') {
+    e.healed = Math.min(e.maxHp - e.hp, Math.round(e.maxHp * RT.baskHeal));
+    e.hp += e.healed;
+  }
 }
 
 export const isStrike = (i) => ['attack', 'multi', 'ambush'].includes(i?.kind);
@@ -258,8 +271,11 @@ export const isStrike = (i) => ['attack', 'multi', 'ambush'].includes(i?.kind);
 export function enemyStrike(st, e, defend, moveId = e.intent.move) {
   const p = st.player, m = MOVES[moveId];
   const d = defend === 'hit' && p.status.braced ? 'block' : defend;
-  const dmg = computeDamage(e, p, m, null, { qte: 'good', defend: d, blockMult: BLD.blockMult(st, m) });
+  const dmg = BLD.reduceHit(st, computeDamage(e, p, m, null, { qte: 'good', defend: d, blockMult: BLD.blockMult(st, m) }));
   p.hp = Math.max(0, p.hp - dmg);
+  const stunned = !!m.stunOnHit && d === 'hit' && dmg > 0 && p.hp > 0; // Club Swing
+  if (stunned) p.status.stun = 1;
+  const healed = d === 'dodge' ? BLD.onDodge(st) : 0;
   afterHit(e, p, dmg);
   st.fight.dmg += dmg;
   if (d === 'dodge') tally(st, 'dodges');
@@ -268,7 +284,7 @@ export function enemyStrike(st, e, defend, moveId = e.intent.move) {
   if (drained) p.status.drain += m.drain;
   const reflect = BLD.onEnemyHit(st, e, d, dmg);
   const revived = BLD.tryRevive(st);
-  return { dmg, defend: d, drained, reflect, revived };
+  return { dmg, defend: d, drained, reflect, revived, stunned, healed };
 }
 
 // After the action: advance the cycle, clear one-shot states.

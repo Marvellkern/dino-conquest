@@ -17,6 +17,11 @@ export const MOVES = {
   skullBash:    { name: 'Skull Bash',    btn: 'SKULL',   desc: 'PIERCE',   cost: 2, power: 1.3, anim: 'charge', defIgnore: 0.5 },
   deathRoll:    { name: 'Death Roll',    btn: 'D.ROLL',  desc: '3 BITES',  cost: 2, power: 0.55, anim: 'bite', hits: 3 },
   swampSurge:   { name: 'Swamp Surge',   btn: 'SURGE',   desc: 'BIG HIT',  cost: 3, power: 1.6, anim: 'charge', defIgnore: 0.3 },
+  // critStun: a crit stuns. poison: turns of poison on hit. execute: bonus vs targets below half HP.
+  clubSmash:    { name: 'Club Smash',    btn: 'CLUB',    desc: 'CRIT ZZ',  cost: 2, power: 1.2, anim: 'tail', critStun: true },
+  diveBomb:     { name: 'Dive Bomb',     btn: 'DIVE',    desc: 'SURE',     cost: 2, power: 1.3, anim: 'charge', sure: true },
+  thagomizer:   { name: 'Thagomizer',    btn: 'SPIKES',  desc: 'PSN 2',    cost: 2, power: 1.1, anim: 'tail', poison: 2 },
+  goreRush:     { name: 'Gore Rush',     btn: 'GORE',    desc: 'EXECUTE',  cost: 2, power: 1.4, anim: 'charge', execute: 0.5 },
 
   // Enemy-only moves (picked by systems/brains.js).
   hornRam:      { name: 'Horn Ram',      power: 2.2, anim: 'charge', blockMult: 0.8 },
@@ -26,6 +31,11 @@ export const MOVES = {
   primalChomp:  { name: 'Primal Chomp',  power: 2.2, anim: 'bigBite', defIgnore: 0.3, tight: 0.55 },
   bogSurge:     { name: 'Bog Surge',     power: 2.0, anim: 'charge', defIgnore: 0.3, tight: 0.6 },
   flood:        { name: 'Flood',         status: true },
+  clubSwing:    { name: 'Club Swing',    power: 1.7, anim: 'tail', stunOnHit: true }, // a clean hit stuns the player
+  dive:         { name: 'Dive',          power: 1.2, anim: 'charge', tight: 0.7 },
+  magmaTail:    { name: 'Magma Tail',    power: 2.2, anim: 'tail', defIgnore: 0.2, tight: 0.6 },
+  goreCharge:   { name: 'Gore Charge',   power: 2.0, anim: 'charge', defIgnore: 0.3 },
+  starfall:     { name: 'Starfall',      power: 2.4, anim: 'bigBite', defIgnore: 0.3, tight: 0.5 },
   counter:      { name: 'Counter',       power: 0.5, anim: 'bite' } // perfect-dodge riposte
 };
 for (const [id, m] of Object.entries(MOVES)) m.id = id;

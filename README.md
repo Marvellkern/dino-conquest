@@ -79,15 +79,42 @@ src/
 
 Fossils and mutations add a lot of power (a decent Compy clears the Jungle 60% of the time without them, 74–88% with them), so the zones' difficulty `scale` went up when they landed.
 
+With all four zones (Phase 5), a veteran save (every fossil pack, Sturdy Blood 3, Nine Lives) and decent play, 300 runs each. Each column is the share of runs that cleared that zone:
+
+| Species | Jungle | Swamp | Volcano | Crater (full clear) |
+|---|---|---|---|---|
+| Compy | 87% | 57% | 27% | 4% |
+| Ankylo | 75% | 61% | 43% | 11% |
+| Raptor | 92% | 75% | 41% | 6% |
+| Pteranodon | 89% | 62% | 31% | 6% |
+| Stego | 97% | 83% | 47% | 9% |
+| Spino | 99% | 80% | 57% | 22% |
+| T-Rex | 100% | 95% | 79% | 24% |
+| Carno | 97% | 95% | 81% | 28% |
+
+The Cinder Stego and the Meteor Titan are the walls by design, which puts a full clear around runs 15–25 for a decent player. Usage: `ZONES=4 VET=1 node sim2.mjs <root> 300`.
+
 ### The run
 
 `run/run.js` holds the run state (dino stats, XP, evolution, upgrades) and `run/mapgen.js` builds the branching map. The scenes are `Map` (travel; Nest / Fossil Dig / Meteor / Shop visits live in `scenes/mapNodes.js`) → `Battle` → `Evolution` (at LV5 / LV10) → `RunEnd` (victory: banks Amber and crowns the species in the Dino-dex). Each run has 3 lives. Losing a fight costs one and restarts that fight at 50% HP. At 0 lives the dino goes to the `Fossil` screen, which banks Amber. Both end screens run the final goal check and the Bloodline pick (`ui/bloodline.js`), and add the dino to the family tree. `Home` is the hub: Dino-dex, the Nest menus, and stats. The current run itself is not saved; refreshing mid-run returns you to Home.
 
 ### Zones
 
-A run goes through `ZONE_ORDER` in `data/zones.js`: **Jungle** (Compy, Raptor, Elite Trike, boss Alpha Rex), then **Swamp** (Pachy, Sarco, Elite Sarco/Raptor, boss Bog Spino, enemies LV5–8). Beating a zone boss gives XP and Amber, heals `ZONE_HEAL` (50%), and `advanceZone()` in `run/run.js` builds the next zone's map. Level, XP, traits, lives and Amber carry over. `RunEnd` only comes after the last zone's boss. Battle and Map pick their backdrop per zone (`drawZone` / `drawMapBackground` in `ui/backdrop.js`). To add a zone, add an entry to `ZONES` and `ZONE_ORDER`, plus a backdrop function in `BACKDROPS`.
+A run goes through the zones it has (`run.zones`: `ZONE_ORDER` in `data/zones.js` minus zones still locked in the Nest):
+- **Jungle**: Compy, Raptor, Elite Trike, boss Alpha Rex (summons a Compy).
+- **Swamp** (LV5–8): Pachy, Sarco, Elite Sarco / Raptor, boss Bog Spino (floods the arena).
+- **Volcano** (LV9–12, a 200 Amber Nest unlock): Ankylo (guards, then a charged Club Swing that stuns on a clean hit), Dimetrodon (basks to heal 20%), Pteranodon (dives; dodges sloppy attacks), Elite Ankylo / Dimetrodon, boss **Cinder Stego** (spiked guard, Magma Tail; phase 2 summons a Pteranodon).
+- **Meteor Crater** (LV13–16, 400 Amber, needs the Volcano): Carno (enrages at half HP), Stego (raises spikes: hitting it while guarded pricks you), Raptor packs, Elite Carno / Stego, final boss **Meteor Titan** (Starfall; phase 2 summons a Raptor and speeds up).
 
-There are 7 hatchable species: Compy and Pachy (Common), Raptor and Sarco (Rare), Trike and Spino (Epic), T-Rex (Legendary). A species marked `enemyOnly: true` in `data/species.js` would stay out of the hatch spin and the Dino-dex (`HATCHABLE` is the hatch list); none use it right now. The Dino-dex shows 4 species per page. The Swamp's wildlife and the Bog Spino have their own stat blocks (`enemyBase` and `boss.base` in `data/zones.js`), so the hatchable Pachy, Sarco and Spino can be tuned without moving the zone. Their specials are Skull Bash (pierces DEF), Death Roll (3 bites) and Swamp Surge (charges up, then hits with a tight dodge window).
+Beating a zone boss gives XP and Amber, heals `ZONE_HEAL` (50%), and `advanceZone()` in `run/run.js` builds the next zone's map. Level, XP, traits, lives and Amber carry over. `RunEnd` only comes after the run's last zone. Battle and Map pick their backdrop per zone (`ui/zoneArt.js` for Jungle / Swamp, `ui/zoneArt2.js` for Volcano / Crater, `drawMapBackground` in `ui/backdrop.js`). The Crater's meteor grows in the sky as you get closer to the boss. To add a zone, add an entry to `ZONES` and `ZONE_ORDER`, plus its layers in the zone art registry.
+
+There are 11 hatchable species: Compy, Pachy, Ankylo (Common); Raptor, Sarco, Pteranodon (Rare); Trike, Spino, Stego (Epic); T-Rex, Carno (Legendary). Ankylo, Pteranodon, Stego and Carno are Nest eggs (`unlock` in `data/species.js`; `hatchable()` in `systems/meta.js` filters the hatch pool). Their specials: Club Smash (a crit stuns), Dive Bomb (can't miss), Thagomizer (poisons 2), Gore Rush (+50% against targets under half HP). Each has two evolved forms with perks (`data/forms.js`, `sprites/forms.js`). Their sprites are built with a small shape builder (`sprites/shapes.js`, `sprites/grids2.js`). Dimetrodon is `enemyOnly`. The Dino-dex shows 4 species per page. The Swamp's wildlife and the Bog Spino have their own stat blocks (`enemyBase` and `boss.base` in `data/zones.js`), so the hatchable Pachy, Sarco and Spino can be tuned without moving the zone. Their specials are Skull Bash (pierces DEF), Death Roll (3 bites) and Swamp Surge (charges up, then hits with a tight dodge window).
+
+### Content (v2 Phase 5)
+
+- 12 enemy types, each with a gimmick, and 4 bosses with 2 phases. New intent kinds: `bask` (heal), `spikes` (thorny guard); new move flags: `stunOnHit` (enemy), `critStun`, `poison`, `execute` (player).
+- 30 fossils: the 10 new ones (Ember Core, Obsidian Scale, Lava Fang, Ash Cloak, Star Shard, Crystal Heart, Meteor Iron, Amber Geode, Twin Horn, Ptera Bone) come in two new Nest packs and two goals.
+- 11 Meteor events (new: Lava Vent, Fallen Star, Crystal Grove) and 22 goals (new: Firewalker, Titan Slayer).
 
 ### Builds (v2 Phase 2)
 
