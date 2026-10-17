@@ -2,7 +2,9 @@ import { GRIDS, REX, CROUCH_DROP, crouchGrid } from '../sprites/grids.js';
 import { FX_GRIDS } from '../sprites/fxGrids.js';
 import { ICONS } from '../sprites/icons.js';
 import { EGG, EGG_STAGES, crackedEgg } from '../sprites/egg.js';
-import { EVO_SHIFT, EVO_SPIKE_EVERY, SKIN_GRIDS, shiftedColor, alphaColor, spikedGrid } from '../sprites/skins.js';
+import { SKIN_GRIDS, alphaColor, spikedGrid } from '../sprites/skins.js';
+import { FORM_ART, buildForm, formColor } from '../sprites/forms.js';
+import { RELIC_ICONS, SHOP_ICON } from '../sprites/relicIcons.js';
 import { makeSpriteSet, makeTexture } from '../sprites/renderSprite.js';
 import { buildRexParts } from '../sprites/rexParts.js';
 import { buildFont } from '../ui/font.js';
@@ -17,18 +19,20 @@ export class Boot extends Phaser.Scene {
     buildFont(this);
     applySettings(this.registry);
 
-    // Every species in 3 stages: base, _e1, _e2 (recolored + spiked).
+    // Every species in 3 forms: base, _e1, _e2 (new silhouettes from sprites/forms.js).
     for (const [species, base] of Object.entries(GRIDS)) {
-      for (let e = 0; e < EVO_SHIFT.length; e++) {
-        const key = e ? `${species}_e${e}` : species;
-        const grid = e ? spikedGrid(base, EVO_SPIKE_EVERY[e]) : base;
-        this.buildSkin(species, key, grid, e ? shiftedColor(EVO_SHIFT[e]) : undefined);
-      }
+      this.buildSkin(species, species, base, undefined);
+      (FORM_ART[species] ?? []).forEach((art, i) => {
+        const { grid, layout, mapRow } = buildForm(base, art);
+        this.buildSkin(species, `${species}_e${i + 1}`, grid, formColor(art, i + 1), layout, mapRow(CROUCH_DROP[species] ?? 0));
+      });
     }
     this.buildSkin('rex', 'alpharex', spikedGrid(REX, 2), alphaColor);
 
     for (const [key, grid] of Object.entries(FX_GRIDS)) makeTexture(this, key, grid);
     for (const [key, grid] of Object.entries(ICONS)) makeTexture(this, key, grid);
+    for (const [key, grid] of Object.entries(RELIC_ICONS)) makeTexture(this, `relic_${key}`, grid);
+    makeTexture(this, 'icon_shop', SHOP_ICON);
     makeTexture(this, 'egg', EGG);
     for (let s = 1; s <= EGG_STAGES; s++) makeTexture(this, `egg_crack${s}`, crackedEgg(s));
 
@@ -37,10 +41,10 @@ export class Boot extends Phaser.Scene {
   }
 
   // Whole sprite (+flash), crouch frame, and T-rex parts when needed.
-  buildSkin(species, key, grid, colorOf) {
+  buildSkin(species, key, grid, colorOf, layout = {}, crouchRow = CROUCH_DROP[species]) {
     SKIN_GRIDS[key] = grid;
     makeSpriteSet(this, key, grid, colorOf);
-    if (species in CROUCH_DROP) makeSpriteSet(this, `${key}_crouch`, crouchGrid(grid, CROUCH_DROP[species]), colorOf);
-    if (species === 'rex') buildRexParts(this, key, grid, colorOf);
+    if (species in CROUCH_DROP) makeSpriteSet(this, `${key}_crouch`, crouchGrid(grid, crouchRow), colorOf);
+    if (species === 'rex') buildRexParts(this, key, grid, colorOf, layout);
   }
 }

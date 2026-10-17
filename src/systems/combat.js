@@ -31,7 +31,7 @@ export const hasTrait = (f, id) => f.traits.includes(id);
 export function startTurn(f) {
   const out = { poison: 0, stunned: false };
   if (f.status.poison > 0) {
-    out.poison = Math.min(f.hp, T.venomDmg);
+    out.poison = Math.min(f.hp, T.venomDmg + (f.poisonBonus ?? 0));
     f.hp -= out.poison;
     f.status.poison--;
   }
@@ -67,12 +67,13 @@ export const isGuarded = (f) => f.status.guard > 0 || (f.status.charging > 0 && 
 
 // rng = null gives the exact (variance-free) number; enemy attacks use that so
 // the intent shown above an enemy is exactly what lands on a clean hit.
-export function computeDamage(att, dfd, move, rng, { qte = 'good', defend = 'hit', mult = 1 } = {}) {
+// blockMult overrides the move's / default block multiplier (relics change it).
+export function computeDamage(att, dfd, move, rng, { qte = 'good', defend = 'hit', mult = 1, blockMult = null } = {}) {
   if (defend === 'dodge') return 0;
   const def = effDef(dfd) * (1 - (move.defIgnore ?? 0));
   const up = 1 + MOVE_UP.power * (att.moveUps?.[move.id] ?? 0);
   let raw = effAtk(att) * move.power * up * QTE_MULT[qte] * mult;
-  if (defend === 'block') raw *= move.blockMult ?? DEFEND_MULT.block;
+  if (defend === 'block') raw *= blockMult ?? move.blockMult ?? DEFEND_MULT.block;
   if (hasTrait(dfd, 'thickHide')) raw *= T.thickHide;
   if (isGuarded(dfd)) raw *= STATUS.guardMult;
   const v = rng ? rng.range(0.9, 1.1) : 1;

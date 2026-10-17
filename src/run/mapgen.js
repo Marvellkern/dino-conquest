@@ -1,4 +1,4 @@
-import { ZONES, NODE_WEIGHTS } from '../data/zones.js';
+import { ZONES, NODE_WEIGHTS, LANE_BIAS } from '../data/zones.js';
 import { TRAITS } from '../data/traits.js';
 import { SPECIES } from '../data/species.js';
 
@@ -15,11 +15,12 @@ function weighted(rng, weights) {
   return Object.keys(weights)[0];
 }
 
-function pickType(rng, row, rows) {
+function pickType(rng, row, rows, lane) {
   if (row <= 1) return 'fight';
-  if (row === rows - 1) return rng.chance(0.6) ? 'nest' : 'fossil'; // breather before the boss
+  if (row === rows - 1) return rng.chance(0.6) ? 'nest' : rng.chance(0.5) ? 'shop' : 'fossil'; // breather before the boss
   const w = { ...NODE_WEIGHTS };
   if (row < 3) delete w.elite;
+  for (const [k, mult] of Object.entries(LANE_BIAS[lane] ?? {})) if (k in w) w[k] *= mult;
   return weighted(rng, w);
 }
 
@@ -51,7 +52,7 @@ export function generateMap(rng, zoneId) {
   for (let r = 0; r < zone.rows; r++) {
     const count = r === 0 ? 1 : rng.int(2, 3);
     const lanes = count === 1 ? [1] : count === 3 ? [0, 1, 2] : rng.pick([[0, 1], [1, 2], [0, 2]]);
-    cols.push(lanes.map((lane) => ({ id: `${r}-${lane}`, row: r, lane, type: pickType(rng, r, zone.rows), next: [] })));
+    cols.push(lanes.map((lane) => ({ id: `${r}-${lane}`, row: r, lane, type: pickType(rng, r, zone.rows, lane), next: [] })));
   }
   cols.push([{ id: 'boss', row: zone.rows, lane: 1, type: 'boss', next: [] }]);
 

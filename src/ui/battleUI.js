@@ -1,6 +1,8 @@
 import { W, H, COLORS } from '../config.js';
-import { MOVES, ENERGY } from '../data/moves.js';
-import { blocked, affordable, intentView } from '../systems/battleState.js';
+import { MOVES } from '../data/moves.js';
+import { MUTATIONS } from '../data/mutations.js';
+import { blocked, affordable, intentView, maxEnergy, moveCost } from '../systems/battleState.js';
+import { mutation } from '../systems/build.js';
 import { Button } from './button.js';
 import { panel } from './pixel.js';
 import { text } from './font.js';
@@ -69,8 +71,9 @@ export class Hud {
     this.hpText.setText(`HP ${f.hp}/${f.maxHp}`);
 
     if (this.st) { // energy pips, right of the HP text
-      for (let i = 0; i < ENERGY.max; i++) {
-        const px = this.x + PW - 8 - (ENERGY.max - 1 - i) * 8, py = this.y + 23;
+      const max = maxEnergy(this.st);
+      for (let i = 0; i < max; i++) {
+        const px = this.x + PW - 8 - (max - 1 - i) * 8, py = this.y + 23;
         g.fillStyle(0x0c0e12).fillRect(px - 1, py - 1, 7, 7);
         g.fillStyle(i < this.st.energy ? 0xfff096 : 0x3a3e48).fillRect(px, py, 5, 5);
         if (i < this.st.energy) g.fillStyle(0xffffff).fillRect(px, py, 2, 1);
@@ -161,10 +164,15 @@ export class MoveBar {
     bg.fillStyle(0x2e333d).fillRect(0, top + 1, W, 1);
 
     const p = st.player, gap = 3, bw = 49;
-    this.btns = p.moves.map((id, i) => new Button(scene, 3 + i * (bw + gap), top + 4, bw, 34, {
-      key: String(i + 1), label: MOVES[id].btn + '+'.repeat(p.moveUps[id] ?? 0), sub: MOVES[id].desc,
-      cost: MOVES[id].cost, onClick: () => this.pick(id), onDeny: () => this.on && onDeny(blocked(st, id))
-    }));
+    this.btns = p.moves.map((id, i) => {
+      const mu = MUTATIONS[id]?.[mutation(st, id)]; // mutated moves get new text + a colored badge
+      const b = new Button(scene, 3 + i * (bw + gap), top + 4, bw, 34, {
+        key: String(i + 1), label: (mu?.btn ?? MOVES[id].btn) + '+'.repeat(p.moveUps[id] ?? 0), sub: mu?.desc ?? MOVES[id].desc,
+        cost: moveCost(st, id), onClick: () => this.pick(id), onDeny: () => this.on && onDeny(blocked(st, id))
+      });
+      if (mu) scene.add.rectangle(b.x + 9, b.y + 4, 4, 3, mu.color).setOrigin(0).setDepth(13); // badge beside the key number
+      return b;
+    });
     const ex = 3 + 5 * (bw + gap);
     this.end = new Button(scene, ex, top + 4, W - 3 - ex, 34, { key: 'E', label: 'END', sub: 'TURN', onClick: () => this.pick('end') });
 
@@ -193,7 +201,10 @@ export class MoveBar {
   }
 
   draw() {
-    this.st.player.moves.forEach((id, i) => this.btns[i].setEnabled(this.on && !blocked(this.st, id)));
+    this.st.player.moves.forEach((id, i) => {
+      this.btns[i].cost = moveCost(this.st, id);
+      this.btns[i].setEnabled(this.on && !blocked(this.st, id));
+    });
     this.end.setEnabled(this.on);
     this.end.setText(null, this.on && !affordable(this.st) ? 'TURN <' : 'TURN');
   }

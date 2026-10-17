@@ -1,6 +1,7 @@
 import { MOVES, QTE } from '../data/moves.js';
 import { dodgeWindow } from '../systems/combat.js';
 import * as B from '../systems/battleState.js';
+import { dodgeMult } from '../systems/build.js';
 import { defendRing } from '../systems/qte.js';
 import { sfx } from '../systems/sfx.js';
 import { animSet, roar, chargeUp, wait } from './anims.js';
@@ -67,7 +68,7 @@ export async function enemyAttack(scene, e, moveId, { feint = false } = {}) {
   const st = scene.st, m = MOVES[moveId], p = st.player, set = animSet(e.species, m.anim);
   let dodged = false;
   if (set.approach) await set.approach(scene, e.rig, p.rig);
-  for (let h = 0; h < (m.hits ?? 1) && p.hp > 0; h++) {
+  for (let h = 0; h < (m.hits ?? 1) && p.hp > 0 && e.hp > 0; h++) {
     await set.strike(scene, e.rig, p.rig, defendCtx(scene, e, moveId, h, feint, (r) => { if (r.defend === 'dodge') dodged = true; }));
   }
   if (set.retreat && p.hp > 0) await set.retreat(scene, e.rig);
@@ -87,7 +88,7 @@ function defendCtx(scene, e, moveId, h, feint, onHit) {
       const c = p.rig.center();
       ring = defendRing(scene, {
         x: c.x, y: c.y, leadMs, noDodge: !!m.sure,
-        dodgeMs: dodgeWindow(p) * tight, blockMs: QTE.blockMs * (tight < 1 ? 0.8 : 1)
+        dodgeMs: dodgeWindow(p) * dodgeMult(st) * tight, blockMs: QTE.blockMs * (tight < 1 ? 0.8 : 1)
       });
     },
     result: () => ring,
@@ -96,6 +97,8 @@ function defendCtx(scene, e, moveId, h, feint, onHit) {
       scene.lastHitBy = e.name;
       hitFeedback(scene, e, p, r.dmg, 'good', r.defend, 0);
       if (r.drained) { const t = p.rig.top(); scene.fx.pop(t.x, t.y - 12, '-1 ENERGY', '#e0a040', 1, 900); }
+      if (r.reflect) { const t = e.rig.hitPoint(); scene.fx.number(t.x, t.y - 8, r.reflect, { color: '#9ab8ff' }); e.rig.flash(40); scene.afterDamage(e, { killed: e.hp <= 0 }); }
+      if (r.revived) scene.revivePop();
       onHit(r);
     }
   };

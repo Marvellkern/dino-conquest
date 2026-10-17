@@ -1,6 +1,7 @@
 import { W, COLORS } from '../config.js';
-import { NODE_INFO, NEST_HEAL } from '../data/zones.js';
-import { EVENTS } from '../data/events.js';
+import { NODE_INFO } from '../data/zones.js';
+import { RelicBar } from '../ui/relicBar.js';
+import { visitNest, visitFossil, visitMeteor, visitShop } from './mapNodes.js';
 import { TRAITS } from '../data/traits.js';
 import { xpToNext } from '../data/progression.js';
 import { text } from '../ui/font.js';
@@ -9,14 +10,13 @@ import { panel, pixelLine, pixelCircle } from '../ui/pixel.js';
 import { choose } from '../ui/popup.js';
 import {
   session, reachable, zoneOf, dinoStats, dinoName, skinOf, groupName,
-  heal, hurt, addStat, gainXp, fossilOffers
 } from '../run/run.js';
 import { Fx } from '../systems/fx.js';
 import { sfx } from '../systems/sfx.js';
 
 const LANE_Y = [72, 104, 136];
 const colX = (row) => 34 + row * 38;
-const ICON = { fight: 'icon_fight', elite: 'icon_elite', nest: 'icon_nest', fossil: 'icon_fossil', meteor: 'icon_meteor' };
+const ICON = { fight: 'icon_fight', elite: 'icon_elite', nest: 'icon_nest', fossil: 'icon_fossil', meteor: 'icon_meteor', shop: 'icon_shop' };
 
 // Zone map: pick the next node, travel, resolve it.
 export class MapScene extends Phaser.Scene {
@@ -118,6 +118,8 @@ export class MapScene extends Phaser.Scene {
     text(this, W - 8, 8, zoneOf(this.run).name, { color: COLORS.accent, origin: [1, 0] }).setDepth(11);
     this.hAmber = text(this, W - 8, 17, '', { color: '#e8a030', origin: [1, 0], shadow: false }).setDepth(11);
     this.hTraits = text(this, W - 8, 26, '', { color: COLORS.textDim, origin: [1, 0], shadow: false }).setDepth(11);
+    // Owned fossils + perks (2 rows of 7); tap one to read it in the tooltip bar.
+    this.relicBar = new RelicBar(this, 178, 7, { cols: 7, onInfo: (t) => this.tip.setText(t) });
   }
 
   updateHud() {
@@ -134,6 +136,8 @@ export class MapScene extends Phaser.Scene {
     this.hXp.setText(`XP ${d.xp}/${need}`);
     this.hAmber.setText(`+${this.run.amber} AMBER`);
     this.hTraits.setText(d.traits.map((t) => TRAITS[t].short).join(' '));
+    const owned = [...this.run.relics, ...this.run.perks].slice(0, 14);
+    if (owned.join() !== this.ownedKey) { this.ownedKey = owned.join(); this.relicBar.set(owned); }
   }
 
   /* ---------- input + travel ---------- */
@@ -178,44 +182,11 @@ export class MapScene extends Phaser.Scene {
       this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Battle', { node: node.id }));
       return;
     }
-    if (node.type === 'nest') {
-      const amt = heal(d, NEST_HEAL);
-      sfx('levelup');
-      this.updateHud();
-      const result = amt > 0 ? `+${amt} HP` : 'ALREADY AT FULL HP.';
-      await choose(this, { title: 'NEST', lines: ['YOU CURL UP AND REST.', result], options: [{ label: 'CONTINUE' }] });
-    } else if (node.type === 'fossil') {
-      sfx('ding');
-      const offers = fossilOffers(run);
-      const i = await choose(this, { title: 'FOSSIL DIG', lines: ['OLD BONES IN THE MUD.', 'TAKE ONE:'], options: offers });
-      offers[i].apply();
-      sfx('levelup');
-    } else if (node.type === 'meteor') {
-      sfx('tell');
-      const ev = run.rng.pick(EVENTS);
-      const i = await choose(this, { title: ev.title, lines: ev.lines, options: ev.options });
-      const result = ev.options[i].run(this.eventCtx()).filter(Boolean);
-      this.updateHud();
-      await choose(this, { title: ev.title, lines: result, options: [{ label: 'CONTINUE' }] });
-    }
+    const visit = { nest: visitNest, fossil: visitFossil, meteor: visitMeteor, shop: visitShop }[node.type];
+    if (visit) await visit(this, run);
     if (d.pendingEvo) { this.scene.start('Evolution'); return; }
     this.busy = false;
     this.sel = 0;
     this.refresh();
-  }
-
-  // Helpers handed to Meteor Shard events; each returns a result line.
-  eventCtx() {
-    const d = this.d;
-    return {
-      rng: this.run.rng,
-      stat: (k, n) => { addStat(d, k, n); return `+${n} ${k.toUpperCase()}`; },
-      hurt: (f) => { sfx('hit'); this.fx.shake(2, 150); return `-${hurt(d, f)} HP`; },
-      heal: (f) => `+${heal(d, f)} HP`,
-      xp: (n) => {
-        const lv = gainXp(d, n);
-        return [`+${n} XP`, lv ? `LEVEL UP! LV${d.level}` : null];
-      }
-    };
   }
 }

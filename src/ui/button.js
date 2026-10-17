@@ -15,8 +15,9 @@ export class Button {
     this.g = scene.add.graphics().setDepth(depth);
     const cx = x + Math.floor(w / 2);
     this.keyText = text(scene, x + 3, y + 3, key, { color: COLORS.textDim, shadow: false }).setDepth(depth + 1);
-    this.label = text(scene, cx, y + 12, label, { origin: [0.5, 0] }).setDepth(depth + 1);
-    this.sub = text(scene, cx, y + 23, sub, { origin: [0.5, 0], color: COLORS.textDim, shadow: false }).setDepth(depth + 1);
+    const ly = h >= 32 ? 12 : 4, sy = h >= 32 ? 23 : 15; // text rows for tall / compact buttons
+    this.label = text(scene, cx, y + ly, label, { origin: [0.5, 0] }).setDepth(depth + 1);
+    this.sub = text(scene, cx, y + sy, sub, { origin: [0.5, 0], color: COLORS.textDim, shadow: false }).setDepth(depth + 1);
     // Depth matters for input: Phaser only hits the top-most interactive object.
     this.zone = scene.add.zone(x, y, w, h).setOrigin(0).setDepth(depth + 1).setInteractive({ useHandCursor: true });
     this.zone.on('pointerover', () => { this.hover = true; this.draw(); });

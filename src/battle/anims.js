@@ -155,7 +155,7 @@ async function leap(s, obj, land, homeY) {
 // Compy Swarm: two ghost compies join in; one QTE, three quick hits.
 async function swarm(s, rig, target, ctx) {
   const dir = rig.homeFacing;
-  const ghosts = [18, 34].map((off) => {
+  const ghosts = [18, 34, 50].slice(0, Math.max(1, (ctx.spread ?? 3) - 1)).map((off) => {
     const g = s.add.image(rig.x - dir * off, rig.homeY, rig.key).setOrigin(0.5, 1)
       .setScale(rig.scale * dir, rig.scale).setTint(0x9fd8ff).setAlpha(0).setDepth(4);
     s.tweens.add({ targets: g, alpha: 0.65, duration: 150 });
@@ -176,12 +176,12 @@ async function swarm(s, rig, target, ctx) {
     await wait(s, 120);
   }
   crouch(false);
-  const attackers = [ghosts[0], ghosts[1], rig];
+  const attackers = [...ghosts, rig];
   for (let i = 0; i < attackers.length; i++) {
     const a = attackers[i], tg = ctx.targetRig?.(i) ?? target;
     if (a === rig) rig.ghost();
     sfx('whoosh');
-    await leap(s, a, standX(rig, tg, 10) + dir * (6 - i * 6), rig.homeY);
+    await leap(s, a, standX(rig, tg, 10) + dir * (6 - (i % 3) * 6), rig.homeY);
     const res = await ctx.result();
     const p = tg.hitPoint();
     s.fx.slash(p.x, p.y + (i - 1) * 4, dir);

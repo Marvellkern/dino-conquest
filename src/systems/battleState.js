@@ -1,4 +1,5 @@
 import { MOVES, ENERGY, STREAK } from '../data/moves.js';
+import * as BLD from './build.js';
 import { BRAINS, DEFAULT_BRAIN, INTENT_ICONS, PHASE2_AT } from '../data/brains.js';
 import {
   startTurn, endTurn, applyStatus, computeDamage, afterHit, roarStuns, roarTurns
@@ -11,11 +12,19 @@ import {
 // END TURN → each enemy runs its intent (enemyAct + enemyStrike per hit) →
 // finishEnemyAction → next round.
 
-export function createBattle({ player, enemies, rng, spawn = null }) {
-  const st = { player, enemies: [], rng, spawn, energy: 0, streak: 0, empowered: false, pendingEmpower: false, activeEmpower: false, firstTurn: true };
+// build: the run's fossils / mutations / perks (systems/build.js). Call
+// startBattle once all enemies are in.
+export function createBattle({ player, enemies, rng, spawn = null, build = null }) {
+  const st = {
+    player, enemies: [], rng, spawn, build: build ?? BLD.emptyBuild(),
+    energy: 0, energyNext: 0, streak: 0, empowered: false, pendingEmpower: false, activeEmpower: false, firstTurn: true
+  };
   for (const e of enemies) addEnemy(st, e);
   return st;
 }
+
+export function startBattle(st) { BLD.onBattleStart(st); }
+export const maxEnergy = (st) => BLD.maxEnergy(st);
 
 export function addEnemy(st, e, brainId = e.brainId ?? e.species) {
   const brain = BRAINS[brainId] ?? DEFAULT_BRAIN;
@@ -80,24 +89,28 @@ export function intentView(st, e) {
 /* ---------- player turn ---------- */
 
 export function beginPlayerTurn(st) {
-  const p = st.player;
-  const fast = st.firstTurn && alive(st).every((e) => p.spd > e.spd);
-  const gain = Math.max(0, ENERGY.perTurn + (fast ? ENERGY.fastStart : 0) - p.status.drain);
-  st.energy = Math.min(ENERGY.max, st.energy + gain);
+  const p = st.player, first = st.firstTurn;
+  const fast = first && alive(st).every((e) => p.spd > e.spd);
+  const bonus = (fast ? ENERGY.fastStart : 0) + (first ? BLD.firstTurnBonus(st) : 0) + st.energyNext;
+  const gain = Math.max(0, ENERGY.perTurn + bonus - p.status.drain);
+  st.energy = Math.min(BLD.maxEnergy(st), st.energy + gain);
+  st.energyNext = 0;
   p.status.drain = 0;
   p.status.braced = 0;
   st.firstTurn = false;
+  const volcanic = BLD.onTurnStart(st, first);
   const tick = startTurn(p);
+  const revived = BLD.tryRevive(st);
   rollIntents(st);
-  return { ...tick, gain, fast };
+  return { ...tick, gain, fast, volcanic, revived };
 }
 
-export const moveCost = (id) => MOVES[id].cost ?? 1;
+export const moveCost = (st, id) => BLD.moveCost(st, id);
 
 // Why a move can't be used right now (null = usable).
 export function blocked(st, id) {
   const m = MOVES[id];
-  if (st.energy < moveCost(id)) return 'NOT ENOUGH ENERGY';
+  if (st.energy < moveCost(st, id)) return 'NOT ENOUGH ENERGY';
   if (m.brace && st.player.status.braced) return 'ALREADY BRACED';
   if (!m.status && !m.brace && !targetable(st).length) return 'NO TARGET';
   return null;
@@ -107,7 +120,7 @@ export const affordable = (st) => st.player.moves.some((id) => !blocked(st, id))
 
 // Spend energy and start a move; empower from a finished crit streak applies now.
 export function beginMove(st, id) {
-  st.energy -= moveCost(id);
+  st.energy -= moveCost(st, id);
   st.activeEmpower = st.empowered && !MOVES[id].status && !MOVES[id].brace;
   if (st.activeEmpower) st.empowered = false;
 }
@@ -121,43 +134,72 @@ export function endMove(st) {
 export function noteQte(st, qte) {
   if (qte !== 'crit') { st.streak = 0; return false; }
   st.streak++;
-  if (st.streak < STREAK.need) return false;
+  if (st.streak < BLD.streakNeed(st)) return false;
   st.streak = 0;
   st.pendingEmpower = true;
   return true;
 }
 
+// Meteor Chip: the first attack of the fight is a crit whatever the QTE said.
+// Call once per QTE, before resolving its strikes.
+export function finalQte(st, qte) {
+  if (!st.autoCrit) return { qte, auto: false };
+  st.autoCrit = false;
+  return { qte: 'crit', auto: true };
+}
+
 // Resolve one player strike on target. evaded: a Raptor dodged a missed QTE
-// and gets a free Pounce. phase: a boss just crossed into phase 2.
+// and gets a free Pounce. fx: build effects (heal, poison, stun, chain).
+// kill: on-kill effects. phase: a boss just crossed into phase 2.
 export function playerStrike(st, id, target, qte) {
   const m = MOVES[id], p = st.player;
   if (qte === 'miss' && target.brain.evadeMiss && !m.sure) return { dmg: 0, evaded: true };
-  const mult = st.activeEmpower ? 1 + STREAK.bonus : 1;
-  const dmg = computeDamage(p, target, m, st.rng, { qte, mult });
-  target.hp = Math.max(0, target.hp - dmg);
+  const mods = BLD.strikeMods(st, id, target);
+  const mult = (st.activeEmpower ? 1 + STREAK.bonus : 1) * mods.mult;
+  const dmg = Math.min(target.hp, computeDamage(p, target, m, st.rng, { qte, mult }) + mods.flat);
+  target.hp -= dmg;
   const trait = afterHit(p, target, dmg);
-  return { dmg, killed: target.hp <= 0, trait, phase: checkPhase(st, target) };
+  const fx = BLD.onPlayerHit(st, id, target, qte, dmg);
+  const killed = target.hp <= 0;
+  return { dmg, killed, trait, fx, kill: killed ? BLD.onKill(st) : null, phase: checkPhase(st, target) };
 }
 
 // Free riposte after a perfect dodge (no energy, no QTE, no streak).
 export function counterStrike(st, target) {
-  const dmg = computeDamage(st.player, target, MOVES.counter, st.rng, { qte: 'good' });
-  target.hp = Math.max(0, target.hp - dmg);
-  return { dmg, killed: target.hp <= 0, trait: afterHit(st.player, target, dmg), phase: checkPhase(st, target) };
+  const mult = BLD.counterMult(st);
+  const dmg = Math.min(target.hp, computeDamage(st.player, target, MOVES.counter, st.rng, { qte: 'good', mult }));
+  target.hp -= dmg;
+  const killed = target.hp <= 0;
+  return { dmg, killed, trait: afterHit(st.player, target, dmg), kill: killed ? BLD.onKill(st) : null, phase: checkPhase(st, target) };
 }
 
-// Roar hits every enemy. Returns [{ e, stunned }].
+// Small after-attack extras (Compy King's ghost bite).
+export function afterAttack(st, target) {
+  const dmg = BLD.ghostBite(st, target);
+  if (!dmg) return null;
+  const killed = target.hp <= 0;
+  return { dmg, killed, kill: killed ? BLD.onKill(st) : null, phase: checkPhase(st, target) };
+}
+
+// Roar hits every enemy. Returns [{ e, stunned, dmg, cancelled, killed, phase }].
 export function playerRoar(st) {
   const m = MOVES.roar;
-  return alive(st).map((e) => {
+  const res = alive(st).map((e) => {
     applyStatus(e, { stat: m.effect.stat, turns: roarTurns(st.player, m) });
     const stunned = roarStuns(st.player, st.rng);
     if (stunned) { e.status.stun = 1; e.intent = { kind: 'stunned' }; }
-    return { e, stunned };
+    return { e, stunned, dmg: 0, cancelled: false };
   });
+  for (const r of BLD.onRoar(st)) Object.assign(res.find((x) => x.e === r.e), { dmg: r.dmg, cancelled: r.cancelled });
+  for (const r of res) { r.killed = r.e.hp <= 0; r.phase = checkPhase(st, r.e); }
+  return res;
 }
 
-export function playerBrace(st) { st.player.status.braced = 1; }
+// Returns HP healed (Fern Cushion).
+export function playerBrace(st) {
+  st.player.status.braced = 1;
+  return BLD.onBrace(st);
+}
 
 // Muddy attack bar is used up by the next attack.
 export function consumeMuddy(st) {
@@ -195,12 +237,14 @@ export const isStrike = (i) => ['attack', 'multi', 'ambush'].includes(i?.kind);
 export function enemyStrike(st, e, defend, moveId = e.intent.move) {
   const p = st.player, m = MOVES[moveId];
   const d = defend === 'hit' && p.status.braced ? 'block' : defend;
-  const dmg = computeDamage(e, p, m, null, { qte: 'good', defend: d });
+  const dmg = computeDamage(e, p, m, null, { qte: 'good', defend: d, blockMult: BLD.blockMult(st, m) });
   p.hp = Math.max(0, p.hp - dmg);
   afterHit(e, p, dmg);
   const drained = !!m.drain && d === 'hit';
   if (drained) p.status.drain += m.drain;
-  return { dmg, defend: d, drained };
+  const reflect = BLD.onEnemyHit(st, e, d, dmg);
+  const revived = BLD.tryRevive(st);
+  return { dmg, defend: d, drained, reflect, revived };
 }
 
 // After the action: advance the cycle, clear one-shot states.

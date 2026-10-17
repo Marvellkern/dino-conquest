@@ -6,6 +6,10 @@ import { drawZone } from '../ui/backdrop.js';
 import { text } from '../ui/font.js';
 import { panel } from '../ui/pixel.js';
 import { Hud, EnemyMarkers, MoveBar } from '../ui/battleUI.js';
+import { RelicBar } from '../ui/relicBar.js';
+import { pickRelic, pickMutation } from '../ui/buildPicks.js';
+import { RELICS } from '../data/relics.js';
+import { MUTATIONS } from '../data/mutations.js';
 import { createRig } from '../sprites/rig.js';
 import { makeRng, randomSeed } from '../systems/rng.js';
 import { makeFighter } from '../systems/combat.js';
@@ -18,7 +22,8 @@ import { deathAnim, phaseAnim, enterAnim } from '../battle/gimmicks.js';
 import { playerMove } from '../battle/playerMoves.js';
 import { enemyAction, evadePounce } from '../battle/enemyMoves.js';
 import {
-  session, playerFighter, enemyFighters, enemyFighter, minionFighter, gainXp, dinoStats, advanceZone, skinOf
+  session, playerFighter, enemyFighters, enemyFighter, minionFighter, gainXp, dinoStats, advanceZone, skinOf,
+  buildOf
 } from '../run/run.js';
 
 const PLAYER_X = 72;
@@ -27,7 +32,8 @@ const PLAYER_X = 72;
 // Each round: enemies show intents → the player spends energy → END TURN →
 // enemies act. Rules live in systems/battleState.js; this scene animates them.
 // In a run: data = { node }. Test mode: URL ?p=raptor&e=compy*,compy*,compy*&z=jungle
-// (a trailing * makes a small pack member; e=boss uses the zone boss).
+// (a trailing * makes a small pack member; e=boss uses the zone boss;
+// r=amberFang,oldEgg adds fossils; m=bite:chain,tail:sweep adds mutations).
 export class Battle extends Phaser.Scene {
   constructor() { super('Battle'); }
 
@@ -40,7 +46,10 @@ export class Battle extends Phaser.Scene {
       trait: t in TRAITS ? t : null,
       enemies: data.enemies ?? (q.get('e') ?? 'raptor').split(','),
       seed: data.seed ?? randomSeed(),
-      zone: data.zone ?? (q.get('z') in ZONES ? q.get('z') : 'jungle')
+      zone: data.zone ?? (q.get('z') in ZONES ? q.get('z') : 'jungle'),
+      relics: data.relics ?? (q.get('r') ? q.get('r').split(',').filter((r) => r in RELICS) : []),
+      mutations: data.mutations ?? Object.fromEntries((q.get('m') ?? '').split(',').filter(Boolean).map((t) => t.split(':'))
+        .filter(([mv, id]) => MUTATIONS[mv]?.[id]))
     };
   }
 
@@ -55,21 +64,25 @@ export class Battle extends Phaser.Scene {
     this.zone = this.node ? session.run.zone : this.cfg.zone;
     drawZone(this, this.zone);
 
-    let player, enemies, pSkin;
+    let player, enemies, pSkin, build;
     if (this.node) {
       const run = session.run;
       player = playerFighter(run);
       enemies = enemyFighters(this.node);
       pSkin = skinOf(run.dino.species, run.dino.evo);
+      build = buildOf(run);
     } else {
       player = makeFighter(this.cfg.player, { side: 'player', traits: this.cfg.trait ? [this.cfg.trait] : [] });
       enemies = this.cfg.enemies.map((tok) => this.testEnemy(tok));
+      build = { relics: new Set(this.cfg.relics), mut: { ...this.cfg.mutations } };
     }
     player.rig = createRig(this, player.species, PLAYER_X, GROUND_Y, 1, pSkin);
-    this.st = B.createBattle({ player, enemies: [], rng: this.rng, spawn: (sp) => this.spawn(sp) });
+    this.st = B.createBattle({ player, enemies: [], rng: this.rng, spawn: (sp) => this.spawn(sp), build });
     this.markers = new EnemyMarkers(this, (e) => this.setTarget(e));
     for (const e of enemies) this.addEnemy(e);
     this.layout(false);
+    B.startBattle(this.st);
+    this.relicBar = new RelicBar(this, 129, 6, { cols: 7, onInfo: (t) => this.say(t) }).set([...build.relics]);
 
     this.playerHud = new Hud(this, 'player', this.st);
     this.playerHud.bind(player);
@@ -178,6 +191,13 @@ export class Battle extends Phaser.Scene {
     this.layout();
   }
 
+  revivePop() {
+    const t = this.st.player.rig.top();
+    this.fx.pop(t.x, t.y - 12, 'OLD EGG! REVIVED', '#ffd040', 1, 1200);
+    this.fx.sparks(t.x, t.y, { count: 16, big: true, gold: true });
+    sfx('levelup');
+  }
+
   streakUp() {
     const t = this.st.player.rig.top();
     this.fx.pop(t.x, t.y - 10, 'POWER UP!', '#ffd040', 1, 900);
@@ -192,6 +212,11 @@ export class Battle extends Phaser.Scene {
     const st = this.st;
     for (let round = 0; ; round++) {
       const t = B.beginPlayerTurn(st);
+      if (t.volcanic) {
+        const p = st.player.rig.hitPoint();
+        this.fx.number(p.x, p.y - 16, t.volcanic, { color: '#ff6040' });
+      }
+      if (t.revived) this.revivePop();
       if (t.poison) {
         const p = st.player.rig.hitPoint();
         this.fx.number(p.x, p.y - 16, t.poison, { color: '#80d060' });
@@ -282,6 +307,7 @@ export class Battle extends Phaser.Scene {
       return;
     }
     d.hp = Math.max(1, this.st.player.hp);
+    this.levelBefore = d.level;
     const rw = REWARDS[type];
     run.amber += rw.amber;
     const lines = [`+${rw.xp} XP   +${rw.amber} AMBER`];
@@ -290,7 +316,10 @@ export class Battle extends Phaser.Scene {
     const done = type === 'boss' && !next;
     if (d.pendingEvo && !done) lines.push('SOMETHING IS STIRRING...');
     if (next) lines.push(`ONWARD TO THE ${ZONES[next].name}!`);
+    const levels = d.level - (this.levelBefore ?? d.level);
     await this.banner(type === 'boss' ? 'ZONE CLEAR!' : 'VICTORY!', true, lines, 'TAP TO CONTINUE');
+    if (type === 'elite') await pickRelic(this, run, 'ELITE DROP', ['IT GUARDED A FOSSIL.']);
+    for (let i = 0; i < levels; i++) await pickMutation(this, run, { title: 'LEVEL UP: MUTATION' });
     if (done) this.leave('RunEnd', { won: true });
     else this.leave(d.pendingEvo ? 'Evolution' : 'Map');
   }

@@ -3,11 +3,12 @@ import { panel } from './pixel.js';
 import { text } from './font.js';
 import { Button } from './button.js';
 
-// Modal choice box over a dimmed screen. options: [{ label, sub? }].
-// Resolves with the chosen index. Click/tap or keys 1–N.
-export function choose(scene, { title, lines = [], options }) {
+// Modal choice box over a dimmed screen. options: [{ label, sub?, disabled? }]
+// (disabled: a reason string; the option is greyed out and shows it).
+// Resolves with the chosen index. Click/tap or keys 1–N. bh: button height.
+export function choose(scene, { title, lines = [], options, bh = 32 }) {
   return new Promise((resolve) => {
-    const PW = 236, x = (W - PW) / 2, bh = 32, gap = 4;
+    const PW = 236, x = (W - PW) / 2, gap = bh < 32 ? 3 : 4;
     const ph = 20 + lines.length * 10 + 4 + options.length * (bh + gap) + 4;
     const y = Math.max(2, Math.round((H - ph) / 2));
     const objs = [
@@ -29,8 +30,8 @@ export function choose(scene, { title, lines = [], options }) {
       });
     };
     const btns = options.map((o, i) => new Button(scene, x + 8, by + i * (bh + gap), PW - 16, bh, {
-      key: options.length > 1 ? String(i + 1) : '', label: o.label, sub: o.sub ?? '', depth: 62, onClick: () => done(i)
-    }));
+      key: options.length > 1 ? String(i + 1) : '', label: o.label, sub: o.disabled ?? o.sub ?? '', depth: 62, onClick: () => done(i)
+    }).setEnabled(!o.disabled));
     const onKey = (e) => {
       if (e.repeat) return;
       const i = options.length === 1 && (e.code === 'Space' || e.code === 'Enter') ? 0 : '123456'.indexOf(e.key);

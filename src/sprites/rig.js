@@ -99,7 +99,8 @@ class Rig {
 // T-rex: part-offset rig (brief §4.3).
 export class RexRig extends Rig {
   constructor(scene, x, y, facing, key = 'rex', scale = 2) {
-    super(scene, x, y, { w: 32, h: 26, facing, scale });
+    const src = scene.textures.get(`${key}_legs`).getSourceImage(); // evolved forms are bigger
+    super(scene, x, y, { w: src.width, h: src.height, facing, scale });
     this.key = key;
     this.legs = this.part(`${key}_legs`);
     this.body = this.part(`${key}_body`);
@@ -124,7 +125,7 @@ export class RexRig extends Rig {
     }
   }
 
-  mouth() { return this.at(30 + this.pose.hx, 7 + this.pose.hy); }
+  mouth() { return this.at(this.w - 2 + this.pose.hx, 7 + this.pose.hy); }
 }
 
 // Everyone else: whole sprite + a pre-built crouch texture.

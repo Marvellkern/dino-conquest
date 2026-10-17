@@ -7,7 +7,7 @@ export const ZONES = {
   jungle: {
     name: 'JUNGLE',
     rows: 7,                       // map columns before the boss
-    scale: { hp: 1.15, atk: 1.05 }, // whole-zone difficulty (fights, elites, boss)
+    scale: { hp: 1.45, atk: 1.2 },  // whole-zone difficulty (fights, elites, boss)
     fights: [
       { w: 3, maxRow: 1, members: [['compy', SMALL], ['compy', SMALL]] },
       { w: 3, minRow: 2, members: [['compy', SMALL], ['compy', SMALL], ['compy', SMALL]] },
@@ -28,7 +28,7 @@ export const ZONES = {
   swamp: {
     name: 'SWAMP',
     rows: 7,
-    scale: { hp: 1.4, atk: 1.35 },
+    scale: { hp: 1.8, atk: 1.6 },
     fights: [
       { w: 3, members: [['pachy']] },
       { w: 3, members: [['sarco']] },
@@ -65,13 +65,25 @@ export const ENEMY_SCALE = {
 };
 
 export const REWARDS = {
-  fight: { xp: 30, amber: 5 },
-  elite: { xp: 60, amber: 15 },
+  fight: { xp: 30, amber: 8 },
+  elite: { xp: 60, amber: 20 },
   boss: { xp: 40, amber: 50 }
 };
 
-// Odds of each node type in the middle columns (elites only from column 3).
-export const NODE_WEIGHTS = { fight: 40, elite: 12, nest: 15, fossil: 18, meteor: 15 };
+// Odds of each node type in the middle columns (elites only from column 3,
+// shops from column 2).
+export const NODE_WEIGHTS = { fight: 36, elite: 12, nest: 13, fossil: 15, meteor: 14, shop: 10 };
+
+// Lane personalities (lane 0 = top): multipliers on NODE_WEIGHTS. The top lane is
+// risky (elites, digs), the bottom lane is safe (nests, shops).
+export const LANE_BIAS = [
+  { elite: 2.2, fossil: 1.6, nest: 0.4, shop: 0.6 },
+  {},
+  { elite: 0.3, fossil: 0.7, nest: 2, shop: 1.8 }
+];
+
+// Shop: prices in in-run Amber (spending it means banking less at the end).
+export const SHOP = { relic: 35, mutation: 30, heal: 15, healFrac: 0.4 };
 
 export const NEST_HEAL = 0.4;
 
@@ -80,7 +92,8 @@ export const NODE_INFO = {
   fight: 'FIGHT',
   elite: 'ELITE',
   nest: 'NEST: HEAL 40% HP',
-  fossil: 'FOSSIL DIG: PICK AN UPGRADE',
+  fossil: 'FOSSIL DIG: PICK A FOSSIL',
   meteor: 'METEOR SHARD: RISK OR REWARD',
+  shop: 'SHOP: SPEND RUN AMBER',
   boss: 'BOSS'
 };

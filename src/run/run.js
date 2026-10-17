@@ -3,7 +3,9 @@ import { MOVES, MOVE_UP } from '../data/moves.js';
 import { TRAITS } from '../data/traits.js';
 import { ZONES, ENEMY_SCALE, ZONE_HEAL, nextZone } from '../data/zones.js';
 import { PROGRESSION, xpToNext, EVO_SUFFIX } from '../data/progression.js';
-import { STAT_UPS } from '../data/upgrades.js';
+import { RELICS, PERKS } from '../data/relics.js';
+import { MUTATIONS } from '../data/mutations.js';
+import { FORMS } from '../data/forms.js';
 import { makeFighter } from '../systems/combat.js';
 import { makeRng } from '../systems/rng.js';
 import { generateMap } from './mapgen.js';
@@ -19,7 +21,10 @@ export function newRun({ species, trait, seed, zone = 'jungle', bonus = {}, live
     bonus: { hp: 0, atk: 0, def: 0, spd: 0, ...bonus }, moveUps: {}
   };
   dino.hp = dinoStats(dino).hp;
-  session.run = { seed, rng, zone, dino, map: generateMap(rng, zone), at: null, amber: 0, cause: null, lives, maxLives: lives };
+  session.run = {
+    seed, rng, zone, dino, map: generateMap(rng, zone), at: null, amber: 0, cause: null, lives, maxLives: lives,
+    relics: [], perks: [], mutations: {}, eggUsed: false
+  };
   return session.run;
 }
 
@@ -34,7 +39,7 @@ export function statsFor(species, level, evo = 0, bonus = {}, base = SPECIES[spe
 }
 
 export const dinoStats = (d) => statsFor(d.species, d.level, d.evo, d.bonus);
-export const dinoName = (d) => SPECIES[d.species].name + EVO_SUFFIX[d.evo];
+export const dinoName = (d) => FORMS[d.species]?.[d.evo]?.name ?? SPECIES[d.species].name + EVO_SUFFIX[d.evo];
 export const skinOf = (species, evo = 0) => (evo ? `${species}_e${evo}` : species);
 export const enemyName = (e) => (e.name ?? SPECIES[e.species].name);
 
@@ -46,6 +51,9 @@ export function playerFighter(run) {
     side: 'player', level: d.level, traits: d.traits, stats: dinoStats(d), hp: d.hp, name: dinoName(d), moveUps: d.moveUps
   });
 }
+
+// The build handed to a fight: fossils + perks + mutations (systems/build.js).
+export const buildOf = (run) => ({ relics: new Set([...run.relics, ...run.perks]), mut: { ...run.mutations }, run });
 
 // One enemy spec → fighter. type: node type, for ENEMY_SCALE.
 export function enemyFighter(e, type) {
@@ -93,17 +101,18 @@ export function gainXp(d, xp) {
   return levels;
 }
 
-// Applies one pending evolution. Returns the upgraded move id (null if maxed).
-export function evolve(d) {
+// Applies one pending evolution: new form, stats, heal, and the form's perk.
+// Returns the perk id (or null).
+export function evolve(run) {
+  const d = run.dino;
   const before = dinoStats(d).hp;
   d.evo = Math.min(EVO_SUFFIX.length - 1, d.evo + 1);
   d.pendingEvo = Math.max(0, d.pendingEvo - 1);
   const max = dinoStats(d).hp;
   d.hp = Math.min(max, d.hp + (max - before) + Math.round(max * PROGRESSION.evoHeal));
-  const special = SPECIES[d.species].special;
-  if (!canUpgrade(d, special)) return null;
-  upgradeMove(d, special);
-  return special;
+  const perk = FORMS[d.species]?.[d.evo]?.perk ?? null;
+  if (perk && !run.perks.includes(perk)) run.perks.push(perk);
+  return perk;
 }
 
 export const canUpgrade = (d, id) => (d.moveUps[id] ?? 0) < MOVE_UP.max;
@@ -127,39 +136,39 @@ export function hurt(d, frac) {
 
 export function addStat(d, stat, n) {
   d.bonus[stat] += n;
-  if (stat === 'hp') d.hp += n;
+  if (stat === 'hp') d.hp = Math.max(1, Math.min(dinoStats(d).hp, d.hp + n));
 }
 
-/* ---------- Fossil Dig offers ---------- */
+/* ---------- fossils (relics) and mutations ---------- */
 
-// Three different kinds when possible: a stat, a new trait, a move upgrade.
-export function fossilOffers(run) {
-  const { rng, dino: d } = run;
-  const offers = [];
-  const s = rng.pick(STAT_UPS);
-  const n = s.amount(SPECIES[d.species]);
-  offers.push({ label: s.label, sub: s.sub, apply: () => addStat(d, s.stat, n) });
+export const relicInfo = (id) => RELICS[id] ?? PERKS[id];
 
-  const newTraits = Object.keys(TRAITS).filter((t) => !d.traits.includes(t));
-  if (d.traits.length < PROGRESSION.maxTraits && newTraits.length) {
-    const t = rng.pick(newTraits);
-    offers.push({ label: TRAITS[t].name, sub: `TRAIT: ${TRAITS[t].desc}`, apply: () => d.traits.push(t) });
-  }
-
-  const moves = ['bite', 'tail', 'roar', SPECIES[d.species].special].filter((id) => canUpgrade(d, id));
-  if (moves.length) {
-    const id = rng.pick(moves);
-    const sub = MOVES[id].status ? 'LASTS 1 MORE TURN' : '+25% POWER';
-    offers.push({ label: `${MOVES[id].name.toUpperCase()}+`, sub, apply: () => upgradeMove(d, id) });
-  }
-
-  while (offers.length < 3) {
-    const extra = rng.pick(STAT_UPS.filter((u) => !offers.some((o) => o.label === u.label)));
-    const amt = extra.amount(SPECIES[d.species]);
-    offers.push({ label: extra.label, sub: extra.sub, apply: () => addStat(d, extra.stat, amt) });
-  }
-  return offers;
+// Up to n fossils the run doesn't own yet.
+export function relicOffers(run, n = 3) {
+  const pool = Object.keys(RELICS).filter((id) => !run.relics.includes(id));
+  const out = [];
+  while (out.length < n && pool.length) out.push(pool.splice(Math.floor(run.rng.next() * pool.length), 1)[0]);
+  return out;
 }
+
+export function addRelic(run, id) {
+  if (!run.relics.includes(id)) run.relics.push(id);
+}
+
+export function removeRandomRelic(run) {
+  if (!run.relics.length) return null;
+  return run.relics.splice(Math.floor(run.rng.next() * run.relics.length), 1)[0];
+}
+
+// A mutation choice for one not-yet-mutated base move: { move, options: [id...] }, or null.
+export function mutationOffer(run) {
+  const open = Object.keys(MUTATIONS).filter((m) => !run.mutations[m]);
+  if (!open.length) return null;
+  const move = run.rng.pick(open);
+  return { move, options: Object.keys(MUTATIONS[move]) };
+}
+
+export function addMutation(run, move, id) { run.mutations[move] = id; }
 
 /* ---------- zones ---------- */
 
