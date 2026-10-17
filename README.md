@@ -52,38 +52,49 @@ src/
 
 - `src/data/zones.js`: zone layout, enemy groups (`fights` / `elites`, 1–3 enemies each) and levels, a per-zone difficulty `scale`, the zone order (`ZONE_ORDER`), the heal between zones (`ZONE_HEAL`), enemy HP/ATK scaling per node type, rewards, node odds. A boss can carry its own `base` stat block, and each zone has an `enemyBase` for its wildlife, so tuning a hatchable species never changes the zones' enemies.
 - `src/data/progression.js`: XP curve, per-level growth, evolution levels and boost.
-- `src/data/events.js` / `src/data/upgrades.js`: Meteor Shard events and Fossil Dig stat upgrades.
+- `src/data/relics.js`: the 20 fossils (in-run relics) and the evolution perks, with their numbers (`RELIC_TUNING`).
+- `src/data/mutations.js`: move mutations for Bite / Tail Whip / Roar.
+- `src/data/forms.js`: evolution form names and perks per species.
+- `src/data/events.js`: the 8 Meteor Shard events (options, tradeoffs, `need` checks).
+- `src/data/zones.js` also holds `SHOP` prices and `LANE_BIAS` (risky top lane, safe bottom lane).
 
-**Balance sim.** The numbers are tuned with a headless sim that plays full runs (Jungle → Swamp) on the real combat rules (`systems/battleState.js`) with probabilistic QTE results and a simple "brace big hits, special when affordable, else bite" policy. `src/systems` and `src/run` contain no Phaser code, so the sim imports them directly. v2 combat, 400 runs each with 3 lives:
+**Balance sim.** The numbers are tuned with a headless sim that plays full runs (Jungle → Swamp) on the real combat rules (`systems/battleState.js` + `systems/build.js`) with probabilistic QTE results, a simple "brace big hits, special when affordable, else bite" policy, and random fossil / mutation picks. `src/systems` and `src/run` contain no Phaser code, so the sim imports them directly. With builds (Phase 2), 400 runs each with 3 lives, before any meta progression:
 
 | Play | Species | Clears Jungle | Clears both zones |
 |---|---|---|---|
-| Decent | Compy (Common) | 72% | 44% |
-| Decent | Pachy (Common) | 72% | 39% |
-| Decent | Raptor (Rare) | 87% | 75% |
-| Decent | Sarco (Rare) | 90% | 78% |
-| Decent | Trike (Epic) | 94% | 90% |
-| Decent | Spino (Epic) | 97% | 81% |
-| Decent | T-Rex (Legendary) | 100% | 95% |
-| Average | Compy (Common) | 19% | 3% |
-| Average | Pachy (Common) | 21% | 3% |
-| Average | Raptor (Rare) | 46% | 16% |
-| Average | Sarco (Rare) | 44% | 18% |
-| Average | Trike (Epic) | 56% | 27% |
-| Average | Spino (Epic) | 61% | 19% |
-| Average | T-Rex (Legendary) | 82% | 49% |
+| Decent | Compy (Common) | 74% | 38% |
+| Decent | Pachy (Common) | 69% | 27% |
+| Decent | Raptor (Rare) | 82% | 53% |
+| Decent | Sarco (Rare) | 85% | 57% |
+| Decent | Trike (Epic) | 89% | 74% |
+| Decent | Spino (Epic) | 96% | 72% |
+| Decent | T-Rex (Legendary) | 100% | 88% |
+| Average | Compy (Common) | 19% | 2% |
+| Average | Raptor (Rare) | 31% | 4% |
+| Average | Trike (Epic) | 47% | 14% |
+| Average | T-Rex (Legendary) | 79% | 41% |
 
-Fights last about 4–6 rounds. The first two map columns only hold a Compy pair, so new players get a gentle opener. Phase 3's meta unlocks are meant to carry players through the Swamp over several runs.
+Fossils and mutations add a lot of power (a decent Compy clears the Jungle 60% of the time without them, 74–88% with them), so the zones' difficulty `scale` went up when they landed.
 
 ### The run
 
-`run/run.js` holds the run state (dino stats, XP, evolution, upgrades) and `run/mapgen.js` builds the branching map. The scenes are `Map` (travel plus Nest / Fossil Dig / Meteor popups) → `Battle` → `Evolution` (at LV5 / LV10) → `RunEnd` (victory: banks Amber, gives 2 Lineage picks via `run/lineagePick.js`, and crowns the species in the Dino-dex). Each run has 3 lives. Losing a fight costs one and restarts that fight at 50% HP. At 0 lives the dino goes to the `Fossil` screen, which banks Amber, records the fossil, and offers a Lineage bonus pick. `Home` is the hub: Dino-dex, Lineage, and stats. The current run itself is not saved; refreshing mid-run returns you to Home.
+`run/run.js` holds the run state (dino stats, XP, evolution, upgrades) and `run/mapgen.js` builds the branching map. The scenes are `Map` (travel; Nest / Fossil Dig / Meteor / Shop visits live in `scenes/mapNodes.js`) → `Battle` → `Evolution` (at LV5 / LV10) → `RunEnd` (victory: banks Amber, gives 2 Lineage picks via `run/lineagePick.js`, and crowns the species in the Dino-dex). Each run has 3 lives. Losing a fight costs one and restarts that fight at 50% HP. At 0 lives the dino goes to the `Fossil` screen, which banks Amber, records the fossil, and offers a Lineage bonus pick. `Home` is the hub: Dino-dex, Lineage, and stats. The current run itself is not saved; refreshing mid-run returns you to Home.
 
 ### Zones
 
 A run goes through `ZONE_ORDER` in `data/zones.js`: **Jungle** (Compy, Raptor, Elite Trike, boss Alpha Rex), then **Swamp** (Pachy, Sarco, Elite Sarco/Raptor, boss Bog Spino, enemies LV5–8). Beating a zone boss gives XP and Amber, heals `ZONE_HEAL` (50%), and `advanceZone()` in `run/run.js` builds the next zone's map. Level, XP, traits, lives and Amber carry over. `RunEnd` only comes after the last zone's boss. Battle and Map pick their backdrop per zone (`drawZone` / `drawMapBackground` in `ui/backdrop.js`). To add a zone, add an entry to `ZONES` and `ZONE_ORDER`, plus a backdrop function in `BACKDROPS`.
 
 There are 7 hatchable species: Compy and Pachy (Common), Raptor and Sarco (Rare), Trike and Spino (Epic), T-Rex (Legendary). A species marked `enemyOnly: true` in `data/species.js` would stay out of the hatch spin and the Dino-dex (`HATCHABLE` is the hatch list); none use it right now. The Dino-dex shows 4 species per page. The Swamp's wildlife and the Bog Spino have their own stat blocks (`enemyBase` and `boss.base` in `data/zones.js`), so the hatchable Pachy, Sarco and Spino can be tuned without moving the zone. Their specials are Skull Bash (pierces DEF), Death Roll (3 bites) and Swamp Surge (charges up, then hits with a tight dodge window).
+
+### Builds (v2 Phase 2)
+
+- **Fossils (relics)**: passives that change fights (crits heal, Roar costs 0, enemies start poisoned, revive once, +1 max energy...). Pick 1 of 3 at Fossil Dig nodes; every elite drops one; shops sell them. Owned fossils show as icons in battle (top middle) and on the map HUD; tap one to read it. Several combo with traits (Venom Bite + Tar Pit Stone / Venom Gland, Quick Reflexes + Raptor Claw / Swift Feather, Bloodlust + Blood Amber, Pack Instinct + Pack Totem, Thunder Roar + Bone Drum / Echo Rock).
+- **Mutations**: each level-up offers one for a random un-mutated base move (Venom / Lifesteal / Chain Bite, Sweep / Stunning Whip, Terror / Battle Roar). The move button shows the new name and a colored badge.
+- **Shop** (in-run Amber, so spending means banking less) and **8 Meteor Shard events** with real tradeoffs. Map lanes lean risky (top: elites, digs) or safe (bottom: nests, shops).
+- **Evolutions** get new silhouettes, built from the base grid in `sprites/forms.js` (grow a crest / frill / sail / dome, horns, spikes, scars, stretch the body, new palette), plus a perk per form (`data/forms.js`). The Evolution scene flickers white silhouettes of both forms, flashes, and slams the new name in; tap to skip.
+- All effects live in `systems/build.js` as hooks the combat rules call (battle start, turn start, cost, strike, kill, brace, block, roar, revive).
+
+Test a build quickly: `?p=compy&e=compy*,compy*,compy*&r=packTotem,meteorChip&m=bite:chain,tail:sweep` (`r` = fossil ids, `m` = move:mutation pairs).
 
 ### Hatching
 

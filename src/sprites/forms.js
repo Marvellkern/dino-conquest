@@ -99,7 +99,8 @@ export function formColor(f, evo) {
 export const FORM_ART = {
   compy: [
     { spikes: [{ x0: 4, x1: 11, every: 2 }], stretch: { cols: [9, 15], rows: [2] } },
-    { pad: { top: 3 }, grow: [{ x0: 14, x1: 17, h: 2, key: 'S' }], spikes: [{ x0: 3, x1: 11, every: 2 }],
+    { pad: { top: 4 }, rays: [{ x: 14, y: 0, dx: -1, dy: -1, len: 2, key: 'S' }, { x: 16, y: 0, dx: 0, dy: -1, len: 3, key: 'S' }, { x: 17, y: 0, dx: 1, dy: -1, len: 2, key: 'S' }],
+      spikes: [{ x0: 3, x1: 11, every: 2 }],
       stretch: { cols: [9, 10, 15, 16], rows: [2, 9] },
       colors: { Y: '#c8a830', H: '#7a5c1c', N: '#f0e0a0', Q: '#a02828' } }
   ],

@@ -95,16 +95,17 @@ export class Evolution extends Phaser.Scene {
     this.fx.shake(3, 200);
     sfx('crit');
 
-    text(this, X, 40, `+${Math.round(PROGRESSION.evoBoost * 100)}% ALL STATS`, { origin: [0.5, 0], color: '#7fe0ff' });
+    // Details go on the floor strip, below the (big, 3x) dino.
+    text(this, X, 141, `+${Math.round(PROGRESSION.evoBoost * 100)}% ALL STATS`, { origin: [0.5, 0], color: '#7fe0ff' });
     if (perk) {
-      text(this, X, 50, `NEW PERK: ${PERKS[perk].name.toUpperCase()}`, { origin: [0.5, 0], color: '#ffd040' });
-      text(this, X, 60, PERKS[perk].desc, { origin: [0.5, 0], color: COLORS.text, shadow: false });
+      text(this, X, 150, `NEW PERK: ${PERKS[perk].name.toUpperCase()}`, { origin: [0.5, 0], color: '#ffd040' });
+      text(this, X, 159, PERKS[perk].desc, { origin: [0.5, 0], color: COLORS.text, shadow: false });
     }
     after.startIdle();
     if (!this.skipped) { await roar(this, after, () => {}); after.startIdle(); }
     sfx('levelup');
 
-    const prompt = text(this, X, 166, 'TAP TO CONTINUE', { origin: [0.5, 0], color: COLORS.textDim, shadow: false });
+    const prompt = text(this, X, 170, 'TAP TO CONTINUE', { origin: [0.5, 0], color: COLORS.textDim, shadow: false });
     this.tweens.add({ targets: prompt, alpha: 0.3, duration: 500, yoyo: true, repeat: -1 });
     await wait(this, 350);
     await new Promise((r) => { const off = onPress(this, () => { off(); r(); }); });
