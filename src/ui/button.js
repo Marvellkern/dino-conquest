@@ -6,21 +6,23 @@ import { text } from './font.js';
 
 // Pixel panel button: small key hint top-left, label, and a dim sub-line.
 // Disabled buttons still receive clicks (they buzz, and call onDeny) so players get feedback.
-// cost: energy pips drawn in the top-right corner.
+// cost: energy pips drawn in the top-right corner. The sub-line and key hint
+// use the small 3x5 font. textTop: push the text block down (room for an icon).
 export class Button {
-  constructor(scene, x, y, w, h, { key = '', label = '', sub = '', onClick = () => {}, onDeny = null, cost = 0, depth = 11 } = {}) {
+  constructor(scene, x, y, w, h, { key = '', label = '', sub = '', onClick = () => {}, onDeny = null, cost = 0, depth = 11, textTop = 0 } = {}) {
     Object.assign(this, { scene, x, y, w, h, onClick, onDeny, cost });
     this.enabled = true;
     this.hover = false;
     this.down = false;
     this.g = scene.add.graphics().setDepth(depth);
     const cx = x + Math.floor(w / 2);
-    this.keyText = text(scene, x + 3, y + 3, key, { color: COLORS.textDim, shadow: false }).setDepth(depth + 1);
-    // Text rows for tall / compact buttons, leaving clear space above the dark bottom edge.
-    const ly = h >= 32 ? 11 : 3, sy = h >= 32 ? 21 : 13;
-    this.rows = { ly, mid: Math.floor((h - 8) / 2) };
+    this.keyText = text(scene, x + 3, y + 3, key, { color: COLORS.textDim, small: true }).setDepth(depth + 1);
+    // Label (7px) + gap + sub (5px), centered as a block; a lone label is centered alone.
+    const gap = h >= 32 ? 4 : 3, block = 7 + gap + 5;
+    const ly = Math.floor((h - 1 - block) / 2) + textTop, sy = ly + 7 + gap;
+    this.rows = { ly, mid: Math.floor((h - 1 - 7) / 2) + textTop };
     this.label = text(scene, cx, y + ly, label, { origin: [0.5, 0] }).setDepth(depth + 1);
-    this.sub = text(scene, cx, y + sy, sub, { origin: [0.5, 0], color: COLORS.textDim, shadow: false }).setDepth(depth + 1);
+    this.sub = text(scene, cx, y + sy, sub, { origin: [0.5, 0], color: '#c0cbdc', small: true }).setDepth(depth + 1);
     this.hasSub = !!sub;
     this.placeLabel();
     // Depth matters for input: Phaser only hits the top-most interactive object.

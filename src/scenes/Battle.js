@@ -93,7 +93,7 @@ export class Battle extends Phaser.Scene {
     this.targetHud = new Hud(this, 'enemy');
     this.target = this.st.enemies[0];
     this.bar = new MoveBar(this, this.st, { onDeny: (why) => why && this.say(why) });
-    this.msg = text(this, W / 2, 52, '', { origin: 0.5 }).setDepth(12); // row y48-56, below the status tags
+    this.msg = text(this, W / 2, 47, '', { origin: 0.5 }).setDepth(12); // row y44-50: under the status tags, above the enemy markers
 
     this.onKey = (ev) => {
       if (!this.planning || ev.repeat) return;

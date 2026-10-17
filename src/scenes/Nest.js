@@ -113,7 +113,7 @@ export class Nest extends Phaser.Scene {
       box,
       text(this, 18, y, g.name.toUpperCase(), { color: done ? COLORS.accent : COLORS.text, shadow: false }),
       text(this, 314, y, rewardText(g.reward), { color: done ? '#7a6a50' : '#e8a030', origin: [1, 0], shadow: false }),
-      text(this, 18, y + 9, g.desc, { color: COLORS.textDim, shadow: false })
+      text(this, 18, y + 10, g.desc, { color: COLORS.textDim, small: true })
     );
   }
 
@@ -131,8 +131,8 @@ export class Nest extends Phaser.Scene {
     this.rows.push(
       g, icon,
       text(this, 50, y + 4, `GEN ${f.gen ?? '?'}  ${dinoName({ species: f.species, evo: f.evo ?? 0 }).toUpperCase()}  LV${f.level}`, { shadow: false }),
-      text(this, 50, y + 13, fate, { color: f.won ? '#7fe0ff' : '#e08070', shadow: false }),
-      text(this, 50, y + 22, passed || 'NO INHERITANCE', { color: passed ? '#e8a030' : COLORS.textDim, shadow: false })
+      text(this, 50, y + 14, fate, { color: f.won ? '#7fe0ff' : '#e08070', small: true }),
+      text(this, 50, y + 21, passed || 'NO INHERITANCE', { color: passed ? '#e8a030' : COLORS.textDim, small: true })
     );
   }
 

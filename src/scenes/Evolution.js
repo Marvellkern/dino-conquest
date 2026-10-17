@@ -99,13 +99,13 @@ export class Evolution extends Phaser.Scene {
     text(this, X, 141, `+${Math.round(PROGRESSION.evoBoost * 100)}% ALL STATS`, { origin: [0.5, 0], color: '#7fe0ff' });
     if (perk) {
       text(this, X, 150, `NEW PERK: ${PERKS[perk].name.toUpperCase()}`, { origin: [0.5, 0], color: '#ffd040' });
-      text(this, X, 159, PERKS[perk].desc, { origin: [0.5, 0], color: COLORS.text, shadow: false });
+      text(this, X, 160, PERKS[perk].desc, { origin: [0.5, 0], color: '#c0cbdc', small: true });
     }
     after.startIdle();
     if (!this.skipped) { await roar(this, after, () => {}); after.startIdle(); }
     sfx('levelup');
 
-    const prompt = text(this, X, 170, 'TAP TO CONTINUE', { origin: [0.5, 0], color: COLORS.textDim, shadow: false });
+    const prompt = text(this, X, 170, 'TAP TO CONTINUE', { origin: [0.5, 0], color: COLORS.textDim, small: true });
     this.tweens.add({ targets: prompt, alpha: 0.3, duration: 500, yoyo: true, repeat: -1 });
     await wait(this, 350);
     await new Promise((r) => { const off = onPress(this, () => { off(); r(); }); });

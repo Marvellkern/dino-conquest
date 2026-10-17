@@ -8,7 +8,7 @@ import { panel } from './pixel.js';
 import { text } from './font.js';
 
 const PW = 120;
-const MARK_TOP = 70; // highest sprite top the enemy markers stack above
+const MARK_TOP = 78; // highest sprite top the enemy markers stack above
 const HP_W = PW - 12;
 
 // Status tags: [status key, label, color, show turns?]
@@ -36,7 +36,7 @@ export class Hud {
     this.name = text(scene, x + 6, y + 5, '').setDepth(11);
     this.lv = text(scene, x + PW - 6, y + 5, '', { color: COLORS.textDim, origin: [1, 0] }).setDepth(11);
     this.bar = scene.add.graphics().setDepth(11);
-    this.hpText = text(scene, x + 6, y + 23, '', { color: COLORS.textDim, shadow: false }).setDepth(11);
+    this.hpText = text(scene, x + 6, y + 23, '', { color: '#c0cbdc', small: true }).setDepth(11);
     this.tags = Array.from({ length: 6 }, () => text(scene, 0, y + 34, '').setDepth(11));
   }
 
@@ -173,14 +173,14 @@ export class MoveBar {
       const mu = MUTATIONS[id]?.[mutation(st, id)]; // mutated moves get new text + a colored badge
       const b = new Button(scene, 3 + i * (bw + gap), top + 4, bw, 34, {
         key: String(i + 1), label: (mu?.btn ?? MOVES[id].btn) + '+'.repeat(p.moveUps[id] ?? 0), sub: mu?.desc ?? MOVES[id].desc,
-        cost: moveCost(st, id), onClick: () => this.pick(id), onDeny: () => this.on && onDeny(blocked(st, id))
+        cost: moveCost(st, id), textTop: 4, onClick: () => this.pick(id), onDeny: () => this.on && onDeny(blocked(st, id))
       });
-      if (mu) scene.add.rectangle(b.x + 9, b.y + 4, 4, 3, mu.color).setOrigin(0).setDepth(13); // badge beside the key number
+      if (mu) scene.add.rectangle(b.x + 8, b.y + 4, 4, 3, mu.color).setOrigin(0).setDepth(13); // badge beside the key number
       b.icon = scene.add.image(b.x + Math.floor(bw / 2) - 4, b.y + 2, iconOf(id, p.species)).setOrigin(0).setDepth(13);
       return b;
     });
     const ex = 3 + 5 * (bw + gap);
-    this.end = new Button(scene, ex, top + 4, W - 3 - ex, 34, { key: 'E', label: 'END', sub: 'TURN', onClick: () => this.pick('end') });
+    this.end = new Button(scene, ex, top + 4, W - 3 - ex, 34, { key: 'E', label: 'END', sub: 'TURN', textTop: 4, onClick: () => this.pick('end') });
     this.end.icon = scene.add.image(ex + Math.floor((W - 3 - ex) / 2) - 4, top + 6, 'mi_end').setOrigin(0).setDepth(13);
 
     this.onKey = (e) => {

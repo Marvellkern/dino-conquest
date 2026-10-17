@@ -1,3 +1,5 @@
+import { SMALL_KEY, buildSmallFont } from './fontSmall.js';
+
 // Code-drawn 5x7 bitmap font, registered as a Phaser bitmap font ("px").
 // Each glyph: 7 rows of 5 bits, space-separated. Lowercase maps to uppercase.
 const GLYPHS = {
@@ -58,6 +60,7 @@ const GLYPHS = {
 };
 
 export const FONT_KEY = 'px';
+export { SMALL_CW } from './fontSmall.js';
 const CW = 6; // cell width (5 + 1 spacing)
 const CH = 8; // cell height (7 + 1 gap)
 
@@ -81,16 +84,20 @@ export function buildFont(scene) {
     spacing: { x: 0, y: 0 }, offset: { x: 0, y: 0 }, lineSpacing: 2
   });
   scene.cache.bitmapFont.add(FONT_KEY, entry);
+  buildSmallFont(scene);
 }
 
 // Text helper. Integer scale only, so glyph pixels stay square.
 // origin: number or [ox, oy]. With shadow (default) returns a container whose
 // setText updates both layers; `.label` is the foreground text.
-export function text(scene, x, y, str, { scale = 1, color = '#f0ecdc', origin = 0, shadow = true } = {}) {
+// small: the 3x5 font (ui/fontSmall.js) for secondary lines; never shadowed.
+export function text(scene, x, y, str, { scale = 1, color = '#f0ecdc', origin = 0, shadow = true, small = false } = {}) {
   const up = (v) => String(v).toUpperCase();
   const tint = parseInt(color.slice(1), 16);
+  const key = small ? SMALL_KEY : FONT_KEY;
+  if (small) shadow = false;
   const make = (dx, dy, t) =>
-    scene.add.bitmapText(x + dx, y + dy, FONT_KEY, up(str)).setScale(scale).setOrigin(...[origin].flat()).setTint(t);
+    scene.add.bitmapText(x + dx, y + dy, key, up(str)).setScale(scale).setOrigin(...[origin].flat()).setTint(t);
   if (!shadow) {
     const t = make(0, 0, tint);
     const set = t.setText.bind(t);

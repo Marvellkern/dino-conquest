@@ -44,13 +44,13 @@ export class Hatch extends Phaser.Scene {
     this.amberText = text(this, W - 6, 6, '', { color: '#e8a030', origin: [1, 0] });
 
     panel(this.add.graphics().setDepth(10), 152, 20, 164, 116);
-    text(this, PX, 25, 'SPECIES', { color: COLORS.textDim, shadow: false }).setDepth(11);
+    text(this, PX, 25, 'SPECIES', { color: COLORS.textDim, small: true }).setDepth(11);
     this.speciesReel = new Reel(this, PX, 35, 152, 32, (id, y) => this.speciesCell(id, y));
-    this.stats = text(this, PX, 71, '', { shadow: false }).setDepth(11);
-    this.special = text(this, PX, 80, '', { color: COLORS.textDim, shadow: false }).setDepth(11);
-    text(this, PX, 93, 'TRAIT', { color: COLORS.textDim, shadow: false }).setDepth(11);
-    this.traitReel = new Reel(this, PX, 103, 152, 14, (id, y) => this.traitCell(id, y));
-    this.traitDesc = text(this, PX, 122, '', { color: COLORS.textDim, shadow: false }).setDepth(11);
+    this.stats = text(this, PX, 73, '', { shadow: false }).setDepth(11);
+    this.special = text(this, PX, 82, '', { color: COLORS.textDim, small: true }).setDepth(11);
+    text(this, PX, 93, 'TRAIT', { color: COLORS.textDim, small: true }).setDepth(11);
+    this.traitReel = new Reel(this, PX, 102, 152, 14, (id, y) => this.traitCell(id, y));
+    this.traitDesc = text(this, PX, 123, '', { color: COLORS.textDim, small: true }).setDepth(11);
 
     const bw = 101, by = 144;
     this.buttons = [
@@ -110,7 +110,7 @@ export class Hatch extends Phaser.Scene {
     return [
       icon,
       text(this, 40, y + 7, sp.name),
-      text(this, 40, y + 18, rar.name, { color: rar.color, shadow: false })
+      text(this, 40, y + 19, rar.name, { color: rar.color, small: true })
     ];
   }
 

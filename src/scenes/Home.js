@@ -77,29 +77,28 @@ export class Home extends Phaser.Scene {
     for (const o of this.dexCells ?? []) o.destroy();
     this.dexCells = [];
     if (this.dexPages > 1) this.dexPageText.setText(`D ${this.dexPage + 1}/${this.dexPages}`);
+    // Cards: 66x48 with a 4px gap, inside the panel (y 20-138).
     DEX_ORDER.slice(this.dexPage * DEX_PAGE, (this.dexPage + 1) * DEX_PAGE).forEach((id, i) => {
-      const cx = 8 + (i % 2) * 74 + 36, top = 35 + Math.floor(i / 2) * 51;
+      const cx = 8 + (i % 2) * 74 + 36, top = 34 + Math.floor(i / 2) * 52;
       const entry = meta.dex[id], rar = RARITIES[SPECIES[id].rarity];
       if (entry) { // rarity-colored card behind each discovered species
         const card = this.add.graphics(), rc = parseInt(rar.color.slice(1), 16);
-        card.fillStyle(rc, 0.3).fillRect(cx - 34, top - 2, 68, 51);
-        card.fillStyle(0x262b44).fillRect(cx - 33, top - 1, 66, 49);
-        card.fillStyle(rc).fillRect(cx - 33, top - 1, 66, 1).fillRect(cx - 33, top + 48, 66, 1);
+        card.fillStyle(rc, 0.3).fillRect(cx - 33, top, 66, 48);
+        card.fillStyle(0x262b44).fillRect(cx - 32, top + 1, 64, 46);
+        card.fillStyle(rc).fillRect(cx - 32, top, 64, 1).fillRect(cx - 32, top + 47, 64, 1);
         this.dexCells.push(card);
       }
-      const img = this.add.image(cx, top + 16, id);
+      const img = this.add.image(cx, top + 18, id);
       if (!entry) img.setTintFill(0x0c0e12);
       if (entry?.wins) { // crown: this species has cleared a run
-        this.dexCells.push(this.add.image(cx + 28, top + 2, 'crown').setOrigin(1, 0));
-        if (entry.wins > 1) this.dexCells.push(text(this, cx + 29, top + 9, `X${entry.wins}`, { color: '#fff096', origin: [1, 0], shadow: false }));
+        this.dexCells.push(this.add.image(cx + 30, top + 3, 'crown').setOrigin(1, 0));
+        if (entry.wins > 1) this.dexCells.push(text(this, cx + 30, top + 10, `X${entry.wins}`, { color: '#fff096', origin: [1, 0], small: true }));
       }
-      const best = entry?.best ? `BEST LV${entry.best}${entry.ext ? ` X${entry.ext}` : ''}` : null;
+      const best = entry?.best ? `BEST LV${entry.best}${entry.ext ? `  EXT ${entry.ext}` : ''}` : null;
       this.dexCells.push(
         img,
         text(this, cx, top + 32, entry ? SPECIES[id].name : '???', { origin: [0.5, 0], color: entry ? rar.color : COLORS.textDim, shadow: false }),
-        text(this, cx, top + 41, best ?? (entry ? 'NO RUNS YET' : rar.name), {
-          origin: [0.5, 0], color: COLORS.textDim, shadow: false
-        })
+        text(this, cx, top + 41, best ?? (entry ? 'NO RUNS YET' : rar.name), { origin: [0.5, 0], color: COLORS.textDim, small: true })
       );
     });
   }

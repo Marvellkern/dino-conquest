@@ -114,11 +114,11 @@ export class MapScene extends Phaser.Scene {
     this.hBars = this.add.graphics().setDepth(11);
     this.hearts = Array.from({ length: this.run.maxLives }, (_, i) =>
       this.add.image(112 + i * 9, 7, 'heart').setOrigin(0).setDepth(11));
-    this.hHp = text(this, 112, 16, '', { color: COLORS.textDim, shadow: false }).setDepth(11);
-    this.hXp = text(this, 112, 25, '', { color: COLORS.textDim, shadow: false }).setDepth(11);
+    this.hHp = text(this, 112, 18, '', { color: COLORS.textDim, small: true }).setDepth(11);
+    this.hXp = text(this, 112, 26, '', { color: COLORS.textDim, small: true }).setDepth(11);
     text(this, W - 8, 8, zoneOf(this.run).name + (this.run.ext ? ` EXT${this.run.ext}` : ''), { color: COLORS.accent, origin: [1, 0] }).setDepth(11);
     this.hAmber = text(this, W - 8, 17, '', { color: '#e8a030', origin: [1, 0], shadow: false }).setDepth(11);
-    this.hTraits = text(this, W - 8, 26, '', { color: COLORS.textDim, origin: [1, 0], shadow: false }).setDepth(11);
+    this.hTraits = text(this, W - 8, 27, '', { color: COLORS.textDim, origin: [1, 0], small: true }).setDepth(11);
     // Owned fossils + perks (2 rows of 7); tap one to read it in the tooltip bar.
     this.relicBar = new RelicBar(this, 178, 7, { cols: 7, onInfo: (t) => this.tip.setText(t) });
   }
