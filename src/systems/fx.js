@@ -37,10 +37,21 @@ export class Fx {
     this.hs = setTimeout(() => { s.time.timeScale = 1; s.tweens.timeScale = 1; }, ms);
   }
 
-  sparks(x, y, { count = 8, dir = 1, big = false } = {}) {
+  // Killing blow: brief slow-motion plus a slight camera push-in.
+  killCam(ms = 120) {
+    const s = this.s, cam = s.cameras.main;
+    s.time.timeScale = 0.3;
+    s.tweens.timeScale = 0.3;
+    clearTimeout(this.hs);
+    this.hs = setTimeout(() => { s.time.timeScale = 1; s.tweens.timeScale = 1; }, ms);
+    cam.zoomTo(1.05, 90, 'Quad.easeOut', true); // camera effects need the long ease names
+    setTimeout(() => s.sys.isActive() && cam.zoomTo(1, 220, 'Quad.easeInOut', true), ms + 60);
+  }
+
+  sparks(x, y, { count = 8, dir = 1, big = false, gold = false } = {}) {
     for (let i = 0; i < count; i++) {
       const size = big && i % 3 === 0 ? 2 : 1;
-      const r = this.s.add.rectangle(x, y, size, size, i % 2 ? 0xfff096 : 0xffffff).setOrigin(0).setDepth(20);
+      const r = this.s.add.rectangle(x, y, size, size, gold ? (i % 2 ? 0xffd040 : 0xffa020) : i % 2 ? 0xfff096 : 0xffffff).setOrigin(0).setDepth(20);
       const a = (dir > 0 ? 0 : Math.PI) + (Math.random() - 0.5) * 2.4;
       const d = (big ? 14 : 8) + Math.random() * (big ? 18 : 10);
       this.s.tweens.add({

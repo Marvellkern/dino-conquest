@@ -1,8 +1,8 @@
 import { SPECIES } from '../data/species.js';
-import { MOVES, MOVE_UP, STATUS, QTE, QTE_MULT, DEFEND_MULT, DAMAGE } from '../data/moves.js';
+import { MOVE_UP, STATUS, QTE, QTE_MULT, DEFEND_MULT, DAMAGE } from '../data/moves.js';
 import { TRAIT_TUNING as T } from '../data/traits.js';
 
-// Pure combat rules — no Phaser in here.
+// Pure combat rules — no Phaser in here. Turn flow lives in battleState.js.
 
 // stats: { hp, atk, def, spd } (defaults to species base); hp: current HP.
 export function makeFighter(species, {
@@ -16,23 +16,19 @@ export function makeFighter(species, {
     name: name ?? sp.name,
     maxHp, hp: Math.min(hp ?? maxHp, maxHp),
     atk: st.atk, def: st.def, spd: st.spd,
-    moves: ['bite', 'tail', 'roar', sp.special],
-    cd: {},
-    status: { atkDown: 0, defUp: 0, poison: 0, stun: 0, charge: 0 }
+    moves: ['bite', 'tail', 'roar', 'brace', sp.special],
+    status: {
+      atkDown: 0, defUp: 0, poison: 0, stun: 0,
+      braced: 0, muddy: 0, drain: 0,         // player
+      guard: 0, charging: 0, submerged: 0    // enemies
+    }
   };
 }
 
 export const hasTrait = (f, id) => f.traits.includes(id);
-export const isReady = (f, id) => !(f.cd[id] > 0);
 
-export function useMove(f, id) {
-  const m = MOVES[id];
-  if (m.cooldown) f.cd[id] = m.cooldown;
-}
-
-// Start of the owner's turn: cooldowns tick, poison bites, stun is consumed.
+// Start of the owner's turn: poison bites, stun is consumed.
 export function startTurn(f) {
-  for (const k in f.cd) if (f.cd[k] > 0) f.cd[k]--;
   const out = { poison: 0, stunned: false };
   if (f.status.poison > 0) {
     out.poison = Math.min(f.hp, T.venomDmg);
@@ -66,13 +62,21 @@ export function effAtk(f) {
 
 export const effDef = (f) => f.def + (f.status.defUp > 0 ? STATUS.defUpAmount : 0);
 
-export function computeDamage(att, dfd, move, rng, { qte = 'good', defend = 'hit' } = {}) {
+// Guarding enemies, and chargers with charge armor, take reduced damage.
+export const isGuarded = (f) => f.status.guard > 0 || (f.status.charging > 0 && f.armorCharging);
+
+// rng = null gives the exact (variance-free) number; enemy attacks use that so
+// the intent shown above an enemy is exactly what lands on a clean hit.
+export function computeDamage(att, dfd, move, rng, { qte = 'good', defend = 'hit', mult = 1 } = {}) {
   if (defend === 'dodge') return 0;
   const def = effDef(dfd) * (1 - (move.defIgnore ?? 0));
-  const up = 1 + MOVE_UP.power * (att.moveUps[move.id] ?? 0);
-  let raw = effAtk(att) * move.power * up * QTE_MULT[qte] * DEFEND_MULT[defend];
+  const up = 1 + MOVE_UP.power * (att.moveUps?.[move.id] ?? 0);
+  let raw = effAtk(att) * move.power * up * QTE_MULT[qte] * mult;
+  if (defend === 'block') raw *= move.blockMult ?? DEFEND_MULT.block;
   if (hasTrait(dfd, 'thickHide')) raw *= T.thickHide;
-  return Math.max(1, Math.round(raw * DAMAGE.scale * (DAMAGE.defK / (DAMAGE.defK + def)) * rng.range(0.9, 1.1)));
+  if (isGuarded(dfd)) raw *= STATUS.guardMult;
+  const v = rng ? rng.range(0.9, 1.1) : 1;
+  return Math.max(1, Math.round(raw * DAMAGE.scale * (DAMAGE.defK / (DAMAGE.defK + def)) * v));
 }
 
 // Trait triggers after damage lands. Returns what happened, for feedback.
@@ -90,7 +94,7 @@ export function afterHit(att, dfd, dmg) {
 }
 
 // Roar duration grows with its upgrade level.
-export const roarTurns = (att, m) => m.effect.turns + MOVE_UP.statusTurns * (att.moveUps[m.id] ?? 0);
+export const roarTurns = (att, m) => m.effect.turns + MOVE_UP.statusTurns * (att.moveUps?.[m.id] ?? 0);
 
 export const roarStuns = (att, rng) => hasTrait(att, 'thunderRoar') && rng.chance(T.stunChance);
 export const dodgeWindow = (dfd) => QTE.dodgeMs * (hasTrait(dfd, 'quickReflexes') ? T.reflexMult : 1);

@@ -47,15 +47,33 @@ export function playerFighter(run) {
   });
 }
 
-export function enemyFighter(node) {
-  const e = node.enemy, sc = ENEMY_SCALE[node.type];
+// One enemy spec → fighter. type: node type, for ENEMY_SCALE.
+export function enemyFighter(e, type) {
+  const sc = ENEMY_SCALE[type];
   const st = statsFor(e.species, e.level, e.evo ?? 0, {}, e.base);
-  st.hp = Math.round(st.hp * sc.hp);
-  st.atk = Math.round(st.atk * sc.atk);
+  st.hp = Math.max(1, Math.round(st.hp * sc.hp * (e.hp ?? 1)));
+  st.atk = Math.max(1, Math.round(st.atk * sc.atk * (e.atk ?? 1)));
   const f = makeFighter(e.species, { side: 'enemy', level: e.level, traits: e.trait ? [e.trait] : [], stats: st, name: enemyName(e) });
-  if (e.special) f.moves[3] = e.special;
-  if (node.type === 'boss') f.levelLabel = 'BOSS';
+  f.brainId = e.brain ?? e.species;
+  f.skin = e.skin ?? skinOf(e.species, e.evo);
+  f.small = !!e.small;
+  if (type === 'boss') f.levelLabel = 'BOSS';
   return f;
+}
+
+export const enemyFighters = (node) => node.enemies.map((e) => enemyFighter(e, node.type));
+
+// A boss's summoned sidekick: a small pack member of the current zone.
+export function minionFighter(zoneId, species, level) {
+  const z = ZONES[zoneId];
+  return enemyFighter({ species, level, base: z.enemyBase?.[species], hp: 0.4, atk: 0.7 }, 'fight');
+}
+
+// "3 COMPY", "RAPTOR + COMPY"... for the map tooltip.
+export function groupName(node) {
+  const names = node.enemies.map(enemyName);
+  if (names.length > 1 && names.every((n) => n === names[0])) return `${names.length} ${names[0]}`;
+  return names.join(' + ');
 }
 
 /* ---------- changes to the dino ---------- */
@@ -132,7 +150,7 @@ export function fossilOffers(run) {
   if (moves.length) {
     const id = rng.pick(moves);
     const sub = MOVES[id].status ? 'LASTS 1 MORE TURN' : '+25% POWER';
-    offers.push({ label: `${MOVES[id].label}+`, sub, apply: () => upgradeMove(d, id) });
+    offers.push({ label: `${MOVES[id].name.toUpperCase()}+`, sub, apply: () => upgradeMove(d, id) });
   }
 
   while (offers.length < 3) {

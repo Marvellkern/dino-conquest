@@ -8,7 +8,7 @@ import { drawMapBackground } from '../ui/backdrop.js';
 import { panel, pixelLine, pixelCircle } from '../ui/pixel.js';
 import { choose } from '../ui/popup.js';
 import {
-  session, reachable, zoneOf, dinoStats, dinoName, skinOf, enemyName,
+  session, reachable, zoneOf, dinoStats, dinoName, skinOf, groupName,
   heal, hurt, addStat, gainXp, fossilOffers
 } from '../run/run.js';
 import { Fx } from '../systems/fx.js';
@@ -68,7 +68,7 @@ export class MapScene extends Phaser.Scene {
 
   addNode(n) {
     const { x, y } = this.pos(n.id);
-    const img = this.add.image(x, y, n.type === 'boss' ? n.enemy.skin ?? n.enemy.species : ICON[n.type]).setDepth(5);
+    const img = this.add.image(x, y, n.type === 'boss' ? n.enemies[0].skin ?? n.enemies[0].species : ICON[n.type]).setDepth(5);
     if (n.type === 'boss') img.setFlipX(true);
     this.icons[n.id] = img;
     const zone = this.add.zone(x, y, 36, 32).setInteractive({ useHandCursor: true });
@@ -103,9 +103,8 @@ export class MapScene extends Phaser.Scene {
 
   describe(n) {
     if (!n) return '';
-    if (!n.enemy) return NODE_INFO[n.type];
-    const e = n.enemy;
-    return `${NODE_INFO[n.type]}: ${enemyName(e)}${n.type === 'boss' ? '' : ` LV${e.level}`}`;
+    if (!n.enemies) return NODE_INFO[n.type];
+    return `${NODE_INFO[n.type]}: ${groupName(n)}${n.type === 'boss' ? '' : ` LV${n.enemies[0].level}`}`;
   }
 
   buildHud() {
@@ -172,7 +171,7 @@ export class MapScene extends Phaser.Scene {
     node.done = true;
     this.refresh();
 
-    if (node.enemy) {
+    if (node.enemies) {
       sfx('tell');
       this.fx.pop(this.marker.x, this.marker.y - 30, '!', '#fff096', 2, 400);
       this.time.delayedCall(350, () => this.cameras.main.fadeOut(200));

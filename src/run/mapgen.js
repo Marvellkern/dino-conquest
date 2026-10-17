@@ -4,7 +4,7 @@ import { SPECIES } from '../data/species.js';
 
 // Branching zone map: `rows` columns of 1–3 nodes on 3 lanes, then the boss.
 // Each node links to the nodes in the next column on its own or adjacent lanes.
-// Node: { id, row, lane, type, next: [ids], enemy?, done? }
+// Node: { id, row, lane, type, next: [ids], enemies?, done? }
 
 function weighted(rng, weights) {
   const total = Object.values(weights).reduce((a, b) => a + b, 0);
@@ -25,17 +25,24 @@ function pickType(rng, row, rows) {
 
 const closest = (nodes, lane) => nodes.reduce((a, b) => (Math.abs(b.lane - lane) < Math.abs(a.lane - lane) ? b : a));
 
-function makeEnemy(rng, zone, node) {
-  const lv = zone.levelAt(node.row), base = (species) => zone.enemyBase?.[species];
-  if (node.type === 'fight') {
-    const species = rng.pick(zone.enemies);
-    return { species, level: lv, base: base(species) };
-  }
-  if (node.type === 'elite') {
-    const species = rng.pick(zone.elites);
-    return { species, level: lv + 1, evo: 1, name: `Elite ${SPECIES[species].name}`, trait: rng.pick(Object.keys(TRAITS)), base: base(species) };
-  }
-  return { ...zone.boss };
+function pickGroup(rng, groups, row) {
+  const ok = groups.filter((g) => (g.minRow ?? 0) <= row && row <= (g.maxRow ?? 99));
+  let r = rng.next() * ok.reduce((t, g) => t + g.w, 0);
+  for (const g of ok) if ((r -= g.w) < 0) return g;
+  return ok[0];
+}
+
+// Enemy specs for a battle node: [{ species, level, base, brain, hp, atk, evo, name, trait, skin }].
+function makeEnemies(rng, zone, node) {
+  const zs = zone.scale ?? { hp: 1, atk: 1 };
+  if (node.type === 'boss') return [{ ...zone.boss, hp: zs.hp, atk: zs.atk }];
+  const lv = zone.levelAt(node.row);
+  const group = pickGroup(rng, node.type === 'elite' ? zone.elites : zone.fights, node.row);
+  return group.members.map(([species, o = {}]) => {
+    const e = { species, level: lv, base: zone.enemyBase?.[species], hp: (o.hp ?? 1) * zs.hp, atk: (o.atk ?? 1) * zs.atk, small: (o.hp ?? 1) < 1 };
+    if (o.elite) Object.assign(e, { level: lv + 1, evo: 1, name: `Elite ${SPECIES[species].name}`, trait: rng.pick(Object.keys(TRAITS)) });
+    return e;
+  });
 }
 
 export function generateMap(rng, zoneId) {
@@ -63,7 +70,7 @@ export function generateMap(rng, zoneId) {
 
   const nodes = {};
   for (const n of cols.flat()) {
-    if (n.type === 'fight' || n.type === 'elite' || n.type === 'boss') n.enemy = makeEnemy(rng, zone, n);
+    if (n.type === 'fight' || n.type === 'elite' || n.type === 'boss') n.enemies = makeEnemies(rng, zone, n);
     nodes[n.id] = n;
   }
   return { nodes, cols: cols.map((c) => c.map((n) => n.id)), start: cols[0][0].id };

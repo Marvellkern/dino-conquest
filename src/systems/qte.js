@@ -1,5 +1,5 @@
 import { W } from '../config.js';
-import { QTE } from '../data/moves.js';
+import { QTE, MUDDY } from '../data/moves.js';
 import { panel, pixelCircle } from '../ui/pixel.js';
 import { text } from '../ui/font.js';
 import { sfx } from './sfx.js';
@@ -23,18 +23,23 @@ function ticker(scene, fn) {
 
 const HINT_Y = 58;
 
+// Dev builds only: lets automated play-tests time their presses.
+const devHook = (info) => { if (import.meta.env.DEV) window.__qteHook?.(info); };
+
 // Attack QTE: marker sweeps a bar once. Resolves 'crit' | 'good' | 'miss'.
-export function attackBar(scene, { rng, sure = false, sweepMs = QTE.sweepMs } = {}) {
+export function attackBar(scene, { rng, sure = false, muddy = false, sweepMs = QTE.sweepMs } = {}) {
+  const sweetW = Math.round(QTE.sweetW * (muddy ? MUDDY.sweet : 1)), goodW = Math.round(QTE.goodW * (muddy ? MUDDY.good : 1));
   return new Promise((resolve) => {
     const BW = 100, BH = 6, x0 = Math.round(W / 2 - BW / 2), y0 = 70;
     const c = Math.round(rng.range(0.55, 0.85) * BW);
+    devHook({ type: 'bar', sweepMs, center: c, width: BW, muddy });
     const g = scene.add.graphics().setDepth(30);
     panel(g, x0 - 4, y0 - 4, BW + 8, BH + 8);
     g.fillStyle(0x121418).fillRect(x0, y0, BW, BH);
-    g.fillStyle(0x3e7a3a).fillRect(x0 + c - QTE.goodW / 2, y0, QTE.goodW, BH);
-    g.fillStyle(0xfff096).fillRect(x0 + c - QTE.sweetW / 2, y0, QTE.sweetW, BH);
+    g.fillStyle(muddy ? 0x5a5030 : 0x3e7a3a).fillRect(x0 + c - goodW / 2, y0, goodW, BH);
+    g.fillStyle(0xfff096).fillRect(x0 + c - sweetW / 2, y0, sweetW, BH);
     const m = scene.add.graphics().setDepth(31);
-    const hint = text(scene, W / 2, HINT_Y, 'TAP IN THE YELLOW!', { origin: 0.5 }).setDepth(31);
+    const hint = text(scene, W / 2, HINT_Y, muddy ? 'MUDDY! TAP IN THE YELLOW!' : 'TAP IN THE YELLOW!', { origin: 0.5, color: muddy ? '#b09a62' : '#f0ecdc' }).setDepth(31);
 
     let t = 0, done = false;
     const pos = () => Math.min(BW - 2, Math.round((t / sweepMs) * (BW - 2)));
@@ -46,8 +51,8 @@ export function attackBar(scene, { rng, sure = false, sweepMs = QTE.sweepMs } = 
     const judge = (px) => {
       if (px == null) return sure ? 'good' : 'miss';
       const d = Math.abs(px + 1 - c);
-      if (d <= QTE.sweetW / 2) return 'crit';
-      if (d <= QTE.goodW / 2 || sure) return 'good';
+      if (d <= sweetW / 2) return 'crit';
+      if (d <= goodW / 2 || sure) return 'good';
       return 'miss';
     };
     const finish = (res) => {
@@ -74,6 +79,7 @@ export function attackBar(scene, { rng, sure = false, sweepMs = QTE.sweepMs } = 
 // Defend QTE: a ring shrinks onto a target circle, meeting it `leadMs` from now
 // (the moment of impact). Resolves 'dodge' | 'block' | 'hit'.
 export function defendRing(scene, { x, y, leadMs, dodgeMs = QTE.dodgeMs, blockMs = QTE.blockMs, noDodge = false }) {
+  devHook({ type: 'ring', leadMs, dodgeMs });
   return new Promise((resolve) => {
     const R0 = 38, RT = 10;
     const g = scene.add.graphics().setDepth(30);

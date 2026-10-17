@@ -4,10 +4,11 @@ import { panel } from './pixel.js';
 import { text } from './font.js';
 
 // Pixel panel button: small key hint top-left, label, and a dim sub-line.
-// Disabled buttons still receive clicks (they buzz) so players get feedback.
+// Disabled buttons still receive clicks (they buzz, and call onDeny) so players get feedback.
+// cost: energy pips drawn in the top-right corner.
 export class Button {
-  constructor(scene, x, y, w, h, { key = '', label = '', sub = '', onClick = () => {}, depth = 11 } = {}) {
-    Object.assign(this, { scene, x, y, w, h, onClick });
+  constructor(scene, x, y, w, h, { key = '', label = '', sub = '', onClick = () => {}, onDeny = null, cost = 0, depth = 11 } = {}) {
+    Object.assign(this, { scene, x, y, w, h, onClick, onDeny, cost });
     this.enabled = true;
     this.hover = false;
     this.down = false;
@@ -27,7 +28,7 @@ export class Button {
   }
 
   click() {
-    if (!this.enabled) { sfx('deny'); return; }
+    if (!this.enabled) { sfx('deny'); this.onDeny?.(); return; }
     sfx('blip');
     this.down = true;
     this.draw();
@@ -52,6 +53,11 @@ export class Button {
     const fill = live ? (this.hover ? 0x3e4553 : 0x2e333d) : 0x1e2128;
     this.g.clear();
     panel(this.g, this.x, this.y + d, this.w, this.h - d, { fill, hi: live ? 0x5a6274 : 0x2a2e36 });
+    for (let i = 0; i < this.cost; i++) {
+      const px = this.x + this.w - 5 - i * 5, py = this.y + 3 + d;
+      this.g.fillStyle(0x0c0e12).fillRect(px - 1, py - 1, 5, 5);
+      this.g.fillStyle(live ? 0xfff096 : 0x6a6a50).fillRect(px, py, 3, 3);
+    }
     this.label.setAlpha(live || this.down ? 1 : 0.45);
   }
 }

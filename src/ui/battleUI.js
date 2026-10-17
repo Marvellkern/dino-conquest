@@ -1,7 +1,6 @@
 import { W, H, COLORS } from '../config.js';
-import { MOVES } from '../data/moves.js';
-import { TRAITS } from '../data/traits.js';
-import { isReady } from '../systems/combat.js';
+import { MOVES, ENERGY } from '../data/moves.js';
+import { blocked, affordable, intentView } from '../systems/battleState.js';
 import { Button } from './button.js';
 import { panel } from './pixel.js';
 import { text } from './font.js';
@@ -9,39 +8,48 @@ import { text } from './font.js';
 const PW = 120;
 const HP_W = PW - 12;
 
-// Status tags shown under the HUD panel: [status key, label, color, show turns?]
-const TAGS = [
-  ['atkDown', 'ATK-', '#e06060', true],
-  ['defUp', 'DEF+', '#7fb0ff', true],
-  ['poison', 'PSN', '#80d060', true],
-  ['stun', 'STUN', '#fff096', false],
-  ['charge', 'CHARGE', '#ff6040', false]
+// Status tags: [status key, label, color, show turns?]
+const PLAYER_TAGS = [
+  ['atkDown', 'ATK-', '#e06060', true], ['defUp', 'DEF+', '#7fb0ff', true], ['poison', 'PSN', '#80d060', true],
+  ['stun', 'STUN', '#fff096', false], ['braced', 'BRACE', '#9ab8ff', false], ['muddy', 'MUD', '#b09a62', false],
+  ['drain', '-EN', '#e0a040', false]
 ];
+const ENEMY_TAGS = [
+  ['atkDown', 'ATK-', '#e06060', true], ['poison', 'PSN', '#80d060', true], ['stun', 'STUN', '#fff096', false],
+  ['guard', 'GUARD', '#9ab8ff', false], ['charging', 'CHARGE', '#ff6040', false], ['submerged', 'UNDER', '#5aa0e0', false]
+];
+const tint = (c) => parseInt(c.slice(1), 16);
 
-// Name + HP bar (with a white damage trail) + trait + status tags.
+// Name + HP bar (white damage trail) + status tags. bind(f) switches fighter
+// (the enemy panel follows the current target). The player panel also shows
+// energy pips and the crit streak.
 export class Hud {
-  constructor(scene, f, side) {
-    this.f = f;
+  constructor(scene, side, st = null) {
+    this.side = side;
+    this.st = st;
     const x = side === 'player' ? 4 : W - 4 - PW, y = 4;
-    this.x = x;
-    this.bx = x + 6;
-    this.by = y + 15;
+    Object.assign(this, { x, y, bx: x + 6, by: y + 15 });
     panel(scene.add.graphics().setDepth(10), x, y, PW, 32);
-    text(scene, x + 6, y + 5, f.name).setDepth(11);
-    text(scene, x + PW - 6, y + 5, f.levelLabel ?? `LV${f.level}`, { color: f.levelLabel ? '#ff6040' : COLORS.textDim, origin: [1, 0] }).setDepth(11);
-    const trait = TRAITS[f.traits[0]];
-    const more = f.traits.length > 1 ? `+${f.traits.length - 1}` : '';
-    if (trait) text(scene, x + PW - 6, y + 23, trait.short + more, { color: '#e8a030', origin: [1, 0], shadow: false }).setDepth(11);
+    this.name = text(scene, x + 6, y + 5, '').setDepth(11);
+    this.lv = text(scene, x + PW - 6, y + 5, '', { color: COLORS.textDim, origin: [1, 0] }).setDepth(11);
     this.bar = scene.add.graphics().setDepth(11);
     this.hpText = text(scene, x + 6, y + 23, '', { color: COLORS.textDim, shadow: false }).setDepth(11);
-    this.tags = TAGS.map(([, , color]) => text(scene, 0, y + 34, '', { color }).setDepth(11));
-    this.shown = f.hp;
-    this.trail = f.hp;
+    this.tags = Array.from({ length: 6 }, () => text(scene, 0, y + 34, '').setDepth(11));
+  }
+
+  bind(f) {
+    if (this.f === f) return;
+    this.f = f;
+    this.name.setText(f.name);
+    this.lv.setText(f.levelLabel ?? `LV${f.level}`);
+    this.lv.label.setTint(f.levelLabel ? 0xff6040 : tint(COLORS.textDim));
+    this.shown = this.trail = f.hp;
     this.delay = 0;
   }
 
   update(dt) {
     const f = this.f;
+    if (!f) return;
     if (f.hp !== this.shown) {
       if (f.hp < this.shown) this.delay = 280;
       this.shown = f.hp;
@@ -52,56 +60,126 @@ export class Hud {
 
     const k = this.shown / f.maxHp;
     const col = k > 0.5 ? 0x5ca048 : k > 0.25 ? 0xe0b040 : 0xc8281e;
-    const fill = Math.round(HP_W * k), tr = Math.round((HP_W * this.trail) / f.maxHp);
     const g = this.bar.clear(), { bx, by } = this;
     g.fillStyle(0x0c0e12).fillRect(bx - 1, by - 1, HP_W + 2, 7);
     g.fillStyle(0x1a1d23).fillRect(bx, by, HP_W, 5);
-    g.fillStyle(0xffffff).fillRect(bx, by, tr, 5);
-    g.fillStyle(col).fillRect(bx, by, fill, 5);
-    g.fillStyle(0xffffff, 0.35).fillRect(bx, by, fill, 1);
+    g.fillStyle(0xffffff).fillRect(bx, by, Math.round((HP_W * this.trail) / f.maxHp), 5);
+    g.fillStyle(col).fillRect(bx, by, Math.round(HP_W * k), 5);
+    g.fillStyle(0xffffff, 0.35).fillRect(bx, by, Math.round(HP_W * k), 1);
     this.hpText.setText(`HP ${f.hp}/${f.maxHp}`);
 
-    // Lay active status tags out left to right.
+    if (this.st) { // energy pips, right of the HP text
+      for (let i = 0; i < ENERGY.max; i++) {
+        const px = this.x + PW - 8 - (ENERGY.max - 1 - i) * 8, py = this.y + 23;
+        g.fillStyle(0x0c0e12).fillRect(px - 1, py - 1, 7, 7);
+        g.fillStyle(i < this.st.energy ? 0xfff096 : 0x3a3e48).fillRect(px, py, 5, 5);
+        if (i < this.st.energy) g.fillStyle(0xffffff).fillRect(px, py, 2, 1);
+      }
+    }
+    this.drawTags();
+  }
+
+  drawTags() {
+    const f = this.f, list = [];
+    for (const [key, label, color, turns] of this.side === 'player' ? PLAYER_TAGS : ENEMY_TAGS) {
+      const n = f.status[key];
+      if (n > 0) list.push([turns ? `${label}${n}` : label, color]);
+    }
+    if (this.st?.empowered) list.unshift(['POWER!', '#ffd040']);
+    else if (this.st?.streak > 0) list.unshift([`CRIT${this.st.streak}`, '#ffd040']);
     let tx = this.x + 2;
-    TAGS.forEach(([key, label, , turns], i) => {
-      const n = f.status[key], t = this.tags[i];
-      const s = n > 0 ? (turns ? `${label}${n}` : label) : '';
+    this.tags.forEach((t, i) => {
+      const [s, color] = list[i] ?? ['', '#ffffff'];
       t.setText(s);
+      t.label.setTint(tint(color));
       t.x = tx; // tag was built at x=0, so the container offset is its position
       if (s) tx += s.length * 6 + 4;
     });
   }
 }
 
-// The 4 move buttons along the bottom. Click/tap or keys 1–4.
-export class MoveButtons {
-  constructor(scene, f) {
-    this.f = f;
+// Floating markers over every enemy: intent icon + number, a thin HP bar,
+// the target arrow, and a tap zone to pick the target.
+export class EnemyMarkers {
+  constructor(scene, onPick) {
+    Object.assign(this, { scene, onPick, items: new Map(), showIntents: true });
+    this.arrow = scene.add.image(0, 0, 'target_arrow').setOrigin(0.5, 0).setDepth(15);
+  }
+
+  add(e) {
+    const s = this.scene;
+    const zone = s.add.zone(0, 0, 10, 10).setOrigin(0.5, 1).setInteractive({ useHandCursor: true });
+    zone.on('pointerdown', () => this.onPick(e));
+    this.items.set(e, {
+      g: s.add.graphics().setDepth(13),
+      icon: s.add.image(0, 0, 'int_attack').setOrigin(0).setDepth(14),
+      label: text(s, 0, 0, '').setDepth(14),
+      zone
+    });
+  }
+
+  remove(e) {
+    const it = this.items.get(e);
+    if (!it) return;
+    for (const o of [it.g, it.icon, it.label, it.zone]) o.destroy();
+    this.items.delete(e);
+  }
+
+  update(st, target, time) {
+    for (const [e, it] of this.items) {
+      const r = e.rig, x = Math.round(r.homeX), top = r.homeY - r.h * r.scale;
+      it.zone.setPosition(x, r.homeY).setSize(r.halfW * 2, r.h * r.scale);
+      const g = it.g.clear(), bw = 28, k = Math.max(0, e.hp / e.maxHp);
+      g.fillStyle(0x0c0e12).fillRect(x - bw / 2 - 1, top - 7, bw + 2, 4);
+      g.fillStyle(k > 0.5 ? 0x5ca048 : k > 0.25 ? 0xe0b040 : 0xc8281e).fillRect(x - bw / 2, top - 6, Math.round(bw * k), 2);
+      const v = this.showIntents ? intentView(st, e) : null;
+      it.icon.setVisible(!!v);
+      it.label.setVisible(!!v);
+      if (v) {
+        const w = 8 + (v.label ? 2 + v.label.length * 6 : 0), x0 = Math.round(x - w / 2), y0 = top - 18;
+        it.icon.setTexture(v.icon).setPosition(x0, y0);
+        it.label.setText(v.label).setPosition(x0 + 10, y0 + 1);
+        it.label.label.setTint(v.kind === 'charge' ? 0xff6040 : v.kind === 'ambush' ? 0x7fe0ff : 0xffffff);
+      }
+    }
+    const t = this.items.has(target) && this.showIntents ? target : null;
+    this.arrow.setVisible(!!t);
+    if (t) this.arrow.setPosition(t.rig.homeX, t.rig.homeY - t.rig.h * t.rig.scale - 27 + (Math.floor(time / 250) % 2));
+  }
+}
+
+// Bottom bar: the 5 moves (key 1–5) with energy-cost pips, plus END TURN (key E).
+export class MoveBar {
+  constructor(scene, st, { onDeny }) {
+    this.st = st;
     this.on = false;
     this.cb = null;
-
     const top = 140;
     const bg = scene.add.graphics().setDepth(10);
     bg.fillStyle(0x16181d).fillRect(0, top, W, H - top);
     bg.fillStyle(0x0c0e12).fillRect(0, top, W, 1);
     bg.fillStyle(0x2e333d).fillRect(0, top + 1, W, 1);
 
-    const gap = 4, bw = Math.floor((W - gap * 5) / 4);
-    this.btns = f.moves.map((id, i) => new Button(scene, gap + i * (bw + gap), top + 4, bw, 34, {
-      key: String(i + 1), label: MOVES[id].label + '+'.repeat(f.moveUps[id] ?? 0), onClick: () => this.pick(id)
+    const p = st.player, gap = 3, bw = 49;
+    this.btns = p.moves.map((id, i) => new Button(scene, 3 + i * (bw + gap), top + 4, bw, 34, {
+      key: String(i + 1), label: MOVES[id].btn + '+'.repeat(p.moveUps[id] ?? 0), sub: MOVES[id].desc,
+      cost: MOVES[id].cost, onClick: () => this.pick(id), onDeny: () => this.on && onDeny(blocked(st, id))
     }));
+    const ex = 3 + 5 * (bw + gap);
+    this.end = new Button(scene, ex, top + 4, W - 3 - ex, 34, { key: 'E', label: 'END', sub: 'TURN', onClick: () => this.pick('end') });
 
     this.onKey = (e) => {
       if (e.repeat) return;
-      const i = '1234'.indexOf(e.key);
+      const i = '12345'.indexOf(e.key);
       if (i >= 0) this.btns[i].click();
+      else if (e.code === 'KeyE') this.end.click();
     };
     scene.input.keyboard.on('keydown', this.onKey);
     scene.events.once('shutdown', () => scene.input.keyboard?.off('keydown', this.onKey));
     this.draw();
   }
 
-  // Resolves with the chosen move id.
+  // Resolves with a move id, or 'end'.
   choose() {
     return new Promise((res) => { this.cb = res; this.on = true; this.draw(); });
   }
@@ -115,9 +193,8 @@ export class MoveButtons {
   }
 
   draw() {
-    this.f.moves.forEach((id, i) => {
-      const ready = isReady(this.f, id);
-      this.btns[i].setText(null, ready ? MOVES[id].desc : `WAIT ${this.f.cd[id]}`).setEnabled(this.on && ready);
-    });
+    this.st.player.moves.forEach((id, i) => this.btns[i].setEnabled(this.on && !blocked(this.st, id)));
+    this.end.setEnabled(this.on);
+    this.end.setText(null, this.on && !affordable(this.st) ? 'TURN <' : 'TURN');
   }
 }

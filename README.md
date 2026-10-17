@@ -16,7 +16,7 @@ npm run build    # static site in dist/
 ## Playing
 
 Title → Home (Dino-dex, Lineage, Settings) → Hatch an egg → Jungle map → fights → Alpha Rex → Swamp map → fights → Bog Spino.
-Keys: **1–4** pick moves and options, **Space / Enter / click / tap** for the timing QTEs, **↑↓ + Enter** on the map, **S** opens Settings on Home, **D** (or tapping the Dino-dex) flips its pages. On phones, tap everything. Landscape is best, and portrait shows a hint to rotate.
+Keys: **1–5** pick moves (and popup options), **E** ends your turn, **← →** (or tapping an enemy) picks the target, **Space / Enter / click / tap** for the timing QTEs, **↑↓ + Enter** on the map, **S** opens Settings on Home, **D** (or tapping the Dino-dex) flips its pages. On phones, tap everything. Landscape is best, and portrait shows a hint to rotate.
 
 Scaling is integer-only by design (crisp pixels), so some screens show black borders around the game.
 
@@ -39,40 +39,41 @@ src/
 ### Tuning numbers
 
 - `src/data/species.js`: HP / ATK / DEF / SPD and the special move per species.
-- `src/data/moves.js`: move power, cooldowns, hits, plus:
+- `src/data/moves.js`: move power, energy cost, hits, plus:
+  - `ENERGY` (max 3, +2 a turn), `STREAK` (3 crits → next attack +50%), `MUDDY` (flooded attack bar)
   - `QTE`: attack-bar speed and zone widths, dodge/block windows, enemy tell length
   - `QTE_MULT` / `DEFEND_MULT`: crit / good / miss and dodge / block / hit multipliers
+- `src/data/brains.js`: every enemy's behaviour cycle and gimmick flags, boss phase 2.
 - `src/systems/combat.js`: the damage formula (`computeDamage`).
-- `src/systems/ai.js`: enemy move choice.
 - `src/data/traits.js`: the 6 traits and their numbers (`TRAIT_TUNING`).
 - `src/data/hatch.js`: rarity odds, reroll prices, spin lengths.
 - `src/data/lineage.js`: Lineage bonuses (per-stack value, caps), base lives, retry HP.
 - `src/systems/save.js`: versioned localStorage save (`SAVE_VERSION` plus `migrate()`). `src/systems/meta.js` holds the loaded save; call `persist()` after changing it. To start over, run `localStorage.removeItem('dino-conquest:save')` in the browser console.
 
-- `src/data/zones.js`: zone layout, enemy pools and levels, the zone order (`ZONE_ORDER`), the heal between zones (`ZONE_HEAL`), enemy HP/ATK scaling per node type, rewards, node odds. A boss can carry its own `base` stat block, and each zone has an `enemyBase` for its wildlife, so tuning a hatchable species never changes the zones' enemies.
+- `src/data/zones.js`: zone layout, enemy groups (`fights` / `elites`, 1–3 enemies each) and levels, a per-zone difficulty `scale`, the zone order (`ZONE_ORDER`), the heal between zones (`ZONE_HEAL`), enemy HP/ATK scaling per node type, rewards, node odds. A boss can carry its own `base` stat block, and each zone has an `enemyBase` for its wildlife, so tuning a hatchable species never changes the zones' enemies.
 - `src/data/progression.js`: XP curve, per-level growth, evolution levels and boost.
 - `src/data/events.js` / `src/data/upgrades.js`: Meteor Shard events and Fossil Dig stat upgrades.
 
-**Balance sim.** The numbers were tuned with a headless sim that plays full runs (Jungle → Swamp) with probabilistic QTE results. `src/systems` and `src/run` contain no Phaser code, so the sim can import them directly. Results, 600 runs each with 3 lives:
+**Balance sim.** The numbers are tuned with a headless sim that plays full runs (Jungle → Swamp) on the real combat rules (`systems/battleState.js`) with probabilistic QTE results and a simple "brace big hits, special when affordable, else bite" policy. `src/systems` and `src/run` contain no Phaser code, so the sim imports them directly. v2 combat, 400 runs each with 3 lives:
 
 | Play | Species | Clears Jungle | Clears both zones |
 |---|---|---|---|
-| Decent | Compy (Common) | 59% | 42% |
-| Decent | Raptor (Rare) | 92% | 91% |
-| Decent | Trike (Epic) | 97% | 97% |
-| Decent | T-Rex (Legendary) | 99% | 99% |
-| Decent | Pachy (Common) | 62% | 49% |
-| Decent | Sarco (Rare) | 90% | 90% |
-| Decent | Spino (Epic) | 97% | 97% |
-| Average | Compy (Common) | 18% | 1% |
-| Average | Raptor (Rare) | 48% | 29% |
-| Average | Trike (Epic) | 64% | 48% |
-| Average | T-Rex (Legendary) | 76% | 67% |
-| Average | Pachy (Common) | 14% | 2% |
-| Average | Sarco (Rare) | 47% | 29% |
-| Average | Spino (Epic) | 63% | 50% |
+| Decent | Compy (Common) | 72% | 44% |
+| Decent | Pachy (Common) | 72% | 39% |
+| Decent | Raptor (Rare) | 87% | 75% |
+| Decent | Sarco (Rare) | 90% | 78% |
+| Decent | Trike (Epic) | 94% | 90% |
+| Decent | Spino (Epic) | 97% | 81% |
+| Decent | T-Rex (Legendary) | 100% | 95% |
+| Average | Compy (Common) | 19% | 3% |
+| Average | Pachy (Common) | 21% | 3% |
+| Average | Raptor (Rare) | 46% | 16% |
+| Average | Sarco (Rare) | 44% | 18% |
+| Average | Trike (Epic) | 56% | 27% |
+| Average | Spino (Epic) | 61% | 19% |
+| Average | T-Rex (Legendary) | 82% | 49% |
 
-Most Compy deaths in the Swamp happen at the Bog Spino. Under average play, both-zone clears follow rarity: Common ~1–2%, Rare ~29%, Epic ~48–50%, Legendary ~67%. To get there the hatchable T-Rex was cut from 110 HP / 16 ATK to 78 HP / 13 ATK / 4 DEF / 3 SPD (Crushing Bite 1.5× power, 30% DEF pierce), and Trike from 90 HP / 9 DEF to 76 HP / 7 DEF. With decent play the Epics and the Legendary clear almost every time; three lives with 50% HP retries absorb most of the risk. The Alpha Rex boss keeps its own stats (`base` in `data/zones.js`).
+Fights last about 4–6 rounds. The first two map columns only hold a Compy pair, so new players get a gentle opener. Phase 3's meta unlocks are meant to carry players through the Swamp over several runs.
 
 ### The run
 
@@ -88,14 +89,19 @@ There are 7 hatchable species: Compy and Pachy (Common), Raptor and Sarco (Rare)
 
 `scenes/Hatch.js` handles the egg, the species spin, the trait spin, rerolls, and START RUN. The reels are in `ui/reel.js`, the buttons in `ui/button.js`, and the egg in `sprites/egg.js`.
 
-### Battle code
+### Battle code (v2 combat)
 
-- `scenes/Battle.js`: turn loop, damage resolution, and hit feedback per outcome.
-- `battle/anims.js`: attack animations (T-rex bite timing from the brief, pounce, tail whip, roar, Compy swarm, Trike ram and horn charge). `animSet()` picks the set per species.
-- `sprites/rexParts.js` + `sprites/rig.js`: the T-rex part rig (skull / jaw / body / legs + jaw-gap filler) and the whole-sprite rig.
-- `systems/qte.js`: attack bar and defend ring. `systems/fx.js`: shake, hitstop, sparks, numbers. `systems/sfx.js`: generated sounds.
+Each round: every enemy shows an **intent** (what it will do next, with exact damage) → you spend **energy** (max 3, +2 a turn) on as many moves as you can afford → **END TURN** → each enemy does what it showed. Brace (1 energy) turns missed dodges into blocks until your next turn. A perfect dodge earns a free counter-bite. 3 crits in a row empower your next attack. Roar hits every enemy; Swarm spreads its 3 hits across them.
 
-**Testing matchups:** `http://localhost:5173/?p=compy&e=trike&t=venomBite` skips the hatchery. `p` is the player species, `e` the enemy, `t` an optional trait id, `z` an optional zone backdrop (`z=swamp`).
+- `systems/battleState.js`: the pure turn rules (energy, intents, strikes, enemy actions, boss phases). Shared by the scene and the balance sim.
+- `data/brains.js`: enemy behaviour. Compy packs, Raptor (evades a missed attack and pounces back, feints its leap), Trike (telegraphed Horn Ram, half damage while charging), Pachy (Headbutt drains 1 energy), Sarco (submerges every 3rd turn, then ambushes with a tight ring), Alpha Rex (phase 2 at 50%: summons a Compy, faster), Bog Spino (floods the arena: your next attack bar is muddy unless you braced).
+- `scenes/Battle.js`: layout, targeting, the round loop, kills and boss phases, rewards. `battle/playerMoves.js` / `battle/enemyMoves.js`: animated moves wired to the QTEs. `battle/gimmicks.js`: defend, brace, submerge, flood, summon, phase-2 and death animations.
+- `battle/anims.js`: attack animations (T-rex bite timing from the brief, pounce with feint, tail whip, roar, Compy swarm, Trike ram and horn charge). `animSet()` picks the set per species.
+- `ui/battleUI.js`: HUDs (energy pips, crit streak, status tags), intent markers with the target arrow, and the move bar.
+- `sprites/rexParts.js` + `sprites/rig.js`: the T-rex part rig and the whole-sprite rig.
+- `systems/qte.js`: attack bar and defend ring. `systems/fx.js`: shake, hitstop, kill cam, sparks, numbers. `systems/sfx.js`: generated sounds.
+
+**Testing matchups:** `http://localhost:5173/?p=compy&e=compy*,compy*,compy*&t=venomBite` skips the hatchery. `p` is the player species, `e` a comma list of enemies (`*` = small pack member, `boss` = the zone boss), `t` an optional trait id, `z` the zone (`z=swamp`).
 
 ## Adding a new species sprite
 

@@ -2,7 +2,8 @@ import { sfx } from '../systems/sfx.js';
 
 // Hit feedback for one impact. n = index within one QTE (Swarm lands 3):
 // labels show once and damage numbers fan out so they don't stack.
-export function hitFeedback(scene, att, dfd, dmg, qte, defend, n = 0) {
+// gold: empowered (crit-streak) hit — gold sparks.
+export function hitFeedback(scene, att, dfd, dmg, qte, defend, n = 0, { gold = false } = {}) {
   const fx = scene.fx, rig = dfd.rig, p = rig.hitPoint(), dir = att.rig.homeFacing;
   const nx = p.x + [0, -10, 10][n % 3];
   const pop = (...args) => n === 0 && fx.pop(...args);
@@ -20,7 +21,7 @@ export function hitFeedback(scene, att, dfd, dmg, qte, defend, n = 0) {
     fx.hitstop(70);
     fx.shake(4, 240);
     fx.impactStar(p.x, p.y);
-    fx.sparks(p.x, p.y, { count: 16, dir, big: true });
+    fx.sparks(p.x, p.y, { count: 16, dir, big: true, gold });
     num(p.y - 16, dmg, { crit: true });
     pop(p.x, p.y - 38, 'CRIT!', '#fff096');
     sfx('crit');
@@ -32,13 +33,13 @@ export function hitFeedback(scene, att, dfd, dmg, qte, defend, n = 0) {
     sfx('block');
   } else if (qte === 'miss') {
     fx.shake(1, 80);
-    fx.sparks(p.x, p.y, { count: 3, dir });
+    fx.sparks(p.x, p.y, { count: 3, dir, gold });
     num(p.y - 16, dmg, { color: '#8a90a0' });
     pop(p.x, p.y - 28, 'WEAK', '#8a90a0');
     sfx('weak');
   } else {
     fx.shake(2, 140);
-    fx.sparks(p.x, p.y, { count: 8, dir });
+    fx.sparks(p.x, p.y, { count: gold ? 14 : 8, dir, gold, big: gold });
     num(p.y - 16, dmg);
     sfx('hit');
   }
@@ -61,7 +62,7 @@ function knock(scene, rig, dir, px) {
   });
 }
 
-function dodgeHop(scene, rig, dir) {
+export function dodgeHop(scene, rig, dir) {
   rig.stopIdle();
   rig.ghost(0.5, 200);
   scene.tweens.add({

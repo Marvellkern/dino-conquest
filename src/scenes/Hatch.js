@@ -222,6 +222,7 @@ export class Hatch extends Phaser.Scene {
 
   go() {
     if (this.busy) return;
+    this.busy = true; // ignore repeat clicks during the fade
     const bonus = { hp: bonusOf(meta, 'hp'), atk: bonusOf(meta, 'atk'), def: bonusOf(meta, 'def') };
     newRun({ species: this.species, trait: this.trait, seed: randomSeed(), bonus, lives: BASE_LIVES + bonusOf(meta, 'life') });
     this.cameras.main.fadeOut(250);

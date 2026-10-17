@@ -1,12 +1,22 @@
-// Zone layouts, enemy pools and scaling. A run goes through ZONE_ORDER; RunEnd after the last boss.
+// Zone layouts, enemy groups and scaling. A run goes through ZONE_ORDER; RunEnd after the last boss.
+// fights / elites: weighted groups of 1–3 enemies. A member is [species, opts]:
+//   opts.hp / opts.atk scale that member (on top of ENEMY_SCALE), opts.elite makes
+//   it the elite (level +1, evolved skin, random trait). minRow / maxRow: map columns it can appear in.
+const SMALL = { hp: 0.4, atk: 0.7 }; // pack members and elite sidekicks
 export const ZONES = {
   jungle: {
     name: 'JUNGLE',
     rows: 7,                       // map columns before the boss
-    enemies: ['compy', 'raptor'],
-    elites: ['trike'],
+    scale: { hp: 1.15, atk: 1.05 }, // whole-zone difficulty (fights, elites, boss)
+    fights: [
+      { w: 3, maxRow: 1, members: [['compy', SMALL], ['compy', SMALL]] },
+      { w: 3, minRow: 2, members: [['compy', SMALL], ['compy', SMALL], ['compy', SMALL]] },
+      { w: 3, minRow: 1, members: [['raptor']] },
+      { w: 2, minRow: 3, members: [['raptor'], ['compy', SMALL]] }
+    ],
+    elites: [{ w: 1, members: [['trike', { elite: true }], ['compy', SMALL]] }],
     // base: the boss's own stat block, so tuning the hatchable T-Rex doesn't move the boss.
-    boss: { species: 'rex', skin: 'alpharex', name: 'Alpha Rex', level: 1, special: 'primalChomp', base: { hp: 110, atk: 16, def: 6, spd: 4 } },
+    boss: { species: 'rex', skin: 'alpharex', name: 'Alpha Rex', brain: 'alphaRex', level: 1, base: { hp: 110, atk: 16, def: 6, spd: 4 } },
     levelAt: (row) => 1 + Math.floor(row / 2), // enemy level by column
     // Wildlife stat blocks, so tuning the hatchable versions doesn't move the Jungle.
     enemyBase: {
@@ -18,15 +28,25 @@ export const ZONES = {
   swamp: {
     name: 'SWAMP',
     rows: 7,
-    enemies: ['pachy', 'sarco'],
-    elites: ['sarco', 'raptor'],
-    boss: { species: 'spino', skin: 'spino', name: 'Bog Spino', level: 6, special: 'swampSurge', base: { hp: 90, atk: 21, def: 4, spd: 5 } },
+    scale: { hp: 1.4, atk: 1.35 },
+    fights: [
+      { w: 3, members: [['pachy']] },
+      { w: 3, members: [['sarco']] },
+      { w: 2, minRow: 3, members: [['sarco'], ['pachy', SMALL]] },
+      { w: 2, minRow: 3, members: [['pachy'], ['pachy', SMALL]] }
+    ],
+    elites: [
+      { w: 1, members: [['sarco', { elite: true }], ['pachy', SMALL]] },
+      { w: 1, members: [['raptor', { elite: true }], ['compy', SMALL]] }
+    ],
+    boss: { species: 'spino', skin: 'spino', name: 'Bog Spino', brain: 'bogSpino', level: 6, base: { hp: 90, atk: 21, def: 4, spd: 5 } },
     levelAt: (row) => 5 + Math.floor(row / 2),
     // Wildlife stat blocks for this zone, so tuning the hatchable versions doesn't move the Swamp.
     enemyBase: {
       pachy: { hp: 64, atk: 11, def: 6, spd: 6 },
       sarco: { hp: 70, atk: 12, def: 7, spd: 5 },
-      raptor: { hp: 60, atk: 13, def: 4, spd: 8 }
+      raptor: { hp: 60, atk: 13, def: 4, spd: 8 },
+      compy: { hp: 52, atk: 10, def: 4, spd: 9 }
     }
   }
 };

@@ -7,6 +7,9 @@ import { sfx } from '../systems/sfx.js';
 //                         timed to land at msToImpact)
 //   ctx.result()          promise of the QTE result
 //   ctx.impact(result)    apply damage + hit feedback
+//   ctx.tellMult          enemy wind-up speed (boss phase 2 is faster)
+//   ctx.feint             raptor fake-out before the real leap
+//   ctx.targetRig(i)      Swarm: rig hit by the i-th attacker (spread)
 // scene.fx is the Fx instance.
 
 export const wait = (s, ms) => new Promise((r) => s.time.delayedCall(ms, r));
@@ -44,6 +47,9 @@ async function tell(s, rig, ms, pose = {}) {
   rig.x = x0;
 }
 
+const tellOf = (ctx) => Math.round(QTE.tellMs * (ctx.tellMult ?? 1));
+const FEINT_MS = 380;
+
 // Where an attacker stands so it overlaps the target by `overlap` px.
 const standX = (rig, target, overlap) => target.homeX - rig.homeFacing * (rig.halfW + target.halfW - overlap);
 
@@ -75,8 +81,8 @@ async function rexBite(s, rig, target, ctx, big = false) {
   const roarGap = big ? 5 : 3, lungeGap = big ? 6 : 4;
   if (ctx.isPlayer) ctx.open();
   else {
-    ctx.open(QTE.tellMs + 90 + 90 + 130 + 50);
-    await tell(s, rig, QTE.tellMs, W1);
+    ctx.open(tellOf(ctx) + 90 + 90 + 130 + 50);
+    await tell(s, rig, tellOf(ctx), W1);
   }
   rig.setPose(W1); await wait(s, 90);
   rig.setPose(W2); await wait(s, 90);
@@ -104,9 +110,14 @@ async function pounce(s, rig, target, ctx) {
     rig.setPose({ crouch: true });
     await holdUntil(s, ctx.result(), (i) => rig.setPose({ crouch: true, dx: -(i % 2) }));
   } else {
-    const tellMs = ctx.hit > 0 ? 300 : QTE.tellMs;
-    ctx.open(tellMs + 120 + 140);
+    const tellMs = ctx.hit > 0 ? 300 : tellOf(ctx);
+    ctx.open(tellMs + (ctx.feint ? FEINT_MS : 0) + 120 + 140);
     await tell(s, rig, tellMs);
+    if (ctx.feint) { // fake leap: rises like it's going, then drops back
+      rig.setPose({ crouch: true }); await wait(s, 100);
+      rig.setPose({}); rig.y = rig.homeY - 6; sfx('whoosh'); await wait(s, 120);
+      rig.y = rig.homeY; s.fx.pop(rig.top().x, rig.top().y, '?', '#ff6040', 2, 300); await wait(s, 160);
+    }
     rig.setPose({ crouch: true }); await wait(s, 120);
   }
   const x0 = rig.x;
@@ -159,21 +170,20 @@ async function swarm(s, rig, target, ctx) {
     crouch(true);
     await holdUntil(s, ctx.result(), (i) => rig.setPose({ crouch: true, dx: -(i % 2) }));
   } else {
-    ctx.open(QTE.tellMs + 120 + 140);
-    await tell(s, rig, QTE.tellMs);
+    ctx.open(tellOf(ctx) + 120 + 140);
+    await tell(s, rig, tellOf(ctx));
     crouch(true);
     await wait(s, 120);
   }
   crouch(false);
-  const land = standX(rig, target, 10);
   const attackers = [ghosts[0], ghosts[1], rig];
   for (let i = 0; i < attackers.length; i++) {
-    const a = attackers[i];
+    const a = attackers[i], tg = ctx.targetRig?.(i) ?? target;
     if (a === rig) rig.ghost();
     sfx('whoosh');
-    await leap(s, a, land + dir * (6 - i * 6), rig.homeY);
+    await leap(s, a, standX(rig, tg, 10) + dir * (6 - i * 6), rig.homeY);
     const res = await ctx.result();
-    const p = target.hitPoint();
+    const p = tg.hitPoint();
     s.fx.slash(p.x, p.y + (i - 1) * 4, dir);
     ctx.impact(res);
     await wait(s, 90);
@@ -190,8 +200,8 @@ async function ram(s, rig, target, ctx) {
     rig.setPose(wind);
     await holdUntil(s, ctx.result(), (i) => rig.setPose({ ...wind, dx: -2 - (i % 2) }));
   } else {
-    ctx.open(QTE.tellMs + 120 + 60);
-    await tell(s, rig, QTE.tellMs);
+    ctx.open(tellOf(ctx) + 120 + 60);
+    await tell(s, rig, tellOf(ctx));
     rig.setPose(wind);
     await wait(s, 120);
   }
@@ -215,8 +225,8 @@ async function charge(s, rig, target, ctx) {
     rig.setPose(wind);
     await holdUntil(s, ctx.result(), (i) => { rig.setPose(wind); rig.x = rig.homeX - (i % 2); });
   } else {
-    ctx.open(QTE.tellMs + dashMs);
-    await tell(s, rig, QTE.tellMs, wind);
+    ctx.open(tellOf(ctx) + dashMs);
+    await tell(s, rig, tellOf(ctx), wind);
   }
   rig.setPose({ crouch: true });
   sfx('step');
@@ -243,8 +253,8 @@ async function tailWhip(s, rig, target, ctx) {
     ctx.open();
     await holdUntil(s, ctx.result(), (i) => { rig.x = x0 - dir * (4 + (i % 2)); });
   } else {
-    ctx.open(QTE.tellMs + 80);
-    await tell(s, rig, QTE.tellMs);
+    ctx.open(tellOf(ctx) + 80);
+    await tell(s, rig, tellOf(ctx));
   }
   rig.ghost();
   rig.x = x0 + dir * 6;

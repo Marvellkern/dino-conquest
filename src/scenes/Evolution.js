@@ -80,7 +80,7 @@ export class Evolution extends Phaser.Scene {
 
     text(this, X, 14, `${dinoName(d)}!`, { scale: 2, color: COLORS.accent, origin: [0.5, 0] });
     text(this, X, 34, `+${Math.round(PROGRESSION.evoBoost * 100)}% ALL STATS`, { origin: [0.5, 0], color: '#7fe0ff' });
-    const moveLine = special ? `${MOVES[special].label}${'+'.repeat(d.moveUps[special])} UNLOCKED` : '';
+    const moveLine = special ? `${MOVES[special].name.toUpperCase()}${'+'.repeat(d.moveUps[special])} UNLOCKED` : '';
     text(this, X, 44, moveLine, { origin: [0.5, 0], color: '#e8a030' });
     sfx('levelup');
     const prompt = text(this, X, 166, 'TAP TO CONTINUE', { origin: [0.5, 0], color: COLORS.textDim, shadow: false });
