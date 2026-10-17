@@ -27,7 +27,10 @@ import {
   buildOf
 } from '../run/run.js';
 
-const PLAYER_X = 72;
+const PLAYER_X = 80;
+// Dinos stand at 3x; small pack members and summoned minions at 2x so a
+// 3-enemy pack still fits on the right.
+const scaleOf = (f) => (f.small ? 2 : 3);
 
 // One fight: the player (left) vs 1–3 enemies (right, mirrored).
 // Each round: enemies show intents → the player spends energy → END TURN →
@@ -61,9 +64,9 @@ export class Battle extends Phaser.Scene {
     this.phases = [];
     this.lastHitBy = null;
     this.planning = false;
-    this.cameras.main.fadeIn(200);
+    this.cameras.main.fadeIn(150);
     this.zone = this.node ? session.run.zone : this.cfg.zone;
-    drawZone(this, this.zone);
+    this.backdrop = drawZone(this, this.zone);
 
     let player, enemies, pSkin, build;
     if (this.node) {
@@ -77,7 +80,7 @@ export class Battle extends Phaser.Scene {
       enemies = this.cfg.enemies.map((tok) => this.testEnemy(tok));
       build = { relics: new Set(this.cfg.relics), mut: { ...this.cfg.mutations } };
     }
-    player.rig = createRig(this, player.species, PLAYER_X, GROUND_Y, 1, pSkin);
+    player.rig = createRig(this, player.species, PLAYER_X, GROUND_Y, 1, pSkin, 3).addShadow();
     this.st = B.createBattle({ player, enemies: [], rng: this.rng, spawn: (sp) => this.spawn(sp), build });
     this.markers = new EnemyMarkers(this, (e) => this.setTarget(e));
     for (const e of enemies) this.addEnemy(e);
@@ -116,6 +119,10 @@ export class Battle extends Phaser.Scene {
     this.targetHud.update(dt);
     this.markers.showIntents = this.planning; // intents are for planning; hide them during actions
     this.markers.update(this.st, this.planning ? t : null, time);
+    // Lunge parallax: layers lean against whoever is furthest from home.
+    let shift = 0;
+    for (const f of [this.st.player, ...this.st.enemies]) if (f.rig && Math.abs(f.rig.x - f.rig.homeX) > Math.abs(shift)) shift = f.rig.x - f.rig.homeX;
+    this.backdrop.shift = shift;
   }
 
   say(s) { this.msg.setText(s); }
@@ -123,7 +130,7 @@ export class Battle extends Phaser.Scene {
   /* ---------- enemies, layout, targeting ---------- */
 
   addEnemy(e) {
-    e.rig = createRig(this, e.species, W + 60, GROUND_Y, -1, e.skin);
+    e.rig = createRig(this, e.species, W + 80, GROUND_Y, -1, e.skin, scaleOf(e)).addShadow();
     B.addEnemy(this.st, e);
     this.markers.add(e);
     return e;
@@ -134,7 +141,7 @@ export class Battle extends Phaser.Scene {
   layout(animate = true, skip = null) {
     const list = B.alive(this.st), gap = 6;
     const total = list.reduce((t, e) => t + e.rig.halfW * 2, 0) + gap * (list.length - 1);
-    let x = Math.max(150, 314 - total);
+    let x = Math.max(136, 312 - total);
     for (const e of list) {
       e.rig.homeX = Math.round(x + e.rig.halfW);
       x += e.rig.halfW * 2 + gap;
@@ -351,7 +358,7 @@ export class Battle extends Phaser.Scene {
   }
 
   leave(scene, data) {
-    this.cameras.main.fadeOut(200);
+    this.cameras.main.fadeOut(150);
     this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start(scene, data));
   }
 }

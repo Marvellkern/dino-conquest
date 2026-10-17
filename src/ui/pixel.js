@@ -1,10 +1,24 @@
+import { E32 } from '../data/palette.js';
+
 // Pixel-exact drawing helpers for Phaser Graphics (no anti-aliased shapes).
 
-// UI panel: 1px outline + 1px inner highlight on top/left.
-export function panel(g, x, y, w, h, { fill = 0x2e333d, hi = 0x4a5161, outline = 0x0c0e12 } = {}) {
+// Stone UI panel: dark stone fill, 1px light top edge, 1px dark bottom edge,
+// small rivets in the corners and a few speckles on big panels. All Endesga 32.
+export function panel(g, x, y, w, h, { fill = E32.night, hi = E32.slate, lo = E32.ink, outline = E32.ink, rivets = true } = {}) {
   g.fillStyle(outline).fillRect(x, y, w, h);
   g.fillStyle(fill).fillRect(x + 1, y + 1, w - 2, h - 2);
-  g.fillStyle(hi).fillRect(x + 1, y + 1, w - 2, 1).fillRect(x + 1, y + 1, 1, h - 2);
+  g.fillStyle(hi).fillRect(x + 1, y + 1, w - 2, 1);
+  g.fillStyle(lo).fillRect(x + 1, y + h - 2, w - 2, 1);
+  if (w >= 60 && h >= 40) { // stone speckle
+    g.fillStyle(E32.dusk);
+    for (let i = 0; i < (w * h) / 180; i++) g.fillRect(x + 4 + ((i * 37) % (w - 8)), y + 4 + ((i * 53) % (h - 8)), 1 + (i % 2), 1);
+  }
+  if (rivets && w >= 16 && h >= 14) {
+    for (const [rx, ry] of [[x + 2, y + 3], [x + w - 3, y + 3], [x + 2, y + h - 4], [x + w - 3, y + h - 4]]) {
+      g.fillStyle(E32.steel).fillRect(rx, ry, 1, 1);
+      g.fillStyle(E32.ink).fillRect(rx, ry + 1, 1, 1);
+    }
+  }
   return g;
 }
 

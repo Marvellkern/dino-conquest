@@ -8,6 +8,7 @@ import { panel } from './pixel.js';
 import { text } from './font.js';
 
 const PW = 120;
+const MARK_TOP = 70; // highest sprite top the enemy markers stack above
 const HP_W = PW - 12;
 
 // Status tags: [status key, label, color, show turns?]
@@ -130,7 +131,8 @@ export class EnemyMarkers {
 
   update(st, target, time) {
     for (const [e, it] of this.items) {
-      const r = e.rig, x = Math.round(r.homeX), top = r.homeY - r.h * r.scale;
+      // Tall 3x sprites: keep the marker stack (arrow, intent, HP) below the HUD panels.
+      const r = e.rig, x = Math.round(r.homeX), top = Math.max(MARK_TOP, r.homeY - r.h * r.scale);
       it.zone.setPosition(x, r.homeY).setSize(r.halfW * 2, r.h * r.scale);
       const g = it.g.clear(), bw = 28, k = Math.max(0, e.hp / e.maxHp);
       g.fillStyle(0x0c0e12).fillRect(x - bw / 2 - 1, top - 7, bw + 2, 4);
@@ -147,9 +149,12 @@ export class EnemyMarkers {
     }
     const t = this.items.has(target) && this.showIntents ? target : null;
     this.arrow.setVisible(!!t);
-    if (t) this.arrow.setPosition(t.rig.homeX, t.rig.homeY - t.rig.h * t.rig.scale - 27 + (Math.floor(time / 250) % 2));
+    if (t) this.arrow.setPosition(t.rig.homeX, Math.max(MARK_TOP, t.rig.homeY - t.rig.h * t.rig.scale) - 27 + (Math.floor(time / 250) % 2));
   }
 }
+
+// 8x8 icon per move (sprites/moveIcons.js): base moves by id, the special by species.
+const iconOf = (id, species) => (['bite', 'tail', 'roar', 'brace'].includes(id) ? `mi_${id}` : `mi_${species}`);
 
 // Bottom bar: the 5 moves (key 1–5) with energy-cost pips, plus END TURN (key E).
 export class MoveBar {
@@ -171,10 +176,12 @@ export class MoveBar {
         cost: moveCost(st, id), onClick: () => this.pick(id), onDeny: () => this.on && onDeny(blocked(st, id))
       });
       if (mu) scene.add.rectangle(b.x + 9, b.y + 4, 4, 3, mu.color).setOrigin(0).setDepth(13); // badge beside the key number
+      b.icon = scene.add.image(b.x + Math.floor(bw / 2) - 4, b.y + 3, iconOf(id, p.species)).setOrigin(0).setDepth(13);
       return b;
     });
     const ex = 3 + 5 * (bw + gap);
     this.end = new Button(scene, ex, top + 4, W - 3 - ex, 34, { key: 'E', label: 'END', sub: 'TURN', onClick: () => this.pick('end') });
+    this.end.icon = scene.add.image(ex + Math.floor((W - 3 - ex) / 2) - 4, top + 7, 'mi_end').setOrigin(0).setDepth(13);
 
     this.onKey = (e) => {
       if (e.repeat) return;
@@ -204,6 +211,7 @@ export class MoveBar {
     this.st.player.moves.forEach((id, i) => {
       this.btns[i].cost = moveCost(this.st, id);
       this.btns[i].setEnabled(this.on && !blocked(this.st, id));
+      this.btns[i].icon.setAlpha(this.btns[i].enabled ? 1 : 0.45);
     });
     this.end.setEnabled(this.on);
     this.end.setText(null, this.on && !affordable(this.st) ? 'TURN <' : 'TURN');

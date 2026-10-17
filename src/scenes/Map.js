@@ -28,7 +28,7 @@ export class MapScene extends Phaser.Scene {
     this.d = this.run.dino;
     this.fx = new Fx(this);
     this.busy = false;
-    this.cameras.main.fadeIn(200);
+    this.cameras.main.fadeIn(150);
 
     drawMapBackground(this, this.run.zone);
     this.edges = this.add.graphics().setDepth(2);
@@ -179,7 +179,7 @@ export class MapScene extends Phaser.Scene {
     if (node.enemies) {
       sfx('tell');
       this.fx.pop(this.marker.x, this.marker.y - 30, '!', '#fff096', 2, 400);
-      this.time.delayedCall(350, () => this.cameras.main.fadeOut(200));
+      this.time.delayedCall(220, () => this.cameras.main.fadeOut(150));
       this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Battle', { node: node.id }));
       return;
     }

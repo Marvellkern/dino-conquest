@@ -22,7 +22,7 @@ export class Fossil extends Phaser.Scene {
     const run = session.run;
     if (!run) { this.scene.start('Home'); return; }
     this.fx = new Fx(this);
-    this.cameras.main.fadeIn(400);
+    this.cameras.main.fadeIn(150);
     this.play(run);
   }
 
@@ -85,7 +85,7 @@ export class Fossil extends Phaser.Scene {
     this.tweens.add({ targets: prompt, alpha: 0.3, duration: 500, yoyo: true, repeat: -1 });
     await wait(this, 300);
     await new Promise((r) => { const off = onPress(this, () => { off(); r(); }); });
-    this.cameras.main.fadeOut(250);
+    this.cameras.main.fadeOut(150);
     this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Home'));
   }
 

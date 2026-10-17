@@ -34,7 +34,7 @@ export class Hatch extends Phaser.Scene {
     this.fx = new Fx(this);
     this.rig = null;
     this.busy = true;
-    this.cameras.main.fadeIn(250);
+    this.cameras.main.fadeIn(150);
     this.free = owned('whisper'); // Egg Whisper: free rerolls this hatch
     this.golden = false;
     this.setup = runSetup();
@@ -147,14 +147,26 @@ export class Hatch extends Phaser.Scene {
     return null;
   }
 
+  // Waits that end early once the player taps to skip the hatch.
+  nap(ms) { return this.skipping ? Promise.resolve() : Promise.race([wait(this, ms), this.skipP]); }
+
   async hatch() {
     this.hint.destroy();
     this.species = (await this.chooseEgg()) ?? this.rollSpecies();
+    this.skipping = false;
+    this.skipP = new Promise((r) => {
+      this.offSkip = onPress(this, () => {
+        this.skipping = true;
+        this.speciesReel.skip();
+        this.traitReel.skip();
+        r();
+      });
+    });
     this.trait = this.rollTrait();
     this.wobble = 2;
     const spin = this.speciesReel.spin(this.strip(HATCHABLE, this.species, 14), SPIN_MS.species);
     for (let s = 1; s <= 3; s++) {
-      await wait(this, SPIN_MS.species / 4);
+      await this.nap(SPIN_MS.species / 4);
       this.egg.setTexture(`egg_crack${s}`);
       sfx('tell');
       this.fx.shake(1, 80);
@@ -163,6 +175,8 @@ export class Hatch extends Phaser.Scene {
     this.burstEgg();
     await this.reveal();
     await this.spinTrait();
+    this.offSkip();
+    this.skipping = false;
     await showGoals(this, checkGoals(null, [{ type: 'hatch' }]));
     this.busy = false;
     this.refresh();
@@ -201,7 +215,7 @@ export class Hatch extends Phaser.Scene {
     const big = sp.rarity === 'epic' || sp.rarity === 'legendary';
     this.fx.pop(DINO_X, 34, `${rar.name}!`, rar.color, big ? 2 : 1, 1600);
     if (sp.rarity === 'legendary') { sfx('win'); this.fx.shake(4, 400); }
-    await roar(this, this.rig, () => {});
+    if (!this.skipping) await roar(this, this.rig, () => {});
     this.rig.startIdle();
   }
 
@@ -259,7 +273,7 @@ export class Hatch extends Phaser.Scene {
     newRun({ ...runSetup(), species: this.species, trait: this.trait, seed: randomSeed(), skin: this.skin() });
     meta.heir = null; // the heir's item is now in this run
     persist();
-    this.cameras.main.fadeOut(250);
+    this.cameras.main.fadeOut(150);
     this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Map'));
   }
 

@@ -5,6 +5,7 @@ import { EGG, EGG_STAGES, crackedEgg } from '../sprites/egg.js';
 import { SKIN_GRIDS, ALPHA, alphaColor, spikedGrid } from '../sprites/skins.js';
 import { FORM_ART, buildForm, formColor } from '../sprites/forms.js';
 import { RELIC_ICONS, SHOP_ICON } from '../sprites/relicIcons.js';
+import { MOVE_ICONS, ICON_SPECIES, speciesIcon } from '../sprites/moveIcons.js';
 import { makeSpriteSet, makeTexture } from '../sprites/renderSprite.js';
 import { buildRexParts } from '../sprites/rexParts.js';
 import { buildFont } from '../ui/font.js';
@@ -38,6 +39,8 @@ export class Boot extends Phaser.Scene {
     for (const [key, grid] of Object.entries(ICONS)) makeTexture(this, key, grid);
     for (const [key, grid] of Object.entries(RELIC_ICONS)) makeTexture(this, `relic_${key}`, grid);
     makeTexture(this, 'icon_shop', SHOP_ICON);
+    for (const [key, grid] of Object.entries(MOVE_ICONS)) makeTexture(this, `mi_${key}`, grid);
+    for (const sp of ICON_SPECIES) makeTexture(this, `mi_${sp}`, speciesIcon(sp));
     makeTexture(this, 'egg', EGG);
     for (let s = 1; s <= EGG_STAGES; s++) makeTexture(this, `egg_crack${s}`, crackedEgg(s));
 

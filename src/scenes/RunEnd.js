@@ -23,7 +23,7 @@ export class RunEnd extends Phaser.Scene {
     const amber = bankRun(run, won);
     session.run = null;
 
-    this.cameras.main.fadeIn(300);
+    this.cameras.main.fadeIn(150);
     this.add.graphics().fillStyle(0x16181d).fillRect(0, 0, W, 180);
     panel(this.add.graphics(), 40, 12, 240, 150);
     text(this, W / 2, 20, won ? 'RUN CLEARED!' : 'YOUR DINO FELL', { scale: 2, color: won ? COLORS.accent : '#e06060', origin: [0.5, 0] });
@@ -51,7 +51,7 @@ export class RunEnd extends Phaser.Scene {
     this.tweens.add({ targets: prompt, alpha: 0.3, duration: 500, yoyo: true, repeat: -1 });
     await wait(this, 600);
     await new Promise((r) => { const off = onPress(this, () => { off(); r(); }); });
-    this.cameras.main.fadeOut(250);
+    this.cameras.main.fadeOut(150);
     this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Home'));
   }
 }

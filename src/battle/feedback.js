@@ -17,16 +17,20 @@ export function hitFeedback(scene, att, dfd, dmg, qte, defend, n = 0, { gold = f
 
   rig.flash(50);
   knock(scene, rig, dir, qte === 'crit' ? 5 : 2);
+  // Shake scales with the share of max HP the hit took (setting toggle still applies).
+  const heavy = Math.min(4, Math.round((dmg / Math.max(1, dfd.maxHp)) * 10));
+  if (defend !== 'block' && qte !== 'miss') fx.debris(p.x, p.y, scene.zone, qte === 'crit' ? 7 : 4);
   if (qte === 'crit') {
-    fx.hitstop(70);
-    fx.shake(4, 240);
+    fx.hitstop(120);
+    fx.shake(3 + heavy, 260);
     fx.impactStar(p.x, p.y);
     fx.sparks(p.x, p.y, { count: 16, dir, big: true, gold });
     num(p.y - 16, dmg, { crit: true });
     pop(p.x, p.y - 38, 'CRIT!', '#fff096');
     sfx('crit');
   } else if (defend === 'block') {
-    fx.shake(2, 120);
+    fx.hitstop(40);
+    fx.shake(1 + Math.min(2, heavy), 120);
     fx.sparks(p.x, p.y, { count: 4, dir });
     num(p.y - 16, dmg, { color: '#9ab8ff' });
     pop(p.x, p.y - 28, 'BLOCK', '#9ab8ff');
@@ -38,7 +42,8 @@ export function hitFeedback(scene, att, dfd, dmg, qte, defend, n = 0, { gold = f
     pop(p.x, p.y - 28, 'WEAK', '#8a90a0');
     sfx('weak');
   } else {
-    fx.shake(2, 140);
+    fx.hitstop(60);
+    fx.shake(1 + heavy, 150);
     fx.sparks(p.x, p.y, { count: gold ? 14 : 8, dir, gold, big: gold });
     num(p.y - 16, dmg);
     sfx('hit');
@@ -69,7 +74,7 @@ export function dodgeHop(scene, rig, dir) {
     targets: rig.c, x: rig.homeX + dir * 14, y: rig.homeY - 6, duration: 90, ease: 'Quad.Out',
     onComplete: () => scene.tweens.add({
       targets: rig.c, x: rig.homeX, y: rig.homeY, duration: 160, delay: 120, ease: 'Quad.In',
-      onComplete: () => rig.startIdle()
+      onComplete: () => { scene.fx.dust(rig.x, rig.homeY, 4); rig.startIdle(); }
     })
   });
 }

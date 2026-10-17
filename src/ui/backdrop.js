@@ -1,87 +1,9 @@
-import { W, H, GROUND_Y } from '../config.js';
+import { W, H } from '../config.js';
+import { zoneBackdrop } from './zoneArt.js';
 
-// Chunky code-drawn jungle backdrop: sky bands, two foliage layers, ground tiles.
-export function drawJungle(scene) {
-  const g = scene.add.graphics();
-  const bands = [0x16302e, 0x1a3a34, 0x1f463a, 0x255240, 0x2c5e44];
-  const bh = Math.ceil(GROUND_Y / bands.length);
-  bands.forEach((c, i) => g.fillStyle(c).fillRect(0, i * bh, W, bh));
-
-  // Far foliage: blocky canopy humps.
-  g.fillStyle(0x183a2c);
-  for (let x = -8; x < W; x += 22) {
-    const h = 38 + ((x * 7 + 56) % 17);
-    g.fillRect(x, GROUND_Y - h, 18, h);
-    g.fillRect(x + 4, GROUND_Y - h - 6, 10, 6);
-  }
-  // Near foliage: ferns along the ground.
-  g.fillStyle(0x234a2a);
-  for (let x = 0; x < W; x += 9) {
-    const h = 6 + ((x * 13) % 9);
-    g.fillRect(x, GROUND_Y - h, 6, h);
-    g.fillRect(x + 2, GROUND_Y - h - 3, 2, 3);
-  }
-
-  // Ground: dirt with a staggered pebble pattern.
-  g.fillStyle(0x4a3a26).fillRect(0, GROUND_Y, W, H - GROUND_Y);
-  g.fillStyle(0x5e4a30).fillRect(0, GROUND_Y, W, 2);
-  g.fillStyle(0x2e2418).fillRect(0, GROUND_Y + 2, W, 1);
-  g.fillStyle(0x3a2e1e);
-  for (let y = GROUND_Y + 6, row = 0; y < H; y += 6, row++) {
-    for (let x = row % 2 ? 0 : 8; x < W; x += 16) g.fillRect(x, y, 3, 1);
-  }
-  return g;
-}
-
-// Murky swamp: hazy green sky, drooping cypress trunks, reeds, a strip of
-// dark water with ripple lines, and a mud bank for the fighters to stand on.
-export function drawSwamp(scene) {
-  const g = scene.add.graphics();
-  const bands = [0x1c2a22, 0x203226, 0x263a2a, 0x2c422c, 0x33482e];
-  const bh = Math.ceil(GROUND_Y / bands.length);
-  bands.forEach((c, i) => g.fillStyle(c).fillRect(0, i * bh, W, bh));
-
-  // Far cypress trunks with hanging moss.
-  for (let x = 6; x < W; x += 34) {
-    const h = 70 + ((x * 11) % 23), tw = 6 + ((x * 3) % 4);
-    g.fillStyle(0x1a2620).fillRect(x, GROUND_Y - h, tw, h);
-    g.fillRect(x - 2, GROUND_Y - 8, tw + 4, 8); // flared root
-    g.fillStyle(0x24382a).fillRect(x - 8, GROUND_Y - h - 4, tw + 16, 6);
-    g.fillStyle(0x3e5a36);
-    for (let m = x - 6; m < x + tw + 8; m += 4) g.fillRect(m, GROUND_Y - h + 2, 1, 4 + ((m * 7) % 9));
-  }
-
-  // Water strip just behind the bank, with pale ripples.
-  const wy = GROUND_Y - 14;
-  g.fillStyle(0x1e3a34).fillRect(0, wy, W, 14);
-  g.fillStyle(0x28483e).fillRect(0, wy, W, 1);
-  g.fillStyle(0x5e8a70);
-  for (let i = 0; i < 18; i++) {
-    const x = (i * 47 + 11) % W, y = wy + 3 + ((i * 5) % 9);
-    g.fillRect(x, y, 4 + (i % 3) * 2, 1);
-  }
-  // Reeds and cattails poking out of the water.
-  for (let x = 3; x < W; x += 13) {
-    const h = 8 + ((x * 7) % 10);
-    g.fillStyle(0x3a5a2c).fillRect(x, GROUND_Y - h, 1, h).fillRect(x + 2, GROUND_Y - h + 3, 1, h - 3);
-    if (x % 3 === 0) g.fillStyle(0x6a4628).fillRect(x, GROUND_Y - h - 3, 1, 3);
-  }
-
-  // Mud bank: dark olive with puddles.
-  g.fillStyle(0x3a3a24).fillRect(0, GROUND_Y, W, H - GROUND_Y);
-  g.fillStyle(0x50502e).fillRect(0, GROUND_Y, W, 2);
-  g.fillStyle(0x24261a).fillRect(0, GROUND_Y + 2, W, 1);
-  for (let y = GROUND_Y + 6, row = 0; y < H; y += 7, row++) {
-    for (let x = row % 2 ? 4 : 18; x < W; x += 28) {
-      g.fillStyle(0x24382e).fillRect(x, y, 7, 2);
-      g.fillStyle(0x4a6a58).fillRect(x + 1, y, 3, 1);
-    }
-  }
-  return g;
-}
-
-const BACKDROPS = { jungle: drawJungle, swamp: drawSwamp };
-export const drawZone = (scene, zone) => (BACKDROPS[zone] ?? drawJungle)(scene);
+// Battle / title backdrops are layered and animated: see ui/zoneArt.js.
+export const drawZone = (scene, zone) => zoneBackdrop(scene, zone);
+export const drawJungle = (scene) => zoneBackdrop(scene, 'jungle');
 
 // Zone-map background: dark bands plus scattered tufts, tinted per zone.
 const MAP_TINT = {

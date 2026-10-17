@@ -3,7 +3,7 @@ export const W = 320;
 export const H = 180;
 
 // Ground line used by side-view scenes.
-export const GROUND_Y = 138;
+export const GROUND_Y = 132;
 
 export const COLORS = {
   bg: '#22262e',

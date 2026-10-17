@@ -20,7 +20,7 @@ export class Evolution extends Phaser.Scene {
   create() {
     this.fx = new Fx(this);
     this.skipped = false;
-    this.cameras.main.fadeIn(200);
+    this.cameras.main.fadeIn(150);
     this.drawStage();
     this.play();
   }
@@ -111,7 +111,7 @@ export class Evolution extends Phaser.Scene {
     await new Promise((r) => { const off = onPress(this, () => { off(); r(); }); });
 
     const next = d.pendingEvo ? 'Evolution' : 'Map';
-    this.cameras.main.fadeOut(200);
+    this.cameras.main.fadeOut(150);
     this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start(next));
   }
 

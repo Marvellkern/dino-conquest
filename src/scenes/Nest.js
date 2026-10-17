@@ -121,7 +121,7 @@ export class Nest extends Phaser.Scene {
     const y = TOP + i * 32, cy = y + 16;
     const g = this.add.graphics();
     g.fillStyle(0x3a3f4a).fillRect(25, y, 2, 32); // the bloodline
-    panel(g, 46, y + 1, 270, 30, { fill: f.won ? 0x2e3a2e : 0x2a2e36 });
+    panel(g, 46, y + 1, 270, 30, { fill: f.won ? 0x265c42 : 0x262b44, rivets: false });
     const key = skinOf(f.species, f.evo ?? 0);
     const icon = this.add.image(26, cy, this.textures.exists(key) ? key : f.species);
     if (!f.won) icon.setTint(0xb0a890);

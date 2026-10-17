@@ -1,4 +1,4 @@
-import { PAL } from '../data/palette.js';
+import { PAL, toEndesga } from '../data/palette.js';
 
 const warned = new Set();
 
@@ -17,7 +17,7 @@ export function drawGrid(ctx, grid, ox = 0, oy = 0, colorOf = (ch) => PAL[ch]) {
         warned.add(ch);
         console.warn(`renderSprite: unknown palette key "${ch}"`);
       }
-      const color = colorOf(ch, x, y);
+      const color = toEndesga(colorOf(ch, x, y)); // every pixel lands on Endesga 32
       if (!color) continue;
       ctx.fillStyle = color;
       ctx.fillRect(ox + x, oy + y, 1, 1);

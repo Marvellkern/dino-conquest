@@ -21,7 +21,7 @@ export class Home extends Phaser.Scene {
 
   create() {
     this.inMenu = false; // scene instances are reused across restarts
-    this.cameras.main.fadeIn(250);
+    this.cameras.main.fadeIn(150);
     const g = this.add.graphics();
     g.fillStyle(0x16181d).fillRect(0, 0, W, 180);
     text(this, 6, 6, 'DINO-CONQUEST', { color: COLORS.accent });
@@ -80,6 +80,13 @@ export class Home extends Phaser.Scene {
     DEX_ORDER.slice(this.dexPage * DEX_PAGE, (this.dexPage + 1) * DEX_PAGE).forEach((id, i) => {
       const cx = 8 + (i % 2) * 74 + 36, top = 35 + Math.floor(i / 2) * 51;
       const entry = meta.dex[id], rar = RARITIES[SPECIES[id].rarity];
+      if (entry) { // rarity-colored card behind each discovered species
+        const card = this.add.graphics(), rc = parseInt(rar.color.slice(1), 16);
+        card.fillStyle(rc, 0.3).fillRect(cx - 34, top - 2, 68, 51);
+        card.fillStyle(0x262b44).fillRect(cx - 33, top - 1, 66, 49);
+        card.fillStyle(rc).fillRect(cx - 33, top - 1, 66, 1).fillRect(cx - 33, top + 48, 66, 1);
+        this.dexCells.push(card);
+      }
       const img = this.add.image(cx, top + 16, id);
       if (!entry) img.setTintFill(0x0c0e12);
       if (entry?.wins) { // crown: this species has cleared a run
@@ -201,7 +208,7 @@ export class Home extends Phaser.Scene {
 
   go() {
     if (this.inMenu) return;
-    this.cameras.main.fadeOut(200);
+    this.cameras.main.fadeOut(150);
     this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Hatch'));
   }
 }

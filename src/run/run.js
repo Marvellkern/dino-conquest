@@ -94,7 +94,7 @@ export const enemyFighters = (node) => node.enemies.map((e) => enemyFighter(e, n
 // A boss's summoned sidekick: a small pack member of the current zone.
 export function minionFighter(zoneId, species, level) {
   const z = ZONES[zoneId];
-  return enemyFighter({ species, level, base: z.enemyBase?.[species], hp: 0.4, atk: 0.7 }, 'fight');
+  return enemyFighter({ species, level, base: z.enemyBase?.[species], hp: 0.4, atk: 0.7, small: true }, 'fight');
 }
 
 // "3 COMPY", "RAPTOR + COMPY"... for the map tooltip.

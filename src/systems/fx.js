@@ -66,10 +66,37 @@ export class Fx {
     this.s.time.delayedCall(90, () => img.destroy());
   }
 
+  // Damage number in the 2x font, rising on a slight arc. Crits flash white
+  // for a frame, then turn gold.
   number(x, y, n, { crit = false, color = '#ffffff' } = {}) {
-    const t = text(this.s, x, y, String(n), { scale: crit ? 2 : 1, color: crit ? '#fff096' : color, origin: 0.5 }).setDepth(25);
-    this.s.tweens.add({ targets: t, y: '-=14', duration: 420, ease: 'Quad.Out' });
-    this.s.time.delayedCall(800, () => t.destroy());
+    const t = text(this.s, x, y, String(n), { scale: 2, color: crit ? '#ffffff' : color, origin: 0.5 }).setDepth(25);
+    if (crit) this.s.time.delayedCall(34, () => t.active && t.label.setTint(0xfeae34));
+    const dx = (Math.random() < 0.5 ? -1 : 1) * (crit ? 8 : 5);
+    this.s.tweens.add({ targets: t, y: `-=${crit ? 20 : 14}`, duration: 460, ease: 'Quad.Out' });
+    this.s.tweens.add({ targets: t, x: x + dx, duration: 460, ease: 'Sine.In' });
+    this.s.time.delayedCall(820, () => t.destroy());
+  }
+
+  // Dust puff at the feet (landings, lunges): a few pale pixels kicked sideways.
+  dust(x, y, n = 6) {
+    for (let i = 0; i < n; i++) {
+      const dir = i % 2 ? 1 : -1, r = this.s.add.rectangle(x + dir * (2 + i), y - 1, 2, 1, i % 3 ? 0xc28569 : 0xead4aa).setOrigin(0).setDepth(6);
+      this.s.tweens.add({
+        targets: r, x: r.x + dir * (6 + Math.random() * 10), y: y - 2 - Math.random() * 5, alpha: 0,
+        duration: 260 + Math.random() * 160, ease: 'Quad.Out', onComplete: () => r.destroy()
+      });
+    }
+  }
+
+  // Impact debris (no blood): leaves in the Jungle, water drops in the Swamp.
+  debris(x, y, zone = 'jungle', n = 4) {
+    const colors = zone === 'swamp' ? [0x8b9bb4, 0xc0cbdc] : [0x63c74d, 0x3e8948];
+    for (let i = 0; i < n; i++) {
+      const r = this.s.add.rectangle(x, y, 2, 1, colors[i % 2]).setOrigin(0).setDepth(20);
+      const dx = (Math.random() - 0.5) * 30;
+      this.s.tweens.add({ targets: r, x: x + dx, y: y - 6 - Math.random() * 8, duration: 160, ease: 'Quad.Out' });
+      this.s.tweens.add({ targets: r, y: y + 18 + Math.random() * 10, alpha: 0, delay: 160, duration: 420, ease: 'Quad.In', onComplete: () => r.destroy() });
+    }
   }
 
   pop(x, y, str, color = '#ffffff', scale = 1, ms = 650) {

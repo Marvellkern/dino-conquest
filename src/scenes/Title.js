@@ -14,13 +14,13 @@ export class Title extends Phaser.Scene {
 
   create() {
     this.fx = new Fx(this);
-    this.cameras.main.fadeIn(400);
+    this.cameras.main.fadeIn(150);
     drawJungle(this);
     this.alive = true;
     this.events.once('shutdown', () => { this.alive = false; });
 
-    this.rex = { rig: createRig(this, 'rex', 96, GROUND_Y, 1) };
-    this.raptor = { rig: createRig(this, 'raptor', 232, GROUND_Y, -1) };
+    this.rex = { rig: createRig(this, 'rex', 96, GROUND_Y, 1).addShadow() };
+    this.raptor = { rig: createRig(this, 'raptor', 232, GROUND_Y, -1).addShadow() };
     this.rex.rig.startIdle();
     this.raptor.rig.startIdle();
 
@@ -33,7 +33,7 @@ export class Title extends Phaser.Scene {
     const off = onPress(this, () => {
       off();
       sfx('fight');
-      this.cameras.main.fadeOut(300);
+      this.cameras.main.fadeOut(150);
       this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Home'));
     });
     this.loop();

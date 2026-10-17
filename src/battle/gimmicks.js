@@ -103,11 +103,47 @@ export async function phaseAnim(s, rig, line) {
   rig.startIdle();
 }
 
-// Enemy defeated: blinks, then fades and sinks.
+// Defeated: flashes white 3 times, then dissolves into pixels that fall to the ground.
 export async function deathAnim(s, rig) {
   rig.stopIdle();
   sfx('ko');
-  for (let i = 0; i < 6; i++) { rig.c.setVisible(i % 2 === 1); await wait(s, 60); }
-  await tween(s, { targets: rig.c, alpha: 0, y: rig.homeY + 4, duration: 300 });
+  for (let i = 0; i < 3; i++) {
+    rig.setFlash(true);
+    await wait(s, 70);
+    rig.setFlash(false);
+    await wait(s, 60);
+  }
+  const bits = dissolve(s, rig);
   rig.c.setVisible(false);
+  await bits;
+}
+
+// Breaks the rig's visible parts into falling pixel squares (every 2nd pixel
+// in each direction, so a big sprite stays around 150–300 pieces).
+function dissolve(s, rig) {
+  const k = rig.scale, f = rig.c.scaleX < 0 ? -1 : 1, jobs = [];
+  for (const part of rig.parts) {
+    if (!part.visible) continue;
+    const src = s.textures.get(part.texture.key).getSourceImage();
+    const ctx = src.getContext?.('2d');
+    if (!ctx) continue;
+    const { data, width, height } = ctx.getImageData(0, 0, src.width, src.height);
+    for (let y = 0; y < height; y += 2) {
+      for (let x = (y >> 1) % 2; x < width; x += 2) {
+        const i = (y * width + x) * 4;
+        if (data[i + 3] < 128) continue;
+        const color = (data[i] << 16) | (data[i + 1] << 8) | data[i + 2];
+        const wx = rig.c.x + (part.x + x) * k * f, wy = rig.c.y + (part.y + y) * k;
+        const r = s.add.rectangle(Math.round(wx), Math.round(wy), k * 2, k * 2, color).setOrigin(0).setDepth(6);
+        const fall = rig.homeY - wy, delay = (height - y) * 6 + Math.random() * 120;
+        const landed = tween(s, {
+          targets: r, y: rig.homeY - k * 2 + Math.random() * 3, x: r.x + (Math.random() - 0.5) * 14 * k,
+          duration: 260 + fall * 3, delay, ease: 'Quad.In'
+        });
+        landed.then(() => tween(s, { targets: r, alpha: 0, duration: 260, delay: Math.random() * 200 })).then(() => r.destroy());
+        jobs.push(landed); // the fight moves on once the pile has landed; it fades on its own
+      }
+    }
+  }
+  return Promise.all(jobs);
 }

@@ -31,6 +31,7 @@ async function hopTo(s, rig, x, ms, height = 3) {
     tween(s, { targets: rig.c, y: rig.homeY - height, duration: ms / 2, yoyo: true, ease: 'Quad.Out' })
   ]);
   rig.y = rig.homeY;
+  s.fx.dust(rig.x, rig.homeY, 4);
 }
 
 // Enemy telegraph: "!" over the head + shudder.

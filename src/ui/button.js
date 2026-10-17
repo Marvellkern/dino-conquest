@@ -1,4 +1,5 @@
 import { COLORS } from '../config.js';
+import { E32 } from '../data/palette.js';
 import { sfx } from '../systems/sfx.js';
 import { panel } from './pixel.js';
 import { text } from './font.js';
@@ -52,9 +53,9 @@ export class Button {
   draw() {
     if (!this.g.scene) return; // destroyed (e.g. a list redrawn by its own click)
     const live = this.enabled, d = this.down ? 1 : 0;
-    const fill = live ? (this.hover ? 0x3e4553 : 0x2e333d) : 0x1e2128;
+    const fill = live ? (this.hover ? E32.slate : E32.dusk) : E32.night;
     this.g.clear();
-    panel(this.g, this.x, this.y + d, this.w, this.h - d, { fill, hi: live ? 0x5a6274 : 0x2a2e36 });
+    panel(this.g, this.x, this.y + d, this.w, this.h - d, { fill, hi: live ? (this.hover ? E32.steel : E32.slate) : E32.dusk, rivets: false });
     for (let i = 0; i < this.cost; i++) {
       const px = this.x + this.w - 5 - i * 5, py = this.y + 3 + d;
       this.g.fillStyle(0x0c0e12).fillRect(px - 1, py - 1, 5, 5);

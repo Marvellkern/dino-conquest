@@ -79,6 +79,31 @@ class Rig {
     }
   }
 
+  // Soft drop shadow on the ground under the rig (40% ink, 3px tall). It
+  // follows the rig every frame, shrinks while it is in the air, and fades
+  // with it. Opt-in (battle and title scenes).
+  addShadow() {
+    const g = this.scene.add.graphics().setDepth(4);
+    let lastW = -1;
+    const sync = () => {
+      if (!this.c.active) { g.destroy(); this.scene.events.off('update', sync); return; }
+      const lift = Math.max(0, this.homeY - this.c.y);
+      const w = Math.max(6, Math.round(this.w * this.scale * 0.8 * (1 - Math.min(0.4, lift / 40))));
+      if (w !== lastW) {
+        lastW = w;
+        g.clear().fillStyle(0x181425, 0.4);
+        g.fillRect(-Math.round(w / 2) + 2, -1, w - 4, 1).fillRect(-Math.round(w / 2), 0, w, 1).fillRect(-Math.round(w / 2) + 2, 1, w - 4, 1);
+      }
+      g.setPosition(Math.round(this.c.x), this.homeY);
+      g.setVisible(this.c.visible).setAlpha(this.c.alpha);
+    };
+    this.scene.events.on('update', sync);
+    this.scene.events.once('shutdown', () => this.scene.events.off('update', sync));
+    sync();
+    this.shadow = g;
+    return this;
+  }
+
   // Idle breathing: 1px bob on a timer (stepped, never sub-pixel).
   startIdle() {
     this.stopIdle();

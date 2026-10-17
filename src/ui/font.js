@@ -98,10 +98,21 @@ export function text(scene, x, y, str, { scale = 1, color = '#f0ecdc', origin = 
     t.label = t;
     return t;
   }
-  const sh = make(scale, scale, 0x0c0e12);
+  // Titles (scale 2+): 2px dark drop shadow plus a 1px light highlight on top.
+  const title = scale >= 2;
+  const sh = make(title ? 2 : 1, title ? 2 : 1, 0x181425);
+  const layers = [sh];
+  if (title) layers.push(make(0, -1, lighten(tint)));
   const fg = make(0, 0, tint);
-  const c = scene.add.container(0, 0, [sh, fg]);
+  layers.push(fg);
+  const c = scene.add.container(0, 0, layers);
   c.label = fg;
-  c.setText = (v) => { sh.setText(up(v)); fg.setText(up(v)); return c; };
+  c.setText = (v) => { for (const l of layers) l.setText(up(v)); return c; };
   return c;
+}
+
+// Halfway to white (title highlight).
+function lighten(c) {
+  const r = c >> 16, g = (c >> 8) & 255, b = c & 255, m = (v) => Math.round(v + (255 - v) * 0.55);
+  return (m(r) << 16) | (m(g) << 8) | m(b);
 }

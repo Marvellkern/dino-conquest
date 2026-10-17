@@ -14,9 +14,14 @@ export class Reel {
     this.strip.setMask(mg.createGeometryMask());
   }
 
+  // color: rarity border; a lit border also gets a soft outer glow.
   setBorder(color) {
     const { x, y, w, h } = this;
     this.frame.clear();
+    if (color !== 0x0c0e12) {
+      this.frame.fillStyle(color, 0.25).fillRect(x - 4, y - 4, w + 8, h + 8);
+      this.frame.fillStyle(color, 0.45).fillRect(x - 3, y - 3, w + 6, h + 6);
+    }
     this.frame.fillStyle(color).fillRect(x - 2, y - 2, w + 4, h + 4);
     this.frame.fillStyle(0x0c0e12).fillRect(x - 1, y - 1, w + 2, h + 2);
     this.frame.fillStyle(0x121418).fillRect(x, y, w, h);
@@ -37,15 +42,22 @@ export class Reel {
     this.setBorder(0x0c0e12);
     this.fill([...items, items[0]]); // spare cell below the result for the overshoot
     this.strip.y = this.y;
-    const end = this.y - (items.length - 1) * this.h;
+    const end = this.endY = this.y - (items.length - 1) * this.h;
     let last = 0;
-    return new Promise((resolve) => this.scene.tweens.add({
+    return new Promise((resolve) => (this.tw = this.scene.tweens.add({
       targets: this.strip, y: end, duration: ms, ease: 'Back.Out', easeParams: [1.1],
       onUpdate: () => {
         const k = Math.floor((this.y - this.strip.y) / this.h + 0.5);
         if (k !== last) { last = k; sfx('tick'); }
       },
-      onComplete: () => { sfx('ding'); resolve(); }
-    }));
+      onComplete: () => { this.tw = null; sfx('ding'); resolve(); }
+    })));
+  }
+
+  // Tap to skip: land on the result right away.
+  skip() {
+    if (!this.tw?.isPlaying()) return;
+    this.tw.complete(); // completing does not seek, so snap to the result cell
+    this.strip.y = this.endY;
   }
 }

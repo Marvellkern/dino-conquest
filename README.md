@@ -108,6 +108,14 @@ Test a build quickly: `?p=compy&e=compy-s,compy-s,compy-s&r=packTotem,meteorChip
 - **Extinction levels 1–10** (unlocked by clearing the Swamp): pick one on Home (X). Each adds a modifier on top of the ones below it, through `run.mods` (enemy HP / ATK, faster wind-ups, fewer nests, 2-trait elites, one life fewer, weaker nests, tougher bosses). Each level banks +10% Amber. The Dino-dex shows the highest level each species has cleared (`X3`).
 - **Save v2**: `migrate()` in `systems/save.js` turns v1 Lineage stacks into 15 Amber each, and keeps the Dino-dex, stats and old fossils (as the family tree). Home shows a one-time notice.
 
+### Art (v2 Phase 4)
+
+- **Palette**: all sprite art is locked to Endesga 32 (`data/palette.js`). `PAL` keys are picked from it, and `renderSprite.js` snaps every pixel (evolution hue shifts, skins, fossils) to the nearest entry with `toEndesga()`. `E32` names the palette for code-drawn backgrounds and UI.
+- **Battle composition**: dinos stand at 3x on a ground line at y 132 (`GROUND_Y`), with the player at x 80. Small pack members and summoned minions stay at 2x so a 3-enemy pack fits. Every battle and title dino has a soft drop shadow (`rig.addShadow()`). Enemy markers stay below the HUD for tall sprites (`MARK_TOP`).
+- **Backdrops** (`ui/zoneArt.js`): Jungle and Swamp each have 4 layers (sky, far, mid + ground, near/foreground), pre-rendered to textures once. Layers sway 1–2px, lean against lunges (`backdrop.shift`), and ambient bits keep moving: light shafts, fireflies and falling leaves in the Jungle; mist bands, bubbles and dragonflies in the Swamp. The foreground ferns / cattails draw in front of the dinos.
+- **UI**: stone panels (`ui/pixel.js` `panel()`: top highlight, dark bottom edge, corner rivets, speckle), 8x8 move icons (`sprites/moveIcons.js`; the special shows the species head), titles (scale 2+) with a 2px shadow and a 1px highlight, rarity glow on the hatch card and rarity cards in the Dino-dex.
+- **Juice**: hitstop 60ms on hits and 120ms on crits; shake scaled by the share of HP a hit takes; dust puffs on hops and landings; leaf / water-drop debris on hits; damage numbers in the 2x font on a small arc (crits flash white, then go gold); deaths flash white 3 times and dissolve into falling pixels (`deathAnim` in `battle/gimmicks.js`); 150ms fades; hatch reels take 1.5s in total and a tap skips them.
+
 ### Hatching
 
 `scenes/Hatch.js` handles the egg, the species spin, the trait spin, rerolls, and START RUN. The reels are in `ui/reel.js`, the buttons in `ui/button.js`, and the egg in `sprites/egg.js`.
@@ -132,7 +140,8 @@ Each round: every enemy shows an **intent** (what it will do next, with exact da
 2. Draw the grid in `src/sprites/grids.js`. One string per row, every row the same width, facing **right**. `.` is transparent, `O` is the outline.
 3. Add it to the `GRIDS` registry (`pachy: PACHY`). Add a row to `CROUCH_DROP`: the mid-body row that gets dropped to make the crouch frame.
 4. Add stats and a rarity in `src/data/species.js`. The hatch spin picks it up automatically unless it is marked `enemyOnly: true`. Add its id to `DEX_ORDER` in `scenes/Home.js` so it shows in the Dino-dex.
-5. Optional: give it its own animations through the `SETS` overrides in `battle/anims.js`. Otherwise it uses the generic pounce and tail whip.
+5. Add a head for its move-button icon in `SPECIES_HEAD` (`sprites/moveIcons.js`).
+6. Optional: give it its own animations through the `SETS` overrides in `battle/anims.js`. Otherwise it uses the generic pounce and tail whip.
 
 Boot renders three textures for it: `pachy`, `pachy_flash` (hit flash) and `pachy_crouch`.
 

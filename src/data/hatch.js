@@ -8,4 +8,5 @@ export const RARITIES = {
 
 export const REROLL_COST = { species: 30, trait: 15 };
 
-export const SPIN_MS = { species: 1500, trait: 1000 };
+// Species + trait reels together stay within 1.5s (and a tap skips them).
+export const SPIN_MS = { species: 900, trait: 600 };
