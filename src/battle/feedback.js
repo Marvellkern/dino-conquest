@@ -18,7 +18,7 @@ export function hitFeedback(scene, att, dfd, dmg, qte, defend, n = 0, { gold = f
   rig.flash(50);
   knock(scene, rig, dir, qte === 'crit' ? 5 : 2);
   // Shake scales with the share of max HP the hit took (setting toggle still applies).
-  const heavy = Math.min(4, Math.round((dmg / Math.max(1, dfd.maxHp)) * 10));
+  const heavy = Math.min(4, Math.round((dmg / Math.max(1, dfd.maxHp || 60)) * 10) || 0); // title props have no maxHp
   if (defend !== 'block' && qte !== 'miss') fx.debris(p.x, p.y, scene.zone, qte === 'crit' ? 7 : 4);
   if (qte === 'crit') {
     fx.hitstop(120);

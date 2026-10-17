@@ -24,6 +24,7 @@ export class Fx {
   // Integer-pixel screen shake. Respects the 'shake' setting in the registry.
   shake(px = 2, ms = 120) {
     if (this.s.registry.get('shake') === false) return;
+    if (!Number.isFinite(px) || px <= 0) return; // a NaN offset would scroll the camera into the void
     if (this.sh && this.sh.px > px) return;
     this.sh = { px, ms, t: 0 };
   }
