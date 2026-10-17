@@ -49,7 +49,7 @@ src/
 - `src/data/lineage.js`: Lineage bonuses (per-stack value, caps), base lives, retry HP.
 - `src/systems/save.js`: versioned localStorage save (`SAVE_VERSION` plus `migrate()`). `src/systems/meta.js` holds the loaded save; call `persist()` after changing it. To start over, run `localStorage.removeItem('dino-conquest:save')` in the browser console.
 
-- `src/data/zones.js`: zone layout, enemy pools and levels, the zone order (`ZONE_ORDER`), the heal between zones (`ZONE_HEAL`), enemy HP/ATK scaling per node type, rewards, node odds. A boss can carry its own `base` stat block (Alpha Rex does), so tuning the hatchable T-Rex doesn't move the boss.
+- `src/data/zones.js`: zone layout, enemy pools and levels, the zone order (`ZONE_ORDER`), the heal between zones (`ZONE_HEAL`), enemy HP/ATK scaling per node type, rewards, node odds. A boss can carry its own `base` stat block, and each zone has an `enemyBase` for its wildlife, so tuning a hatchable species never changes the zones' enemies.
 - `src/data/progression.js`: XP curve, per-level growth, evolution levels and boost.
 - `src/data/events.js` / `src/data/upgrades.js`: Meteor Shard events and Fossil Dig stat upgrades.
 
@@ -59,20 +59,20 @@ src/
 |---|---|---|---|
 | Decent | Compy (Common) | 59% | 42% |
 | Decent | Raptor (Rare) | 92% | 91% |
-| Decent | Trike (Epic) | 100% | 100% |
-| Decent | T-Rex (Legendary) | 98% | 98% |
+| Decent | Trike (Epic) | 97% | 97% |
+| Decent | T-Rex (Legendary) | 99% | 99% |
 | Decent | Pachy (Common) | 62% | 49% |
 | Decent | Sarco (Rare) | 90% | 90% |
 | Decent | Spino (Epic) | 97% | 97% |
 | Average | Compy (Common) | 18% | 1% |
 | Average | Raptor (Rare) | 48% | 29% |
-| Average | Trike (Epic) | 83% | 81% |
-| Average | T-Rex (Legendary) | 69% | 54% |
+| Average | Trike (Epic) | 64% | 48% |
+| Average | T-Rex (Legendary) | 76% | 67% |
 | Average | Pachy (Common) | 14% | 2% |
 | Average | Sarco (Rare) | 47% | 29% |
 | Average | Spino (Epic) | 63% | 50% |
 
-Most Compy deaths in the Swamp happen at the Bog Spino. The hatchable T-Rex was nerfed (72 HP / 13 ATK / 4 DEF / 3 SPD, Crushing Bite 1.5× power with 30% DEF pierce) so it is no longer a guaranteed clear but stays ahead of Raptor. Three lives with 50% HP retries absorb most risk, so pushing decent-play Rex to 90–95% would need Raptor-level stats (about 62 HP / 12 ATK), which drops average-play Rex to Raptor's level. The Alpha Rex boss keeps its own stats (`base` in `data/zones.js`).
+Most Compy deaths in the Swamp happen at the Bog Spino. Under average play, both-zone clears follow rarity: Common ~1–2%, Rare ~29%, Epic ~48–50%, Legendary ~67%. To get there the hatchable T-Rex was cut from 110 HP / 16 ATK to 78 HP / 13 ATK / 4 DEF / 3 SPD (Crushing Bite 1.5× power, 30% DEF pierce), and Trike from 90 HP / 9 DEF to 76 HP / 7 DEF. With decent play the Epics and the Legendary clear almost every time; three lives with 50% HP retries absorb most of the risk. The Alpha Rex boss keeps its own stats (`base` in `data/zones.js`).
 
 ### The run
 

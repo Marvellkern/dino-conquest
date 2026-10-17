@@ -7,7 +7,13 @@ export const ZONES = {
     elites: ['trike'],
     // base: the boss's own stat block, so tuning the hatchable T-Rex doesn't move the boss.
     boss: { species: 'rex', skin: 'alpharex', name: 'Alpha Rex', level: 1, special: 'primalChomp', base: { hp: 110, atk: 16, def: 6, spd: 4 } },
-    levelAt: (row) => 1 + Math.floor(row / 2) // enemy level by column
+    levelAt: (row) => 1 + Math.floor(row / 2), // enemy level by column
+    // Wildlife stat blocks, so tuning the hatchable versions doesn't move the Jungle.
+    enemyBase: {
+      compy: { hp: 52, atk: 10, def: 4, spd: 9 },
+      raptor: { hp: 60, atk: 13, def: 4, spd: 8 },
+      trike: { hp: 90, atk: 10, def: 9, spd: 3 }
+    }
   },
   swamp: {
     name: 'SWAMP',
@@ -19,7 +25,8 @@ export const ZONES = {
     // Wildlife stat blocks for this zone, so tuning the hatchable versions doesn't move the Swamp.
     enemyBase: {
       pachy: { hp: 64, atk: 11, def: 6, spd: 6 },
-      sarco: { hp: 70, atk: 12, def: 7, spd: 5 }
+      sarco: { hp: 70, atk: 12, def: 7, spd: 5 },
+      raptor: { hp: 60, atk: 13, def: 4, spd: 8 }
     }
   }
 };
