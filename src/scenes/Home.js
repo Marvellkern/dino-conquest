@@ -113,9 +113,9 @@ export class Home extends Phaser.Scene {
     const open = (mode) => () => this.open(mode);
     const ext = extUnlocked();
     const btns = [
-      ['KeyU', 'U', 'UNLOCKS', 'SPEND AMBER', open('unlocks')],
+      ['KeyU', 'U', 'UNLOCKS', 'AMBER SHOP', open('unlocks')],
       ['KeyG', 'G', 'GOALS', `${goalsDone()}/${GOAL_ORDER.length}`, open('goals')],
-      ['KeyF', 'F', 'FAMILY', `${meta.fossils.length} DINOS`, open('family')],
+      ['KeyF', 'F', 'FAMILY', `${meta.fossils.length} DINO${meta.fossils.length === 1 ? '' : 'S'}`, open('family')],
       ['KeyX', 'X', 'EXTINCT', ext ? `LEVEL ${meta.ext.sel}` : 'LOCKED', () => this.extinction()]
     ];
     this.nestKeys = {};

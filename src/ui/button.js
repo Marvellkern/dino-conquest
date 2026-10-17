@@ -16,8 +16,10 @@ export class Button {
     this.g = scene.add.graphics().setDepth(depth);
     const cx = x + Math.floor(w / 2);
     this.keyText = text(scene, x + 3, y + 3, key, { color: COLORS.textDim, shadow: false }).setDepth(depth + 1);
-    const ly = h >= 32 ? 12 : 4, sy = h >= 32 ? 23 : 15; // text rows for tall / compact buttons
-    this.label = text(scene, cx, y + ly, label, { origin: [0.5, 0] }).setDepth(depth + 1);
+    // Text rows for tall / compact buttons, leaving clear space above the dark bottom edge.
+    const ly = h >= 32 ? 11 : 3, sy = h >= 32 ? 21 : 13;
+    const lyy = sub ? ly : Math.floor((h - 8) / 2); // a label with no sub-line sits in the middle
+    this.label = text(scene, cx, y + lyy, label, { origin: [0.5, 0] }).setDepth(depth + 1);
     this.sub = text(scene, cx, y + sy, sub, { origin: [0.5, 0], color: COLORS.textDim, shadow: false }).setDepth(depth + 1);
     // Depth matters for input: Phaser only hits the top-most interactive object.
     this.zone = scene.add.zone(x, y, w, h).setOrigin(0).setDepth(depth + 1).setInteractive({ useHandCursor: true });

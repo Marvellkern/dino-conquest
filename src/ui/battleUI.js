@@ -176,12 +176,12 @@ export class MoveBar {
         cost: moveCost(st, id), onClick: () => this.pick(id), onDeny: () => this.on && onDeny(blocked(st, id))
       });
       if (mu) scene.add.rectangle(b.x + 9, b.y + 4, 4, 3, mu.color).setOrigin(0).setDepth(13); // badge beside the key number
-      b.icon = scene.add.image(b.x + Math.floor(bw / 2) - 4, b.y + 3, iconOf(id, p.species)).setOrigin(0).setDepth(13);
+      b.icon = scene.add.image(b.x + Math.floor(bw / 2) - 4, b.y + 2, iconOf(id, p.species)).setOrigin(0).setDepth(13);
       return b;
     });
     const ex = 3 + 5 * (bw + gap);
     this.end = new Button(scene, ex, top + 4, W - 3 - ex, 34, { key: 'E', label: 'END', sub: 'TURN', onClick: () => this.pick('end') });
-    this.end.icon = scene.add.image(ex + Math.floor((W - 3 - ex) / 2) - 4, top + 7, 'mi_end').setOrigin(0).setDepth(13);
+    this.end.icon = scene.add.image(ex + Math.floor((W - 3 - ex) / 2) - 4, top + 6, 'mi_end').setOrigin(0).setDepth(13);
 
     this.onKey = (e) => {
       if (e.repeat) return;
