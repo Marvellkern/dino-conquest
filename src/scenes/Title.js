@@ -4,6 +4,7 @@ import { text } from '../ui/font.js';
 import { createRig } from '../sprites/rig.js';
 import { Fx } from '../systems/fx.js';
 import { onPress } from '../systems/qte.js';
+import { isPhone, enterFullscreen } from '../systems/screen.js';
 import { sfx } from '../systems/sfx.js';
 import { animSet, wait } from '../battle/anims.js';
 import { hitFeedback } from '../battle/feedback.js';
@@ -32,6 +33,7 @@ export class Title extends Phaser.Scene {
 
     const off = onPress(this, () => {
       off();
+      if (isPhone()) enterFullscreen(); // phones: fullscreen + landscape on the first tap
       sfx('fight');
       this.cameras.main.fadeOut(150);
       this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Home'));

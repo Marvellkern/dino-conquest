@@ -10,6 +10,7 @@ import { Evolution } from './scenes/Evolution.js';
 import { RunEnd } from './scenes/RunEnd.js';
 import { Fossil } from './scenes/Fossil.js';
 import { Nest } from './scenes/Nest.js';
+import { fit } from './systems/screen.js';
 
 window.Phaser = Phaser;
 
@@ -27,17 +28,12 @@ const game = new Phaser.Game({
   scene: [Boot, Title, Home, Hatch, MapScene, Battle, Evolution, RunEnd, Fossil, Nest]
 });
 
-// Integer scaling in *device* pixels, so every game pixel maps to an exact
-// NxN block of screen pixels (crisp on high-DPI screens too). Letterboxed.
-function fit() {
-  const dpr = window.devicePixelRatio || 1;
-  const z = Math.max(1, Math.floor(Math.min((innerWidth * dpr) / W, (innerHeight * dpr) / H)));
-  game.scale.setZoom(z / dpr);
-  game.registry.set('zoom', z);
-  game.events.emit('zoom', z);
-}
+// Scaling and fullscreen live in systems/screen.js.
+const refit = () => fit(game);
 
 if (import.meta.env.DEV) window.__game = game; // debugging handle, dev builds only
 
-game.events.once('ready', fit);
-window.addEventListener('resize', fit);
+game.events.once('ready', refit);
+window.addEventListener('resize', refit);
+window.visualViewport?.addEventListener('resize', refit); // phone browser bars sliding in and out
+document.addEventListener('fullscreenchange', () => setTimeout(refit, 50));

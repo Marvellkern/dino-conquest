@@ -8,6 +8,7 @@ import { panel } from '../ui/pixel.js';
 import { Button } from '../ui/button.js';
 import { meta, persist, applySettings, resetMeta, runSetup, extUnlocked, maxExtChoice, owned } from '../systems/meta.js';
 import { goalsDone } from '../systems/goals.js';
+import { canFullscreen, isFullscreen, enterFullscreen, exitFullscreen } from '../systems/screen.js';
 import { choose } from '../ui/popup.js';
 import { sfx } from '../systems/sfx.js';
 
@@ -174,18 +175,19 @@ export class Home extends Phaser.Scene {
     this.inMenu = true;
     const s = meta.settings;
     for (;;) {
-      const i = await choose(this, {
-        title: 'SETTINGS',
-        options: [
-          { label: `SOUND: ${s.sfx ? 'ON' : 'OFF'}` },
-          { label: `SCREEN SHAKE: ${s.shake ? 'ON' : 'OFF'}` },
-          { label: 'RESET SAVE', sub: 'ERASES ALL PROGRESS' },
-          { label: 'BACK' }
-        ]
-      });
-      if (i === 0) s.sfx = !s.sfx;
-      else if (i === 1) s.shake = !s.shake;
-      else if (i === 2) {
+      // Each entry: [id, option]. Fullscreen only where the browser supports it.
+      const items = [
+        ['sfx', { label: `SOUND: ${s.sfx ? 'ON' : 'OFF'}` }],
+        ['shake', { label: `SCREEN SHAKE: ${s.shake ? 'ON' : 'OFF'}` }],
+        ...(canFullscreen() ? [['full', { label: `FULLSCREEN: ${isFullscreen() ? 'ON' : 'OFF'}` }]] : []),
+        ['reset', { label: 'RESET SAVE', sub: 'ERASES ALL PROGRESS' }],
+        ['back', { label: 'BACK' }]
+      ];
+      const pick = items[await choose(this, { title: 'SETTINGS', options: items.map(([, o]) => o), bh: 26 })][0];
+      if (pick === 'sfx') s.sfx = !s.sfx;
+      else if (pick === 'shake') s.shake = !s.shake;
+      else if (pick === 'full') { if (isFullscreen()) exitFullscreen(); else enterFullscreen(); await new Promise((r) => setTimeout(r, 250)); }
+      else if (pick === 'reset') {
         const yes = await choose(this, {
           title: 'ERASE EVERYTHING?',
           lines: ['AMBER, UNLOCKS, GOALS, FAMILY', 'AND DINO-DEX WILL BE LOST.'],
@@ -200,7 +202,7 @@ export class Home extends Phaser.Scene {
       } else break;
       persist();
       applySettings(this.registry);
-      if (i === 1 && s.shake) this.cameras.main.shake(120, 0.008);
+      if (pick === 'shake' && s.shake) this.cameras.main.shake(120, 0.008);
       sfx('blip');
     }
     this.inMenu = false;

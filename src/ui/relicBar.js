@@ -13,7 +13,8 @@ export class RelicBar {
     this.items = ids.map((id, i) => {
       const px = this.x + (i % this.cols) * 9, py = this.y + Math.floor(i / this.cols) * 9;
       const img = this.scene.add.image(px, py, PERKS[id] ? 'relic_perk' : `relic_${id}`).setOrigin(0).setDepth(12);
-      const zone = this.scene.add.zone(px - 1, py - 1, 10, 10).setOrigin(0).setDepth(13).setInteractive({ useHandCursor: true });
+      // Tap area a little taller than the icon, so it's easier to hit with a finger.
+      const zone = this.scene.add.zone(px - 1, py - 2, 10, 13).setOrigin(0).setDepth(13).setInteractive({ useHandCursor: true });
       const info = relicInfo(id);
       const show = () => this.onInfo(`${info.name.toUpperCase()}: ${info.desc}`);
       zone.on('pointerover', show);

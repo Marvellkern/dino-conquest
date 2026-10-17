@@ -1,0 +1,9 @@
+{
+  "name": "Dino-Conquest",
+  "short_name": "Dino-Conquest",
+  "start_url": "/",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#121418",
+  "theme_color": "#121418"
+}
