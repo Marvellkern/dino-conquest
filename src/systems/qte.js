@@ -21,7 +21,8 @@ function ticker(scene, fn) {
   return () => scene.events.off('update', upd);
 }
 
-const HINT_Y = 58;
+// Text rows under the HUD: status tags y38-46, battle message y48-56, QTE hint y58-66.
+const HINT_Y = 62;
 
 // Dev builds only: lets automated play-tests time their presses.
 const devHook = (info) => { if (import.meta.env.DEV) window.__qteHook?.(info); };
@@ -30,7 +31,7 @@ const devHook = (info) => { if (import.meta.env.DEV) window.__qteHook?.(info); }
 export function attackBar(scene, { rng, sure = false, muddy = false, sweepMs = QTE.sweepMs } = {}) {
   const sweetW = Math.round(QTE.sweetW * (muddy ? MUDDY.sweet : 1)), goodW = Math.round(QTE.goodW * (muddy ? MUDDY.good : 1));
   return new Promise((resolve) => {
-    const BW = 100, BH = 6, x0 = Math.round(W / 2 - BW / 2), y0 = 70;
+    const BW = 100, BH = 6, x0 = Math.round(W / 2 - BW / 2), y0 = 72;
     const c = Math.round(rng.range(0.55, 0.85) * BW);
     devHook({ type: 'bar', sweepMs, center: c, width: BW, muddy });
     const g = scene.add.graphics().setDepth(30);
