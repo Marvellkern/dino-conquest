@@ -1,7 +1,7 @@
 import { W, COLORS } from '../config.js';
 import { NODE_INFO } from '../data/zones.js';
 import { RelicBar } from '../ui/relicBar.js';
-import { visitNest, visitFossil, visitMeteor, visitShop } from './mapNodes.js';
+import { visitNest, visitFossil, visitMeteor, visitShop, nestHeal } from './mapNodes.js';
 import { TRAITS } from '../data/traits.js';
 import { xpToNext } from '../data/progression.js';
 import { text } from '../ui/font.js';
@@ -9,7 +9,7 @@ import { drawMapBackground } from '../ui/backdrop.js';
 import { panel, pixelLine, pixelCircle } from '../ui/pixel.js';
 import { choose } from '../ui/popup.js';
 import {
-  session, reachable, zoneOf, dinoStats, dinoName, skinOf, groupName,
+  session, reachable, zoneOf, dinoStats, dinoName, dinoSkin, groupName,
 } from '../run/run.js';
 import { Fx } from '../systems/fx.js';
 import { sfx } from '../systems/sfx.js';
@@ -36,7 +36,7 @@ export class MapScene extends Phaser.Scene {
     this.time.addEvent({ delay: 380, loop: true, callback: () => this.rings.setVisible(!this.rings.visible) });
     this.icons = {};
     for (const n of Object.values(this.run.map.nodes)) this.addNode(n);
-    this.marker = this.add.image(0, 0, skinOf(this.d.species, this.d.evo)).setOrigin(0.5, 1).setDepth(6);
+    this.marker = this.add.image(0, 0, dinoSkin(this.d)).setOrigin(0.5, 1).setDepth(6);
     const here = this.pos(this.run.at);
     this.marker.setPosition(here.x, here.y - 6);
 
@@ -103,6 +103,7 @@ export class MapScene extends Phaser.Scene {
 
   describe(n) {
     if (!n) return '';
+    if (n.type === 'nest') return `NEST: HEAL ${Math.round(nestHeal(this.run) * 100)}% HP`;
     if (!n.enemies) return NODE_INFO[n.type];
     return `${NODE_INFO[n.type]}: ${groupName(n)}${n.type === 'boss' ? '' : ` LV${n.enemies[0].level}`}`;
   }
@@ -115,7 +116,7 @@ export class MapScene extends Phaser.Scene {
       this.add.image(112 + i * 9, 7, 'heart').setOrigin(0).setDepth(11));
     this.hHp = text(this, 112, 16, '', { color: COLORS.textDim, shadow: false }).setDepth(11);
     this.hXp = text(this, 112, 25, '', { color: COLORS.textDim, shadow: false }).setDepth(11);
-    text(this, W - 8, 8, zoneOf(this.run).name, { color: COLORS.accent, origin: [1, 0] }).setDepth(11);
+    text(this, W - 8, 8, zoneOf(this.run).name + (this.run.ext ? ` EXT${this.run.ext}` : ''), { color: COLORS.accent, origin: [1, 0] }).setDepth(11);
     this.hAmber = text(this, W - 8, 17, '', { color: '#e8a030', origin: [1, 0], shadow: false }).setDepth(11);
     this.hTraits = text(this, W - 8, 26, '', { color: COLORS.textDim, origin: [1, 0], shadow: false }).setDepth(11);
     // Owned fossils + perks (2 rows of 7); tap one to read it in the tooltip bar.

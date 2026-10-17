@@ -15,8 +15,8 @@ npm run build    # static site in dist/
 
 ## Playing
 
-Title → Home (Dino-dex, Lineage, Settings) → Hatch an egg → Jungle map → fights → Alpha Rex → Swamp map → fights → Bog Spino.
-Keys: **1–5** pick moves (and popup options), **E** ends your turn, **← →** (or tapping an enemy) picks the target, **Space / Enter / click / tap** for the timing QTEs, **↑↓ + Enter** on the map, **S** opens Settings on Home, **D** (or tapping the Dino-dex) flips its pages. On phones, tap everything. Landscape is best, and portrait shows a hint to rotate.
+Title → Home (Dino-dex, Nest unlocks, goals, family tree, Extinction, Settings) → Hatch an egg → Jungle map → fights → Alpha Rex → Swamp map → fights → Bog Spino.
+Keys: **1–5** pick moves (and popup options), **E** ends your turn, **← →** (or tapping an enemy) picks the target, **Space / Enter / click / tap** for the timing QTEs, **↑↓ + Enter** on the map, **S** opens Settings on Home (**U** unlocks, **G** goals, **F** family tree, **X** Extinction; **Q / E** flip their pages, **Esc** goes back), **D** (or tapping the Dino-dex) flips its pages. On phones, tap everything. Landscape is best, and portrait shows a hint to rotate.
 
 Scaling is integer-only by design (crisp pixels), so some screens show black borders around the game.
 
@@ -47,7 +47,10 @@ src/
 - `src/systems/combat.js`: the damage formula (`computeDamage`).
 - `src/data/traits.js`: the 6 traits and their numbers (`TRAIT_TUNING`).
 - `src/data/hatch.js`: rarity odds, reroll prices, spin lengths.
-- `src/data/lineage.js`: Lineage bonuses (per-stack value, caps), base lives, retry HP.
+- `src/data/unlocks.js`: Nest unlocks and prices, the starting fossil pool, fossil packs, goal-locked fossils and mutations, Golden Egg price.
+- `src/data/goals.js`: the 20 goals (a `test` per goal and its reward).
+- `src/data/extinction.js`: the 10 Extinction modifiers and the Amber bonus per level.
+- `src/data/progression.js` also holds base lives and retry HP.
 - `src/systems/save.js`: versioned localStorage save (`SAVE_VERSION` plus `migrate()`). `src/systems/meta.js` holds the loaded save; call `persist()` after changing it. To start over, run `localStorage.removeItem('dino-conquest:save')` in the browser console.
 
 - `src/data/zones.js`: zone layout, enemy groups (`fights` / `elites`, 1–3 enemies each) and levels, a per-zone difficulty `scale`, the zone order (`ZONE_ORDER`), the heal between zones (`ZONE_HEAL`), enemy HP/ATK scaling per node type, rewards, node odds. A boss can carry its own `base` stat block, and each zone has an `enemyBase` for its wildlife, so tuning a hatchable species never changes the zones' enemies.
@@ -78,7 +81,7 @@ Fossils and mutations add a lot of power (a decent Compy clears the Jungle 60% o
 
 ### The run
 
-`run/run.js` holds the run state (dino stats, XP, evolution, upgrades) and `run/mapgen.js` builds the branching map. The scenes are `Map` (travel; Nest / Fossil Dig / Meteor / Shop visits live in `scenes/mapNodes.js`) → `Battle` → `Evolution` (at LV5 / LV10) → `RunEnd` (victory: banks Amber, gives 2 Lineage picks via `run/lineagePick.js`, and crowns the species in the Dino-dex). Each run has 3 lives. Losing a fight costs one and restarts that fight at 50% HP. At 0 lives the dino goes to the `Fossil` screen, which banks Amber, records the fossil, and offers a Lineage bonus pick. `Home` is the hub: Dino-dex, Lineage, and stats. The current run itself is not saved; refreshing mid-run returns you to Home.
+`run/run.js` holds the run state (dino stats, XP, evolution, upgrades) and `run/mapgen.js` builds the branching map. The scenes are `Map` (travel; Nest / Fossil Dig / Meteor / Shop visits live in `scenes/mapNodes.js`) → `Battle` → `Evolution` (at LV5 / LV10) → `RunEnd` (victory: banks Amber and crowns the species in the Dino-dex). Each run has 3 lives. Losing a fight costs one and restarts that fight at 50% HP. At 0 lives the dino goes to the `Fossil` screen, which banks Amber. Both end screens run the final goal check and the Bloodline pick (`ui/bloodline.js`), and add the dino to the family tree. `Home` is the hub: Dino-dex, the Nest menus, and stats. The current run itself is not saved; refreshing mid-run returns you to Home.
 
 ### Zones
 
@@ -94,7 +97,16 @@ There are 7 hatchable species: Compy and Pachy (Common), Raptor and Sarco (Rare)
 - **Evolutions** get new silhouettes, built from the base grid in `sprites/forms.js` (grow a crest / frill / sail / dome, horns, spikes, scars, stretch the body, new palette), plus a perk per form (`data/forms.js`). The Evolution scene flickers white silhouettes of both forms, flashes, and slams the new name in; tap to skip.
 - All effects live in `systems/build.js` as hooks the combat rules call (battle start, turn start, cost, strike, kill, brace, block, roar, revive).
 
-Test a build quickly: `?p=compy&e=compy*,compy*,compy*&r=packTotem,meteorChip&m=bite:chain,tail:sweep` (`r` = fossil ids, `m` = move:mutation pairs).
+Test a build quickly: `?p=compy&e=compy-s,compy-s,compy-s&r=packTotem,meteorChip&m=bite:chain,tail:sweep` (`r` = fossil ids, `m` = move:mutation pairs).
+
+### Meta progression (v2 Phase 3)
+
+- **Nest unlocks** (`scenes/Nest.js`, mode `unlocks`): spend banked Amber on fossil packs (4 fossils each), Twin Clutch (pick 1 of 2 eggs, rarity shown), Trader Trails (twice the shops), and 3 small stat bonuses (Sturdy Blood, Egg Whisper, Nine Lives). The 4 new species eggs and the Volcano / Meteor Crater zones are listed as COMING SOON until Phase 5.
+- **Fossil pool**: a new save drops only 8 fossils. Packs add 8 more, and 4 come from goals. Chain Bite, Stunning Whip and Battle Roar also start locked behind goals.
+- **Bloodline**: when a dino dies or clears a run, you pick 1 of its fossils or mutations (up to 5 offered). The next hatchling starts with it. The **family tree** (`Nest`, mode `family`) lists every past dino with its form, level, fate, and what it inherited and passed on.
+- **Goals**: 20 goals (`data/goals.js`), each pushing a different playstyle (dodging, bracing, crit streaks, poison, Roar, Tail Whip, shops, no nests, Commons...). Rewards are Amber, fossils, mutations, the Golden Egg (Rare or better, 40 Amber), a 20% shop discount, the Alpha Rex skin, and Extinction levels. Combat counters live in `run.stats` (`tally()` in `systems/battleState.js`). `systems/goals.js` checks them after every won fight, zone clear, run end and hatch.
+- **Extinction levels 1–10** (unlocked by clearing the Swamp): pick one on Home (X). Each adds a modifier on top of the ones below it, through `run.mods` (enemy HP / ATK, faster wind-ups, fewer nests, 2-trait elites, one life fewer, weaker nests, tougher bosses). Each level banks +10% Amber. The Dino-dex shows the highest level each species has cleared (`X3`).
+- **Save v2**: `migrate()` in `systems/save.js` turns v1 Lineage stacks into 15 Amber each, and keeps the Dino-dex, stats and old fossils (as the family tree). Home shows a one-time notice.
 
 ### Hatching
 
@@ -112,7 +124,7 @@ Each round: every enemy shows an **intent** (what it will do next, with exact da
 - `sprites/rexParts.js` + `sprites/rig.js`: the T-rex part rig and the whole-sprite rig.
 - `systems/qte.js`: attack bar and defend ring. `systems/fx.js`: shake, hitstop, kill cam, sparks, numbers. `systems/sfx.js`: generated sounds.
 
-**Testing matchups:** `http://localhost:5173/?p=compy&e=compy*,compy*,compy*&t=venomBite` skips the hatchery. `p` is the player species, `e` a comma list of enemies (`*` = small pack member, `boss` = the zone boss), `t` an optional trait id, `z` the zone (`z=swamp`).
+**Testing matchups:** `http://localhost:5173/?p=compy&e=compy-s,compy-s,compy-s&t=venomBite` skips the hatchery. `p` is the player species, `e` a comma list of enemies (`-s` = small pack member, `boss` = the zone boss), `t` an optional trait id, `z` the zone (`z=swamp`).
 
 ## Adding a new species sprite
 

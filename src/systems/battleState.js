@@ -17,13 +17,25 @@ import {
 export function createBattle({ player, enemies, rng, spawn = null, build = null }) {
   const st = {
     player, enemies: [], rng, spawn, build: build ?? BLD.emptyBuild(),
-    energy: 0, energyNext: 0, streak: 0, empowered: false, pendingEmpower: false, activeEmpower: false, firstTurn: true
+    energy: 0, energyNext: 0, streak: 0, empowered: false, pendingEmpower: false, activeEmpower: false, firstTurn: true,
+    fight: { braces: 0, dmg: 0, moveKills: 0 } // this fight's tallies (goals)
   };
   for (const e of enemies) addEnemy(st, e);
   return st;
 }
 
 export function startBattle(st) { BLD.onBattleStart(st); }
+
+// Run-long counters for goals (run.stats; none in test fights).
+function tally(st, k, n = 1) {
+  const s = st.build.run?.stats;
+  if (s) s[k] = (s[k] ?? 0) + n;
+}
+function tallyMax(st, k, n) {
+  const s = st.build.run?.stats;
+  if (s) s[k] = Math.max(s[k] ?? 0, n);
+}
+const noteKill = (st, killed) => { if (killed) st.fight.moveKills++; };
 export const maxEnergy = (st) => BLD.maxEnergy(st);
 
 export function addEnemy(st, e, brainId = e.brainId ?? e.species) {
@@ -121,11 +133,14 @@ export const affordable = (st) => st.player.moves.some((id) => !blocked(st, id))
 // Spend energy and start a move; empower from a finished crit streak applies now.
 export function beginMove(st, id) {
   st.energy -= moveCost(st, id);
+  st.fight.moveKills = 0;
+  if (id === 'roar') tally(st, 'roars');
   st.activeEmpower = st.empowered && !MOVES[id].status && !MOVES[id].brace;
   if (st.activeEmpower) st.empowered = false;
 }
 
 export function endMove(st) {
+  tallyMax(st, 'multiKill', st.fight.moveKills);
   if (st.pendingEmpower) { st.empowered = true; st.pendingEmpower = false; }
   st.activeEmpower = false;
 }
@@ -137,6 +152,7 @@ export function noteQte(st, qte) {
   if (st.streak < BLD.streakNeed(st)) return false;
   st.streak = 0;
   st.pendingEmpower = true;
+  tally(st, 'streaks');
   return true;
 }
 
@@ -161,6 +177,8 @@ export function playerStrike(st, id, target, qte) {
   const trait = afterHit(p, target, dmg);
   const fx = BLD.onPlayerHit(st, id, target, qte, dmg);
   const killed = target.hp <= 0;
+  noteKill(st, killed);
+  if (id === 'tail' && dmg > 0) tally(st, 'tailHits');
   return { dmg, killed, trait, fx, kill: killed ? BLD.onKill(st) : null, phase: checkPhase(st, target) };
 }
 
@@ -178,6 +196,7 @@ export function afterAttack(st, target) {
   const dmg = BLD.ghostBite(st, target);
   if (!dmg) return null;
   const killed = target.hp <= 0;
+  noteKill(st, killed);
   return { dmg, killed, kill: killed ? BLD.onKill(st) : null, phase: checkPhase(st, target) };
 }
 
@@ -191,13 +210,14 @@ export function playerRoar(st) {
     return { e, stunned, dmg: 0, cancelled: false };
   });
   for (const r of BLD.onRoar(st)) Object.assign(res.find((x) => x.e === r.e), { dmg: r.dmg, cancelled: r.cancelled });
-  for (const r of res) { r.killed = r.e.hp <= 0; r.phase = checkPhase(st, r.e); }
+  for (const r of res) { r.killed = r.e.hp <= 0; noteKill(st, r.killed); r.phase = checkPhase(st, r.e); }
   return res;
 }
 
 // Returns HP healed (Fern Cushion).
 export function playerBrace(st) {
   st.player.status.braced = 1;
+  st.fight.braces++;
   return BLD.onBrace(st);
 }
 
@@ -216,6 +236,7 @@ export function endPlayerTurn(st) { endTurn(st.player); }
 export function beginEnemyAction(st, e) {
   e.status.guard = 0;
   const tick = startTurn(e);
+  if (tick.poison && e.hp <= 0) tally(st, 'poisonKills');
   if (tick.stunned) e.intent = { kind: 'stunned' };
   return tick;
 }
@@ -240,6 +261,9 @@ export function enemyStrike(st, e, defend, moveId = e.intent.move) {
   const dmg = computeDamage(e, p, m, null, { qte: 'good', defend: d, blockMult: BLD.blockMult(st, m) });
   p.hp = Math.max(0, p.hp - dmg);
   afterHit(e, p, dmg);
+  st.fight.dmg += dmg;
+  if (d === 'dodge') tally(st, 'dodges');
+  if (d === 'block' && p.status.braced) tally(st, 'blocks');
   const drained = !!m.drain && d === 'hit';
   if (drained) p.status.drain += m.drain;
   const reflect = BLD.onEnemyHit(st, e, d, dmg);

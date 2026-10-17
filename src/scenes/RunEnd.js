@@ -2,16 +2,16 @@ import { W, COLORS } from '../config.js';
 import { text } from '../ui/font.js';
 import { panel } from '../ui/pixel.js';
 import { createRig } from '../sprites/rig.js';
-import { session, dinoName, skinOf, zoneOf } from '../run/run.js';
-import { bankRun } from '../systems/meta.js';
-import { pickLineage } from '../run/lineagePick.js';
+import { session, dinoName, dinoSkin, zoneOf } from '../run/run.js';
+import { bankRun, addAncestor } from '../systems/meta.js';
+import { pickHeir, endGoals } from '../ui/bloodline.js';
 import { sfx } from '../systems/sfx.js';
 import { onPress } from '../systems/qte.js';
 import { wait } from '../battle/anims.js';
 
-// Victory screen after the final zone's boss: banks the Amber, sums up the run
-// and grants CLEAR_PICKS Lineage bonuses. (Deaths go to the Fossil screen.)
-const CLEAR_PICKS = 2;
+// Victory screen after the final zone's boss: banks the Amber, sums up the run,
+// checks goals, and the champion passes a fossil or mutation to its heir.
+// (Deaths go to the Fossil screen.)
 export class RunEnd extends Phaser.Scene {
   constructor() { super('RunEnd'); }
 
@@ -28,7 +28,7 @@ export class RunEnd extends Phaser.Scene {
     panel(this.add.graphics(), 40, 12, 240, 150);
     text(this, W / 2, 20, won ? 'RUN CLEARED!' : 'YOUR DINO FELL', { scale: 2, color: won ? COLORS.accent : '#e06060', origin: [0.5, 0] });
 
-    const rig = createRig(this, d.species, 92, 112, 1, skinOf(d.species, d.evo));
+    const rig = createRig(this, d.species, 92, 112, 1, dinoSkin(d));
     if (won) rig.startIdle();
     else rig.c.setAlpha(0.5);
 
@@ -39,16 +39,13 @@ export class RunEnd extends Phaser.Scene {
       won ? [`${zone.boss.name.toUpperCase()} DEFEATED`, '#7fe0ff'] : [`FELL TO ${String(run.cause ?? '???').toUpperCase()}`, '#e06060'],
       [`+${amber} AMBER`, '#e8a030']
     ];
+    if (run.ext) lines.splice(4, 0, [`EXTINCTION ${run.ext} CLEARED`, '#ff8060']);
     lines.forEach(([s, color], i) => text(this, 140, 52 + i * 14, s, { color }));
     sfx(won ? 'win' : 'lose');
 
-    if (won) {
-      await wait(this, 1200);
-      for (let i = 1; i <= CLEAR_PICKS; i++) {
-        const picked = await pickLineage(this, { title: `CHAMPION BONUS ${i}/${CLEAR_PICKS}`, lines: ['YOUR BLOODLINE GROWS STRONGER:'] });
-        if (!picked) break;
-      }
-    }
+    await wait(this, 1200);
+    await endGoals(this, run, won);
+    addAncestor(run, won, await pickHeir(this, run));
 
     const prompt = text(this, W / 2, 148, 'TAP TO RETURN TO THE NEST', { origin: [0.5, 0], color: COLORS.textDim, shadow: false });
     this.tweens.add({ targets: prompt, alpha: 0.3, duration: 500, yoyo: true, repeat: -1 });

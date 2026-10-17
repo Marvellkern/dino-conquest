@@ -2,7 +2,7 @@ import { GRIDS, REX, CROUCH_DROP, crouchGrid } from '../sprites/grids.js';
 import { FX_GRIDS } from '../sprites/fxGrids.js';
 import { ICONS } from '../sprites/icons.js';
 import { EGG, EGG_STAGES, crackedEgg } from '../sprites/egg.js';
-import { SKIN_GRIDS, alphaColor, spikedGrid } from '../sprites/skins.js';
+import { SKIN_GRIDS, ALPHA, alphaColor, spikedGrid } from '../sprites/skins.js';
 import { FORM_ART, buildForm, formColor } from '../sprites/forms.js';
 import { RELIC_ICONS, SHOP_ICON } from '../sprites/relicIcons.js';
 import { makeSpriteSet, makeTexture } from '../sprites/renderSprite.js';
@@ -27,7 +27,12 @@ export class Boot extends Phaser.Scene {
         this.buildSkin(species, `${species}_e${i + 1}`, grid, formColor(art, i + 1), layout, mapRow(CROUCH_DROP[species] ?? 0));
       });
     }
+    // Alpha Rex: the Jungle boss, and a player skin (a goal reward) in all 3 forms.
     this.buildSkin('rex', 'alpharex', spikedGrid(REX, 2), alphaColor);
+    FORM_ART.rex.forEach((art, i) => {
+      const { grid, layout, mapRow } = buildForm(REX, art), fc = formColor(art, i + 1);
+      this.buildSkin('rex', `alpharex_e${i + 1}`, grid, (ch) => ALPHA[ch] ?? fc(ch), layout, mapRow(CROUCH_DROP.rex ?? 0));
+    });
 
     for (const [key, grid] of Object.entries(FX_GRIDS)) makeTexture(this, key, grid);
     for (const [key, grid] of Object.entries(ICONS)) makeTexture(this, key, grid);

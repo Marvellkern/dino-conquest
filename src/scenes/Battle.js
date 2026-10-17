@@ -1,7 +1,8 @@
 import { W, GROUND_Y, COLORS } from '../config.js';
 import { TRAITS } from '../data/traits.js';
 import { REWARDS, ZONES } from '../data/zones.js';
-import { RETRY_HP } from '../data/lineage.js';
+import { RETRY_HP } from '../data/progression.js';
+import { checkGoals, goalLines } from '../systems/goals.js';
 import { drawZone } from '../ui/backdrop.js';
 import { text } from '../ui/font.js';
 import { panel } from '../ui/pixel.js';
@@ -22,7 +23,7 @@ import { deathAnim, phaseAnim, enterAnim } from '../battle/gimmicks.js';
 import { playerMove } from '../battle/playerMoves.js';
 import { enemyAction, evadePounce } from '../battle/enemyMoves.js';
 import {
-  session, playerFighter, enemyFighters, enemyFighter, minionFighter, gainXp, dinoStats, advanceZone, skinOf,
+  session, playerFighter, enemyFighters, enemyFighter, minionFighter, gainXp, dinoStats, advanceZone, dinoSkin,
   buildOf
 } from '../run/run.js';
 
@@ -31,8 +32,8 @@ const PLAYER_X = 72;
 // One fight: the player (left) vs 1–3 enemies (right, mirrored).
 // Each round: enemies show intents → the player spends energy → END TURN →
 // enemies act. Rules live in systems/battleState.js; this scene animates them.
-// In a run: data = { node }. Test mode: URL ?p=raptor&e=compy*,compy*,compy*&z=jungle
-// (a trailing * makes a small pack member; e=boss uses the zone boss;
+// In a run: data = { node }. Test mode: URL ?p=raptor&e=compy-s,compy-s,compy-s&z=jungle
+// (a trailing -s (or *) makes a small pack member; e=boss uses the zone boss;
 // r=amberFang,oldEgg adds fossils; m=bite:chain,tail:sweep adds mutations).
 export class Battle extends Phaser.Scene {
   constructor() { super('Battle'); }
@@ -69,7 +70,7 @@ export class Battle extends Phaser.Scene {
       const run = session.run;
       player = playerFighter(run);
       enemies = enemyFighters(this.node);
-      pSkin = skinOf(run.dino.species, run.dino.evo);
+      pSkin = dinoSkin(run.dino);
       build = buildOf(run);
     } else {
       player = makeFighter(this.cfg.player, { side: 'player', traits: this.cfg.trait ? [this.cfg.trait] : [] });
@@ -103,7 +104,7 @@ export class Battle extends Phaser.Scene {
   testEnemy(tok) {
     const z = ZONES[this.cfg.zone];
     if (tok === 'boss') return enemyFighter({ ...z.boss }, 'boss');
-    const small = tok.endsWith('*'), sp = tok.replace('*', '');
+    const small = /(\*|-s)$/.test(tok), sp = tok.replace(/(\*|-s)$/, '');
     return enemyFighter({ species: sp, level: 1, base: z.enemyBase?.[sp], hp: small ? 0.4 : 1, atk: small ? 0.7 : 1, small }, 'fight');
   }
 
@@ -312,10 +313,12 @@ export class Battle extends Phaser.Scene {
     run.amber += rw.amber;
     const lines = [`+${rw.xp} XP   +${rw.amber} AMBER`];
     if (gainXp(d, rw.xp)) { lines.push(`LEVEL UP! LV${d.level}`); sfx('levelup'); }
+    const goals = checkGoals(run, this.fightEvents(run));
     const next = type === 'boss' ? advanceZone(run) : null;
     const done = type === 'boss' && !next;
     if (d.pendingEvo && !done) lines.push('SOMETHING IS STIRRING...');
     if (next) lines.push(`ONWARD TO THE ${ZONES[next].name}!`);
+    lines.push(...goalLines(goals));
     const levels = d.level - (this.levelBefore ?? d.level);
     await this.banner(type === 'boss' ? 'ZONE CLEAR!' : 'VICTORY!', true, lines, 'TAP TO CONTINUE');
     if (type === 'elite') await pickRelic(this, run, 'ELITE DROP', ['IT GUARDED A FOSSIL.']);
@@ -324,12 +327,24 @@ export class Battle extends Phaser.Scene {
     else this.leave(d.pendingEvo ? 'Evolution' : 'Map');
   }
 
+  // Goal events for a won fight (systems/goals.js), after updating run stats.
+  fightEvents(run) {
+    const s = run.stats, f = this.st.fight, type = this.node.type;
+    if (type === 'elite') s.elites = (s.elites ?? 0) + 1;
+    if (f.dmg === 0) s.cleanFights = (s.cleanFights ?? 0) + 1;
+    const evs = [{ type: 'fight', node: this.node, zone: run.zone, fight: f }];
+    if (type === 'boss') evs.push({ type: 'zone', zone: run.zone });
+    return evs;
+  }
+
   async banner(title, won, lines, prompt) {
     const h = 34 + lines.length * 10 + 12;
     const y = Math.round(84 - h / 2);
     panel(this.add.graphics().setDepth(40), 70, y, 180, h);
     text(this, W / 2, y + 14, title, { scale: 2, color: won ? COLORS.accent : '#e06060', origin: 0.5 }).setDepth(41);
-    lines.forEach((l, i) => text(this, W / 2, y + 30 + i * 10, l, { origin: [0.5, 0], color: l.startsWith('LEVEL') ? '#7fe0ff' : COLORS.text }).setDepth(41));
+    const color = (l) => (l.startsWith('LEVEL') ? '#7fe0ff' : l.startsWith('GOAL') ? '#ffd040' : COLORS.text);
+    lines.forEach((l, i) => text(this, W / 2, y + 30 + i * 10, l, { origin: [0.5, 0], color: color(l) }).setDepth(41));
+    if (lines.some((l) => l.startsWith('GOAL'))) sfx('ding');
     text(this, W / 2, y + h - 10, prompt, { color: COLORS.textDim, origin: 0.5, shadow: false }).setDepth(41);
     await wait(this, 400);
     await new Promise((r) => { const off = onPress(this, () => { off(); r(); }); });

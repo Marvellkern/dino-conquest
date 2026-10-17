@@ -8,8 +8,11 @@ import { sfx } from '../systems/sfx.js';
 
 // What happens at the non-battle map nodes. Each takes the Map scene and the run.
 
+export const nestHeal = (run) => run.mods?.nestHeal ?? NEST_HEAL; // Extinction 7 lowers it
+
 export async function visitNest(scene, run) {
-  const amt = heal(run.dino, NEST_HEAL);
+  const amt = heal(run.dino, nestHeal(run));
+  run.stats.nests = (run.stats.nests ?? 0) + 1;
   sfx('levelup');
   scene.updateHud();
   await choose(scene, { title: 'NEST', lines: ['YOU CURL UP AND REST.', amt > 0 ? `+${amt} HP` : 'ALREADY AT FULL HP.'], options: [{ label: 'CONTINUE' }] });
@@ -32,11 +35,13 @@ export async function visitMeteor(scene, run) {
 }
 
 // Shop: two fossils, a mutation and a heal, priced in in-run Amber. Buy until LEAVE.
+// run.discount: the Big Spender goal reward.
 export async function visitShop(scene, run) {
   sfx('ding');
-  const stock = relicOffers(run, 2).map((id) => ({ kind: 'relic', id, price: SHOP.relic }));
-  if (mutationOffer(run)) stock.push({ kind: 'mutation', price: SHOP.mutation });
-  stock.push({ kind: 'heal', price: SHOP.heal });
+  const price = (p) => Math.round(p * (1 - (run.discount ?? 0)));
+  const stock = relicOffers(run, 2).map((id) => ({ kind: 'relic', id, price: price(SHOP.relic) }));
+  if (mutationOffer(run)) stock.push({ kind: 'mutation', price: price(SHOP.mutation) });
+  stock.push({ kind: 'heal', price: price(SHOP.heal) });
   for (;;) {
     const options = stock.map((s) => ({
       label: `${label(s)}  ${s.price}A`,
@@ -48,6 +53,7 @@ export async function visitShop(scene, run) {
     if (i >= stock.length) return;
     const s = stock[i];
     run.amber -= s.price;
+    run.stats.shopSpent = (run.stats.shopSpent ?? 0) + s.price;
     s.sold = true;
     if (s.kind === 'relic') { addRelic(run, s.id); sfx('levelup'); }
     else if (s.kind === 'heal') { heal(run.dino, SHOP.healFrac); sfx('levelup'); }

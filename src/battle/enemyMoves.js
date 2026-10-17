@@ -81,7 +81,7 @@ function defendCtx(scene, e, moveId, h, feint, onHit) {
   return {
     isPlayer: false,
     hit: h,
-    tellMult: e.tellMult,
+    tellMult: e.tellMult * (st.build.run?.mods?.tell ?? 1), // Extinction 2+: faster wind-ups
     feint: feint && h === 0,
     open: (leadMs = 0) => {
       if (ring) return;

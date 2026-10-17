@@ -10,9 +10,12 @@ import { Button } from '../ui/button.js';
 import { Reel } from '../ui/reel.js';
 import { createRig } from '../sprites/rig.js';
 import { makeRng, randomSeed } from '../systems/rng.js';
-import { meta, persist, markHatched } from '../systems/meta.js';
-import { BASE_LIVES, bonusOf, hatchOdds } from '../data/lineage.js';
-import { newRun } from '../run/run.js';
+import { meta, persist, markHatched, owned, runSetup } from '../systems/meta.js';
+import { GOLDEN_EGG_COST } from '../data/unlocks.js';
+import { checkGoals } from '../systems/goals.js';
+import { showGoals } from '../ui/bloodline.js';
+import { choose } from '../ui/popup.js';
+import { newRun, skinOf } from '../run/run.js';
 import { Fx } from '../systems/fx.js';
 import { sfx } from '../systems/sfx.js';
 import { onPress } from '../systems/qte.js';
@@ -32,7 +35,9 @@ export class Hatch extends Phaser.Scene {
     this.rig = null;
     this.busy = true;
     this.cameras.main.fadeIn(250);
-    this.free = bonusOf(meta, 'reroll'); // Egg Whisper: free rerolls this hatch
+    this.free = owned('whisper'); // Egg Whisper: free rerolls this hatch
+    this.golden = false;
+    this.setup = runSetup();
 
     drawNestRoom(this, DINO_X, GROUND);
     text(this, 6, 6, 'HATCHERY', { color: COLORS.accent });
@@ -51,7 +56,9 @@ export class Hatch extends Phaser.Scene {
     this.buttons = [
       new Button(this, 4, by, bw, 32, { key: '1', label: 'REROLL DINO', sub: `${REROLL_COST.species} AMBER`, onClick: () => this.rerollSpecies() }),
       new Button(this, 4 + (bw + 4), by, bw, 32, { key: '2', label: 'REROLL TRAIT', sub: `${REROLL_COST.trait} AMBER`, onClick: () => this.rerollTrait() }),
-      new Button(this, 4 + 2 * (bw + 4), by, bw, 32, { key: '3', label: 'START RUN', sub: 'THE JUNGLE', onClick: () => this.go() })
+      new Button(this, 4 + 2 * (bw + 4), by, bw, 32, {
+        key: '3', label: 'START RUN', sub: this.setup.ext ? `EXTINCTION ${this.setup.ext}` : 'THE JUNGLE', onClick: () => this.go()
+      })
     ];
     this.onKey = (e) => {
       const i = '123'.indexOf(e.key);
@@ -67,6 +74,7 @@ export class Hatch extends Phaser.Scene {
     this.eggTimer = this.time.addEvent({ delay: 60, loop: true, callback: () => this.wobbleEgg() });
     this.hint = text(this, DINO_X, 30, 'TAP TO HATCH', { origin: 0.5 }).setDepth(12);
     this.tweens.add({ targets: this.hint, alpha: 0.3, duration: 500, yoyo: true, repeat: -1 });
+    if (this.setup.heir) text(this, DINO_X, 14, `HEIR OF ${this.setup.heir.name.toUpperCase()}`, { origin: [0.5, 0], color: '#e8a030', shadow: false }).setDepth(12);
     const off = onPress(this, () => { off(); this.hatch(); });
   }
 
@@ -74,11 +82,13 @@ export class Hatch extends Phaser.Scene {
 
   /* ---------- rolls ---------- */
 
-  rollSpecies() {
-    let r = this.rng.next(), rarity = 'common';
-    for (const [k, odds] of Object.entries(hatchOdds(meta))) {
-      if (r < odds) { rarity = k; break; }
-      r -= odds;
+  // golden: the Golden Egg skips Common.
+  rollSpecies(golden = this.golden) {
+    const odds = Object.entries(RARITIES).filter(([k]) => !golden || k !== 'common');
+    let r = this.rng.next() * odds.reduce((t, [, v]) => t + v.odds, 0), rarity = odds[0][0];
+    for (const [k, v] of odds) {
+      if (r < v.odds) { rarity = k; break; }
+      r -= v.odds;
     }
     return this.rng.pick(HATCHABLE.filter((id) => SPECIES[id].rarity === rarity));
   }
@@ -117,9 +127,29 @@ export class Hatch extends Phaser.Scene {
     this.egg.x = DINO_X + (shaking ? (Math.floor(t / 60) % 2 ? this.wobble : -this.wobble) : 0);
   }
 
+  // Twin Clutch: pick 1 of 2 eggs (rarity shows). Golden Egg: pay for Rare or better.
+  // Returns a species, or null to roll one normally.
+  async chooseEgg() {
+    const twin = owned('twinClutch'), gold = owned('egg:golden');
+    if (!twin && !gold) return null;
+    const eggs = twin ? [this.rollSpecies(false), this.rollSpecies(false)] : [null];
+    const options = eggs.map((sp, i) => (sp
+      ? { label: `EGG ${i + 1}`, sub: `A ${RARITIES[SPECIES[sp].rarity].name} EGG` }
+      : { label: 'PLAIN EGG', sub: 'ANY RARITY' }));
+    if (gold) options.push({ label: 'GOLDEN EGG', sub: `RARE OR BETTER - ${GOLDEN_EGG_COST} AMBER`, disabled: meta.amber < GOLDEN_EGG_COST ? `NEED ${GOLDEN_EGG_COST} AMBER` : null });
+    const i = await choose(this, { title: 'CHOOSE AN EGG', options });
+    if (i < eggs.length) return eggs[i];
+    meta.amber -= GOLDEN_EGG_COST;
+    persist();
+    this.golden = true;
+    this.egg.setTint(0xffd040);
+    this.refresh();
+    return null;
+  }
+
   async hatch() {
     this.hint.destroy();
-    this.species = this.rollSpecies();
+    this.species = (await this.chooseEgg()) ?? this.rollSpecies();
     this.trait = this.rollTrait();
     this.wobble = 2;
     const spin = this.speciesReel.spin(this.strip(HATCHABLE, this.species, 14), SPIN_MS.species);
@@ -133,6 +163,7 @@ export class Hatch extends Phaser.Scene {
     this.burstEgg();
     await this.reveal();
     await this.spinTrait();
+    await showGoals(this, checkGoals(null, [{ type: 'hatch' }]));
     this.busy = false;
     this.refresh();
   }
@@ -162,7 +193,7 @@ export class Hatch extends Phaser.Scene {
   // New dino appears in the nest and roars; rarity is announced.
   async reveal() {
     const sp = SPECIES[this.species], rar = RARITIES[sp.rarity];
-    this.rig = createRig(this, this.species, DINO_X, GROUND - 4, 1);
+    this.rig = createRig(this, this.species, DINO_X, GROUND - 4, 1, skinOf(this.species, 0, this.skin()));
     markHatched(this.species);
     this.speciesReel.setBorder(parseInt(rar.color.slice(1), 16));
     this.stats.setText(`HP ${sp.hp} ATK ${sp.atk} DEF ${sp.def} SPD ${sp.spd}`);
@@ -220,11 +251,14 @@ export class Hatch extends Phaser.Scene {
     this.refresh();
   }
 
+  skin() { return this.species === 'rex' && owned('skin:alpha') ? 'alpha' : null; }
+
   go() {
     if (this.busy) return;
     this.busy = true; // ignore repeat clicks during the fade
-    const bonus = { hp: bonusOf(meta, 'hp'), atk: bonusOf(meta, 'atk'), def: bonusOf(meta, 'def') };
-    newRun({ species: this.species, trait: this.trait, seed: randomSeed(), bonus, lives: BASE_LIVES + bonusOf(meta, 'life') });
+    newRun({ ...runSetup(), species: this.species, trait: this.trait, seed: randomSeed(), skin: this.skin() });
+    meta.heir = null; // the heir's item is now in this run
+    persist();
     this.cameras.main.fadeOut(250);
     this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Map'));
   }

@@ -9,23 +9,37 @@ import { FORMS } from '../data/forms.js';
 import { makeFighter } from '../systems/combat.js';
 import { makeRng } from '../systems/rng.js';
 import { generateMap } from './mapgen.js';
+import { extMods } from '../data/extinction.js';
 
 // The current run lives here (in memory). No Phaser in this file.
 export const session = { run: null };
 
-// bonus: starting stat bonuses (from Lineage). lives: tries before the dino fossilizes.
-export function newRun({ species, trait, seed, zone = 'jungle', bonus = {}, lives = 3 }) {
+// Options come from the meta save (systems/meta.js runSetup); the sim passes its own.
+//   bonus: starting stat bonuses. lives: tries before the dino fossilizes.
+//   ext: Extinction level. pool: fossil ids that can drop (default: all).
+//   mutLock: locked "move:id" mutations. shopMult / discount: shop unlocks.
+//   heir: { kind, id, move? } inherited from the last dino. skin: 'alpha' look.
+export function newRun({
+  species, trait, seed, zone = 'jungle', bonus = {}, lives = 3, ext = 0, pool = null, mutLock = [],
+  shopMult = 1, discount = 0, heir = null, skin = null
+}) {
   const rng = makeRng(seed);
   const dino = {
-    species, traits: [trait], level: 1, xp: 0, evo: 0, pendingEvo: 0,
+    species, traits: [trait], level: 1, xp: 0, evo: 0, pendingEvo: 0, skin,
     bonus: { hp: 0, atk: 0, def: 0, spd: 0, ...bonus }, moveUps: {}
   };
   dino.hp = dinoStats(dino).hp;
-  session.run = {
-    seed, rng, zone, dino, map: generateMap(rng, zone), at: null, amber: 0, cause: null, lives, maxLives: lives,
-    relics: [], perks: [], mutations: {}, eggUsed: false
+  const mods = { ...extMods(ext), shop: shopMult };
+  const run = {
+    seed, rng, zone, dino, at: null, amber: 0, cause: null, lives, maxLives: lives,
+    relics: [], perks: [], mutations: {}, eggUsed: false,
+    ext, mods, pool: pool ?? Object.keys(RELICS), mutLock, discount, heir, stats: {}
   };
-  return session.run;
+  run.map = generateMap(rng, zone, mods);
+  if (heir?.kind === 'relic' && RELICS[heir.id]) addRelic(run, heir.id);
+  if (heir?.kind === 'mutation' && MUTATIONS[heir.move]?.[heir.id]) addMutation(run, heir.move, heir.id);
+  session.run = run;
+  return run;
 }
 
 /* ---------- stats ---------- */
@@ -40,7 +54,12 @@ export function statsFor(species, level, evo = 0, bonus = {}, base = SPECIES[spe
 
 export const dinoStats = (d) => statsFor(d.species, d.level, d.evo, d.bonus);
 export const dinoName = (d) => FORMS[d.species]?.[d.evo]?.name ?? SPECIES[d.species].name + EVO_SUFFIX[d.evo];
-export const skinOf = (species, evo = 0) => (evo ? `${species}_e${evo}` : species);
+// skin 'alpha': the Alpha Rex look (a goal reward), on every T-Rex form.
+export const skinOf = (species, evo = 0, skin = null) => {
+  const key = skin === 'alpha' && species === 'rex' ? 'alpharex' : species;
+  return evo ? `${key}_e${evo}` : key;
+};
+export const dinoSkin = (d) => skinOf(d.species, d.evo, d.skin);
 export const enemyName = (e) => (e.name ?? SPECIES[e.species].name);
 
 /* ---------- fighters ---------- */
@@ -61,7 +80,8 @@ export function enemyFighter(e, type) {
   const st = statsFor(e.species, e.level, e.evo ?? 0, {}, e.base);
   st.hp = Math.max(1, Math.round(st.hp * sc.hp * (e.hp ?? 1)));
   st.atk = Math.max(1, Math.round(st.atk * sc.atk * (e.atk ?? 1)));
-  const f = makeFighter(e.species, { side: 'enemy', level: e.level, traits: e.trait ? [e.trait] : [], stats: st, name: enemyName(e) });
+  const traits = e.traits ?? (e.trait ? [e.trait] : []);
+  const f = makeFighter(e.species, { side: 'enemy', level: e.level, traits, stats: st, name: enemyName(e) });
   f.brainId = e.brain ?? e.species;
   f.skin = e.skin ?? skinOf(e.species, e.evo);
   f.small = !!e.small;
@@ -143,9 +163,9 @@ export function addStat(d, stat, n) {
 
 export const relicInfo = (id) => RELICS[id] ?? PERKS[id];
 
-// Up to n fossils the run doesn't own yet.
+// Up to n fossils from the run's pool that it doesn't own yet.
 export function relicOffers(run, n = 3) {
-  const pool = Object.keys(RELICS).filter((id) => !run.relics.includes(id));
+  const pool = (run.pool ?? Object.keys(RELICS)).filter((id) => !run.relics.includes(id));
   const out = [];
   while (out.length < n && pool.length) out.push(pool.splice(Math.floor(run.rng.next() * pool.length), 1)[0]);
   return out;
@@ -161,14 +181,25 @@ export function removeRandomRelic(run) {
 }
 
 // A mutation choice for one not-yet-mutated base move: { move, options: [id...] }, or null.
+// Locked mutations (run.mutLock) aren't offered.
+export const mutationOptions = (run, move) => Object.keys(MUTATIONS[move]).filter((id) => !(run.mutLock ?? []).includes(`${move}:${id}`));
+
 export function mutationOffer(run) {
-  const open = Object.keys(MUTATIONS).filter((m) => !run.mutations[m]);
+  const open = Object.keys(MUTATIONS).filter((m) => !run.mutations[m] && mutationOptions(run, m).length);
   if (!open.length) return null;
   const move = run.rng.pick(open);
-  return { move, options: Object.keys(MUTATIONS[move]) };
+  return { move, options: mutationOptions(run, move) };
 }
 
 export function addMutation(run, move, id) { run.mutations[move] = id; }
+
+// What a dino can pass to its heir: its fossils and mutations (not form perks).
+export function heirOptions(run) {
+  return [
+    ...run.relics.map((id) => ({ kind: 'relic', id, name: RELICS[id].name })),
+    ...Object.entries(run.mutations).map(([move, id]) => ({ kind: 'mutation', move, id, name: MUTATIONS[move][id].name }))
+  ];
+}
 
 /* ---------- zones ---------- */
 
@@ -178,7 +209,7 @@ export function advanceZone(run) {
   const id = nextZone(run.zone);
   if (!id) return null;
   run.zone = id;
-  run.map = generateMap(run.rng, id);
+  run.map = generateMap(run.rng, id, run.mods);
   run.at = null;
   heal(run.dino, ZONE_HEAL);
   return id;

@@ -50,7 +50,7 @@ export const fossilColor = (ch) =>
   ch === 'O' || ch === 'E' ? '#2e2418' : ch === 'W' ? '#f2ead6' : SHADE_KEYS.has(ch) ? '#a8977a' : '#d6c9a8';
 
 // Alpha Rex: blood-red hide, yellow eyes.
-const ALPHA = { G: '#8c2c24', D: '#58181a', L: '#c89070', M: '#2a0808', E: '#ffe040' };
+export const ALPHA = { G: '#8c2c24', D: '#58181a', L: '#c89070', M: '#2a0808', E: '#ffe040' };
 export const alphaColor = (ch) => ALPHA[ch] ?? PAL[ch];
 
 // Adds 2px spikes (white body, outline tip, outlined sides) on top of the

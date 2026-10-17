@@ -50,6 +50,7 @@ export class Button {
   }
 
   draw() {
+    if (!this.g.scene) return; // destroyed (e.g. a list redrawn by its own click)
     const live = this.enabled, d = this.down ? 1 : 0;
     const fill = live ? (this.hover ? 0x3e4553 : 0x2e333d) : 0x1e2128;
     this.g.clear();

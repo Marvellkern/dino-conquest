@@ -3,7 +3,7 @@ import { PROGRESSION } from '../data/progression.js';
 import { PERKS } from '../data/relics.js';
 import { text } from '../ui/font.js';
 import { createRig } from '../sprites/rig.js';
-import { session, evolve, dinoName, skinOf } from '../run/run.js';
+import { session, evolve, dinoName, dinoSkin } from '../run/run.js';
 import { Fx } from '../systems/fx.js';
 import { sfx } from '../systems/sfx.js';
 import { onPress } from '../systems/qte.js';
@@ -48,9 +48,9 @@ export class Evolution extends Phaser.Scene {
 
   async play() {
     const run = session.run, d = run.dino;
-    const oldName = dinoName(d), oldSkin = skinOf(d.species, d.evo);
+    const oldName = dinoName(d), oldSkin = dinoSkin(d);
     const perk = evolve(run);
-    const newSkin = skinOf(d.species, d.evo);
+    const newSkin = dinoSkin(d);
 
     const before = createRig(this, d.species, X, GROUND, 1, oldSkin, 3);
     const after = createRig(this, d.species, X, GROUND, 1, newSkin, 3);

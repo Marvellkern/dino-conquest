@@ -3,9 +3,9 @@ import { text } from '../ui/font.js';
 import { panel } from '../ui/pixel.js';
 import { makeTexture } from '../sprites/renderSprite.js';
 import { SKIN_GRIDS, fossilColor } from '../sprites/skins.js';
-import { session, dinoName, skinOf, zoneOf } from '../run/run.js';
-import { meta, bankRun, addFossil } from '../systems/meta.js';
-import { pickLineage } from '../run/lineagePick.js';
+import { session, dinoName, dinoSkin, zoneOf } from '../run/run.js';
+import { meta, bankRun, addAncestor } from '../systems/meta.js';
+import { pickHeir, endGoals } from '../ui/bloodline.js';
 import { Fx } from '../systems/fx.js';
 import { sfx } from '../systems/sfx.js';
 import { onPress } from '../systems/qte.js';
@@ -14,7 +14,7 @@ import { wait } from '../battle/anims.js';
 const SLAB = { x: 12, y: 34, w: 164, h: 118 };
 
 // Death screen: the dino turns to stone in the strata, the run is summed up,
-// and the fossil grants a permanent Lineage bonus.
+// goals are checked, and the dino passes one fossil or mutation to its heir.
 export class Fossil extends Phaser.Scene {
   constructor() { super('Fossil'); }
 
@@ -42,9 +42,8 @@ export class Fossil extends Phaser.Scene {
   async play(run) {
     const d = run.dino, zone = zoneOf(run);
     const col = run.at ? run.map.nodes[run.at].row + 1 : 0;
-    const skin = skinOf(d.species, d.evo);
+    const skin = dinoSkin(d);
     const amber = bankRun(run, false);
-    addFossil({ species: d.species, evo: d.evo, level: d.level, zone: run.zone, col, cause: run.cause, at: Date.now() });
     session.run = null;
 
     this.drawStrata();
@@ -74,12 +73,13 @@ export class Fossil extends Phaser.Scene {
       ['FELL TO', COLORS.textDim],
       [String(run.cause ?? '???'), '#e06060'],
       [`+${amber} AMBER`, '#e8a030'],
-      [`FOSSIL #${meta.fossils.length}`, '#d6c9a8']
+      [`GENERATION ${meta.stats.gens + 1}`, '#d6c9a8']
     ];
     lines.forEach(([s, color], i) => text(this, 190, 40 + i * 15, s, { color, shadow: i === 0 }));
     await wait(this, 900);
 
-    await pickLineage(this);
+    await endGoals(this, run, false);
+    addAncestor(run, false, await pickHeir(this, run));
 
     const prompt = text(this, W / 2, 162, 'TAP TO RETURN TO THE NEST', { origin: [0.5, 0], color: COLORS.textDim, shadow: false });
     this.tweens.add({ targets: prompt, alpha: 0.3, duration: 500, yoyo: true, repeat: -1 });
