@@ -84,7 +84,12 @@ export function defendRing(scene, { x, y, leadMs, dodgeMs = QTE.dodgeMs, blockMs
     const R0 = 38, RT = 10;
     const g = scene.add.graphics().setDepth(30);
     const hint = text(scene, W / 2, HINT_Y, 'TAP WHEN THE RINGS MEET!', { origin: 0.5 }).setDepth(31);
-    const bang = text(scene, x, y, '!', { scale: 2, color: '#fff096', origin: 0.5 }).setDepth(31);
+    // "!" drawn in pixels, symmetric around the ring's center pixel (a font
+    // glyph sits off-center in its cell). 3px wide, rows y-6..y+6.
+    x = Math.round(x); y = Math.round(y);
+    const bang = scene.add.graphics().setDepth(31);
+    bang.fillStyle(0x0c0e12).fillRect(x - 2, y - 7, 5, 10).fillRect(x - 2, y + 3, 5, 5);
+    bang.fillStyle(0xfff096).fillRect(x - 1, y - 6, 3, 8).fillRect(x - 1, y + 4, 3, 3);
 
     let t = 0, done = false;
     const draw = () => {
