@@ -18,9 +18,11 @@ export class Button {
     this.keyText = text(scene, x + 3, y + 3, key, { color: COLORS.textDim, shadow: false }).setDepth(depth + 1);
     // Text rows for tall / compact buttons, leaving clear space above the dark bottom edge.
     const ly = h >= 32 ? 11 : 3, sy = h >= 32 ? 21 : 13;
-    const lyy = sub ? ly : Math.floor((h - 8) / 2); // a label with no sub-line sits in the middle
-    this.label = text(scene, cx, y + lyy, label, { origin: [0.5, 0] }).setDepth(depth + 1);
+    this.rows = { ly, mid: Math.floor((h - 8) / 2) };
+    this.label = text(scene, cx, y + ly, label, { origin: [0.5, 0] }).setDepth(depth + 1);
     this.sub = text(scene, cx, y + sy, sub, { origin: [0.5, 0], color: COLORS.textDim, shadow: false }).setDepth(depth + 1);
+    this.hasSub = !!sub;
+    this.placeLabel();
     // Depth matters for input: Phaser only hits the top-most interactive object.
     this.zone = scene.add.zone(x, y, w, h).setOrigin(0).setDepth(depth + 1).setInteractive({ useHandCursor: true });
     this.zone.on('pointerover', () => { this.hover = true; this.draw(); });
@@ -44,9 +46,13 @@ export class Button {
 
   setText(label, sub) {
     if (label != null) this.label.setText(label);
-    if (sub != null) this.sub.setText(sub);
+    if (sub != null) { this.sub.setText(sub); this.hasSub = !!sub; this.placeLabel(); }
     return this;
   }
+
+  // A label with no sub-line sits in the middle; otherwise on the top row.
+  // (The label is a container whose children were built at the top row.)
+  placeLabel() { this.label.y = this.hasSub ? 0 : this.rows.mid - this.rows.ly; }
 
   destroy() {
     for (const o of [this.g, this.keyText, this.label, this.sub, this.zone]) o.destroy();
