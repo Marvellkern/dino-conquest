@@ -1,0 +1,119 @@
+import { W } from '../config.js';
+import { QTE } from '../data/moves.js';
+import { panel, pixelCircle } from '../ui/pixel.js';
+import { text } from '../ui/font.js';
+import { sfx } from './sfx.js';
+
+// Space / Enter / click / tap anywhere. Returns an unsubscribe function.
+export function onPress(scene, cb) {
+  const p = () => cb();
+  const k = (e) => { if (!e.repeat && (e.code === 'Space' || e.code === 'Enter')) cb(); };
+  scene.input.on('pointerdown', p);
+  scene.input.keyboard.on('keydown', k);
+  return () => { scene.input.off('pointerdown', p); scene.input.keyboard?.off('keydown', k); };
+}
+
+// Both QTEs count time from scene 'update' deltas scaled by the clock,
+// so they stay in sync with animation waits (and freeze during hitstop).
+function ticker(scene, fn) {
+  const upd = (_, dt) => fn(dt * scene.time.timeScale);
+  scene.events.on('update', upd);
+  return () => scene.events.off('update', upd);
+}
+
+const HINT_Y = 58;
+
+// Attack QTE: marker sweeps a bar once. Resolves 'crit' | 'good' | 'miss'.
+export function attackBar(scene, { rng, sure = false, sweepMs = QTE.sweepMs } = {}) {
+  return new Promise((resolve) => {
+    const BW = 100, BH = 6, x0 = Math.round(W / 2 - BW / 2), y0 = 70;
+    const c = Math.round(rng.range(0.55, 0.85) * BW);
+    const g = scene.add.graphics().setDepth(30);
+    panel(g, x0 - 4, y0 - 4, BW + 8, BH + 8);
+    g.fillStyle(0x121418).fillRect(x0, y0, BW, BH);
+    g.fillStyle(0x3e7a3a).fillRect(x0 + c - QTE.goodW / 2, y0, QTE.goodW, BH);
+    g.fillStyle(0xfff096).fillRect(x0 + c - QTE.sweetW / 2, y0, QTE.sweetW, BH);
+    const m = scene.add.graphics().setDepth(31);
+    const hint = text(scene, W / 2, HINT_Y, 'TAP IN THE YELLOW!', { origin: 0.5 }).setDepth(31);
+
+    let t = 0, done = false;
+    const pos = () => Math.min(BW - 2, Math.round((t / sweepMs) * (BW - 2)));
+    const draw = (px) => {
+      m.clear();
+      m.fillStyle(0x0c0e12).fillRect(x0 + px - 1, y0 - 3, 4, BH + 6);
+      m.fillStyle(0xffffff).fillRect(x0 + px, y0 - 2, 2, BH + 4);
+    };
+    const judge = (px) => {
+      if (px == null) return sure ? 'good' : 'miss';
+      const d = Math.abs(px + 1 - c);
+      if (d <= QTE.sweetW / 2) return 'crit';
+      if (d <= QTE.goodW / 2 || sure) return 'good';
+      return 'miss';
+    };
+    const finish = (res) => {
+      if (done) return;
+      done = true;
+      offPress(); offTick();
+      hint.setText(res === 'crit' ? 'CRIT!' : res === 'good' ? 'GOOD' : 'MISS');
+      hint.label.setTint(res === 'crit' ? 0xfff096 : res === 'good' ? 0xf0ecdc : 0x8a90a0);
+      if (res === 'crit') g.fillStyle(0xffffff).fillRect(x0, y0, BW, BH);
+      sfx(res === 'crit' ? 'ding' : res === 'good' ? 'tick' : 'early');
+      scene.time.delayedCall(260, () => { g.destroy(); m.destroy(); hint.destroy(); });
+      resolve(res);
+    };
+    const offPress = onPress(scene, () => { if (t > 60) finish(judge(pos())); });
+    const offTick = ticker(scene, (dt) => {
+      t += dt;
+      if (t >= sweepMs) finish(judge(null));
+      else draw(pos());
+    });
+    draw(0);
+  });
+}
+
+// Defend QTE: a ring shrinks onto a target circle, meeting it `leadMs` from now
+// (the moment of impact). Resolves 'dodge' | 'block' | 'hit'.
+export function defendRing(scene, { x, y, leadMs, dodgeMs = QTE.dodgeMs, blockMs = QTE.blockMs, noDodge = false }) {
+  return new Promise((resolve) => {
+    const R0 = 38, RT = 10;
+    const g = scene.add.graphics().setDepth(30);
+    const hint = text(scene, W / 2, HINT_Y, 'TAP WHEN THE RINGS MEET!', { origin: 0.5 }).setDepth(31);
+    const bang = text(scene, x, y, '!', { scale: 2, color: '#fff096', origin: 0.5 }).setDepth(31);
+
+    let t = 0, done = false;
+    const draw = () => {
+      g.clear();
+      const r = Math.max(2, RT + (R0 - RT) * (1 - t / leadMs));
+      pixelCircle(g, x, y, RT, 0xf0ecdc);
+      pixelCircle(g, x, y, RT + 1, 0xf0ecdc, 0.5);
+      pixelCircle(g, x, y, r, 0xfff096);
+      pixelCircle(g, x, y, r - 1, 0xfff096);
+    };
+    const judge = (d) => {
+      if (Math.abs(d) <= dodgeMs) return noDodge ? 'block' : 'dodge';
+      if (Math.abs(d) <= blockMs) return 'block';
+      return 'hit';
+    };
+    const finish = (res, early = false) => {
+      if (done) return;
+      done = true;
+      offPress(); offTick();
+      hint.setText(early ? 'TOO EARLY!' : res === 'hit' ? 'TOO LATE!' : res === 'dodge' ? 'PERFECT!' : 'NICE!');
+      if (early) sfx('early');
+      g.clear();
+      pixelCircle(g, x, y, RT, res === 'dodge' ? 0x7fe0ff : res === 'block' ? 0x9ab8ff : 0xc8281e);
+      scene.time.delayedCall(180, () => { g.destroy(); hint.destroy(); bang.destroy(); });
+      resolve(res);
+    };
+    const offPress = onPress(scene, () => {
+      const d = t - leadMs;
+      finish(judge(d), d < -blockMs);
+    });
+    const offTick = ticker(scene, (dt) => {
+      t += dt;
+      if (t > leadMs + blockMs) finish('hit');
+      else draw();
+    });
+    draw();
+  });
+}
