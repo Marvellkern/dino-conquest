@@ -32,7 +32,8 @@ const game = new Phaser.Game({
 // Scaling and fullscreen live in systems/screen.js.
 const refit = () => fit(game);
 
-if (import.meta.env.DEV) window.__game = game; // debugging handle, dev builds only
+// Debugging handle: dev builds, or any build with ?debug in the URL (perf checks).
+if (import.meta.env.DEV || new URLSearchParams(location.search).has('debug')) window.__game = game;
 
 game.events.once('ready', refit);
 window.addEventListener('resize', refit);
