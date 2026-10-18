@@ -7,6 +7,7 @@ const SMALL = { hp: 0.4, atk: 0.7 }; // pack members and elite sidekicks
 export const ZONES = {
   jungle: {
     name: 'JUNGLE',
+    intro: 'WHERE IT ALL BEGINS', // zone intro tagline (scenes/ZoneIntro.js)
     rows: 7,                       // map columns before the boss
     scale: { hp: 1.9, atk: 1.75 },  // whole-zone difficulty (fights, elites, boss)
     fights: [
@@ -28,6 +29,7 @@ export const ZONES = {
   },
   swamp: {
     name: 'SWAMP',
+    intro: 'THE MUD REMEMBERS', // zone intro tagline (scenes/ZoneIntro.js)
     rows: 7,
     scale: { hp: 2.35, atk: 1.95 },
     fights: [
@@ -52,6 +54,7 @@ export const ZONES = {
   },
   volcano: {
     name: 'VOLCANO',
+    intro: 'THE GROUND IS ON FIRE', // zone intro tagline (scenes/ZoneIntro.js)
     rows: 7,
     unlock: 'zoneVolcano',
     scale: { hp: 3.1, atk: 2.35 },
@@ -77,6 +80,7 @@ export const ZONES = {
   },
   crater: {
     name: 'METEOR CRATER',
+    intro: 'WHERE THE SKY FELL', // zone intro tagline (scenes/ZoneIntro.js)
     rows: 7,
     unlock: 'zoneCrater',
     scale: { hp: 3.0, atk: 2.3 },

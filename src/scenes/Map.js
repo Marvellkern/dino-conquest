@@ -36,6 +36,8 @@ export class MapScene extends Phaser.Scene {
     syncLayout(this);
     this.run = session.run;
     if (!this.run) { this.scene.start('Hatch'); return; }
+    // First visit to this zone: play its intro cutscene, which comes back here.
+    if (this.run.introZone !== this.run.zone) { this.run.introZone = this.run.zone; this.scene.start('ZoneIntro'); return; }
     this.d = this.run.dino;
     this.fx = new Fx(this);
     this.busy = false;

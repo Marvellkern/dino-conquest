@@ -10,6 +10,7 @@ import { Evolution } from './scenes/Evolution.js';
 import { RunEnd } from './scenes/RunEnd.js';
 import { Fossil } from './scenes/Fossil.js';
 import { Nest } from './scenes/Nest.js';
+import { ZoneIntro } from './scenes/ZoneIntro.js';
 import { fit, wantPortrait } from './systems/screen.js';
 
 window.Phaser = Phaser;
@@ -26,7 +27,7 @@ const game = new Phaser.Game({
   scale: { mode: Phaser.Scale.NONE, autoCenter: Phaser.Scale.CENTER_BOTH },
   input: { activePointers: 2 },
   audio: { noAudio: true }, // SFX are our own WebAudio synth (systems/sfx.js)
-  scene: [Boot, Title, Home, Hatch, MapScene, Battle, Evolution, RunEnd, Fossil, Nest]
+  scene: [Boot, Title, Home, Hatch, MapScene, Battle, Evolution, RunEnd, Fossil, Nest, ZoneIntro]
 });
 
 // Scaling and fullscreen live in systems/screen.js.
