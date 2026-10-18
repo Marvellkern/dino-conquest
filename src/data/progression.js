@@ -12,5 +12,5 @@ export const xpToNext = (level) => level * 10;
 // Display suffix per evolution stage.
 export const EVO_SUFFIX = ['', ' II', ' III'];
 
-export const BASE_LIVES = 3;
-export const RETRY_HP = 0.5; // a lost fight restarts at 50% HP
+export const BASE_LIVES = 2;
+export const RETRY_HP = 0.4; // a lost fight restarts at 40% HP

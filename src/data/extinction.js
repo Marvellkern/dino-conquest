@@ -8,7 +8,7 @@ export const EXTINCTION = [
   { desc: 'ENEMIES +10% ATK', atk: 0.1 },
   { desc: 'ELITES HAVE 2 TRAITS', eliteTraits: 2 },
   { desc: '1 LIFE FEWER', lives: -1 },
-  { desc: 'NESTS HEAL 25% (NOT 40%)', nestHeal: 0.25 },
+  { desc: 'NESTS HEAL 20% (NOT 30%)', nestHeal: 0.2 },
   { desc: 'ENEMIES +15% HP', hp: 0.15 },
   { desc: 'BOSSES +20% HP AND ATK', boss: 0.2 },
   { desc: 'ENEMIES +15% ATK', atk: 0.15 }

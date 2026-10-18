@@ -1,4 +1,4 @@
-import { ZONES, NODE_WEIGHTS, LANE_BIAS } from '../data/zones.js';
+import { ZONES, NODE_WEIGHTS, LANE_BIAS, RAMP } from '../data/zones.js';
 import { TRAITS } from '../data/traits.js';
 import { SPECIES } from '../data/species.js';
 
@@ -43,9 +43,11 @@ function makeEnemies(rng, zone, node, mods) {
   const boss = 1 + (mods.boss ?? 0);
   if (node.type === 'boss') return [{ ...zone.boss, hp: zs.hp * boss, atk: zs.atk * boss }];
   const lv = zone.levelAt(node.row);
+  // Difficulty ramp across the zone: gentle first fights, tougher near the boss.
+  const k = RAMP.start + (RAMP.end - RAMP.start) * (node.row / Math.max(1, zone.rows - 1));
   const group = pickGroup(rng, node.type === 'elite' ? zone.elites : zone.fights, node.row);
   return group.members.map(([species, o = {}]) => {
-    const e = { species, level: lv, base: zone.enemyBase?.[species], hp: (o.hp ?? 1) * zs.hp, atk: (o.atk ?? 1) * zs.atk, small: (o.hp ?? 1) < 1 };
+    const e = { species, level: lv, base: zone.enemyBase?.[species], hp: (o.hp ?? 1) * zs.hp * k, atk: (o.atk ?? 1) * zs.atk * k, small: (o.hp ?? 1) < 1 };
     if (o.elite) {
       const pool = Object.keys(TRAITS), traits = [];
       while (traits.length < (mods.eliteTraits ?? 1)) traits.push(pool.splice(Math.floor(rng.next() * pool.length), 1)[0]);

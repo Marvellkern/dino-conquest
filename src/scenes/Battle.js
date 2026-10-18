@@ -314,7 +314,7 @@ export class Battle extends Phaser.Scene {
       run.lives--;
       if (run.lives > 0) {
         d.hp = Math.max(1, Math.round(dinoStats(d).hp * RETRY_HP));
-        await this.banner('DEFEATED', false, [`-1 LIFE  (${run.lives} LEFT)`, 'BACK UP AT 50% HP'], 'TAP TO RETRY');
+        await this.banner('DEFEATED', false, [`-1 LIFE  (${run.lives} LEFT)`, `BACK UP AT ${Math.round(RETRY_HP * 100)}% HP`], 'TAP TO RETRY');
         this.leave('Battle', { node: this.node.id });
         return;
       }

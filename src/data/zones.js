@@ -8,7 +8,7 @@ export const ZONES = {
   jungle: {
     name: 'JUNGLE',
     rows: 7,                       // map columns before the boss
-    scale: { hp: 1.45, atk: 1.2 },  // whole-zone difficulty (fights, elites, boss)
+    scale: { hp: 1.75, atk: 1.45 },  // whole-zone difficulty (fights, elites, boss)
     fights: [
       { w: 3, maxRow: 1, members: [['compy', SMALL], ['compy', SMALL]] },
       { w: 3, minRow: 2, members: [['compy', SMALL], ['compy', SMALL], ['compy', SMALL]] },
@@ -29,7 +29,7 @@ export const ZONES = {
   swamp: {
     name: 'SWAMP',
     rows: 7,
-    scale: { hp: 1.8, atk: 1.6 },
+    scale: { hp: 2.5, atk: 2.0 },
     fights: [
       { w: 3, members: [['pachy']] },
       { w: 3, members: [['sarco']] },
@@ -54,7 +54,7 @@ export const ZONES = {
     name: 'VOLCANO',
     rows: 7,
     unlock: 'zoneVolcano',
-    scale: { hp: 2.0, atk: 1.85 },
+    scale: { hp: 2.6, atk: 2.1 },
     fights: [
       { w: 3, members: [['dimetro']] },
       { w: 3, members: [['ankylo']] },
@@ -79,7 +79,7 @@ export const ZONES = {
     name: 'METEOR CRATER',
     rows: 7,
     unlock: 'zoneCrater',
-    scale: { hp: 2.4, atk: 2.1 },
+    scale: { hp: 3.0, atk: 2.3 },
     fights: [
       { w: 3, members: [['carno']] },
       { w: 3, members: [['stego']] },
@@ -107,8 +107,11 @@ export const ZONE_ORDER = ['jungle', 'swamp', 'volcano', 'crater'];
 // zones: the run's zone list (unlocked ones), see run/run.js.
 export const nextZone = (id, zones = ZONE_ORDER) => zones[zones.indexOf(id) + 1] ?? null;
 
+// Enemy HP / ATK multiplier from the first column of a zone (start) to the last before the boss (end).
+export const RAMP = { start: 0.8, end: 1.3 };
+
 // Clearing a zone boss heals this much before the next zone starts.
-export const ZONE_HEAL = 0.5;
+export const ZONE_HEAL = 0.35;
 
 // Enemy stat multipliers by node type.
 export const ENEMY_SCALE = {
@@ -138,13 +141,13 @@ export const LANE_BIAS = [
 // Shop: prices in in-run Amber (spending it means banking less at the end).
 export const SHOP = { relic: 35, mutation: 30, heal: 15, healFrac: 0.4 };
 
-export const NEST_HEAL = 0.4;
+export const NEST_HEAL = 0.3;
 
 // What the map tooltip says for each node type.
 export const NODE_INFO = {
   fight: 'FIGHT',
   elite: 'ELITE',
-  nest: 'NEST: HEAL 40% HP',
+  nest: 'NEST: HEAL 30% HP',
   fossil: 'FOSSIL DIG: PICK A FOSSIL',
   meteor: 'METEOR SHARD: RISK OR REWARD',
   shop: 'SHOP: SPEND RUN AMBER',
