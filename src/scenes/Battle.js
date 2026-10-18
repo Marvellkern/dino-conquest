@@ -6,6 +6,7 @@ import { REWARDS, ZONES } from '../data/zones.js';
 import { RETRY_HP } from '../data/progression.js';
 import { checkGoals, goalLines } from '../systems/goals.js';
 import { amberMult } from '../systems/build.js';
+import { zoneTiming } from '../data/qteProfiles.js';
 import { drawZone } from '../ui/backdrop.js';
 import { text } from '../ui/font.js';
 import { panel } from '../ui/pixel.js';
@@ -89,7 +90,8 @@ export class Battle extends Phaser.Scene {
     }
     player.rig = createRig(this, player.species, playerX(), GROUND_Y, 1, pSkin, BIG()).addShadow();
     player.rig.homeX = player.rig.x = Math.max(playerX(), player.rig.halfW + 2); // wide dinos stay on screen
-    this.st = B.createBattle({ player, enemies: [], rng: this.rng, spawn: (sp) => this.spawn(sp), build });
+    const timing = zoneTiming(this.zone, this.node ? session.run.ext ?? 0 : 0);
+    this.st = B.createBattle({ player, enemies: [], rng: this.rng, spawn: (sp) => this.spawn(sp), build, timing });
     this.markers = new EnemyMarkers(this, (e) => this.setTarget(e));
     for (const e of enemies) this.addEnemy(e);
     this.layout(false);

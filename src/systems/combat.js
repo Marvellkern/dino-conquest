@@ -98,4 +98,4 @@ export function afterHit(att, dfd, dmg) {
 export const roarTurns = (att, m) => m.effect.turns + MOVE_UP.statusTurns * (att.moveUps?.[m.id] ?? 0);
 
 export const roarStuns = (att, rng) => hasTrait(att, 'thunderRoar') && rng.chance(T.stunChance);
-export const dodgeWindow = (dfd) => QTE.dodgeMs * (hasTrait(dfd, 'quickReflexes') ? T.reflexMult : 1);
+export const dodgeWindow = (dfd, base = QTE.dodgeMs) => base * (hasTrait(dfd, 'quickReflexes') ? T.reflexMult : 1);

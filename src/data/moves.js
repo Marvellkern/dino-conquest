@@ -28,6 +28,7 @@ export const MOVES = {
   headbutt:     { name: 'Headbutt',      power: 1.0, anim: 'bite', drain: 1 },
   ambush:       { name: 'Ambush',        power: 1.4, anim: 'bite', tight: 0.6 },
   pounce:       { name: 'Pounce',        power: 0.7, anim: 'bite' },
+  nip:          { name: 'Nip',           power: 0.55, anim: 'bite', hits: 2 }, // Compy combo
   primalChomp:  { name: 'Primal Chomp',  power: 2.2, anim: 'bigBite', defIgnore: 0.3, tight: 0.55 },
   bogSurge:     { name: 'Bog Surge',     power: 2.0, anim: 'charge', defIgnore: 0.3, tight: 0.6 },
   flood:        { name: 'Flood',         status: true },

@@ -1,0 +1,49 @@
+// Defend-ring timing (QTE rework, phase 1). Every enemy attack has a timing
+// profile (brains.js `profiles`), rolled fresh each time with the battle's
+// seeded RNG, so the same enemy never attacks on the exact same beat twice.
+// The attack animation and the ring both follow the profile, so it's readable:
+//   tell   wind-up length range (ms) before the strike
+//   ease   ring shrink curve: linear | in (slow, then fast) | out (fast, then slow)
+//   pause  the wind-up freezes for this long partway through (the ring stops too)
+//   feint  a fake wind-up first; the ring restarts (pressing during it is TOO EARLY)
+//   gaps   follow-up hits of a multi-hit attack come after an uneven gap
+export const PROFILES = {
+  steady: { tell: [450, 650], ease: 'linear' },
+  lunge: { tell: [500, 750], ease: 'in' },
+  snap: { tell: [350, 550], ease: 'out' },
+  delay: { tell: [420, 560], ease: 'linear', pause: [150, 300] },
+  feint: { tell: [420, 580], ease: 'linear', feint: true },
+  combo: { tell: [420, 580], ease: 'linear', gaps: [250, 550] }
+};
+
+export const FEINT_MS = 380; // length of the fake-out
+export const PAUSE_AT = 0.55; // where in the wind-up a `delay` freezes
+
+// Dodge / block windows (±ms) per zone, and how often an attack gets a red
+// (can't dodge: perfect only blocks) or purple (can't block: only a perfect
+// dodge avoids it) ring. Bosses use at least `bossRings`.
+export const ZONE_TIMING = {
+  jungle: { dodgeMs: 85, blockMs: 180, rings: 0 },
+  swamp: { dodgeMs: 75, blockMs: 165, rings: 0.15 },
+  volcano: { dodgeMs: 65, blockMs: 150, rings: 0.25 },
+  crater: { dodgeMs: 55, blockMs: 135, rings: 0.35 }
+};
+export const BOSS_RINGS = 0.35;
+export const EXT_DODGE_MS = 3; // each Extinction level tightens the dodge window
+export const MIN_DODGE_MS = 40; // never tighter than this (touch latency)
+
+export function zoneTiming(zone, ext = 0) {
+  const z = ZONE_TIMING[zone] ?? ZONE_TIMING.jungle;
+  return { dodgeMs: Math.max(MIN_DODGE_MS, z.dodgeMs - EXT_DODGE_MS * ext), blockMs: z.blockMs, rings: z.rings };
+}
+
+const roll = (rng, [a, b]) => Math.round(a + rng.next() * (b - a));
+
+// Concrete timing for one hit. hit: index within a multi-hit attack.
+export function rollTiming(rng, name, hit = 0) {
+  const p = PROFILES[name] ?? PROFILES.steady;
+  const tell = hit > 0 ? roll(rng, p.gaps ?? [280, 320]) : roll(rng, p.tell);
+  const out = { profile: name, tell, ease: hit > 0 ? 'linear' : p.ease, pause: 0, pauseAt: 0, feint: hit === 0 && !!p.feint };
+  if (p.pause && hit === 0) { out.pause = roll(rng, p.pause); out.pauseAt = Math.round((tell - out.pause) * PAUSE_AT); }
+  return out;
+}

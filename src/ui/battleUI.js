@@ -120,6 +120,7 @@ export class EnemyMarkers {
     this.items.set(e, {
       g: s.add.graphics().setDepth(13),
       icon: s.add.image(0, 0, 'int_attack').setOrigin(0).setDepth(14),
+      flag: s.add.image(0, 0, 'int_ring_red').setOrigin(0).setDepth(14).setVisible(false),
       label: text(s, 0, 0, '').setDepth(14),
       zone
     });
@@ -128,7 +129,7 @@ export class EnemyMarkers {
   remove(e) {
     const it = this.items.get(e);
     if (!it) return;
-    for (const o of [it.g, it.icon, it.label, it.zone]) o.destroy();
+    for (const o of [it.g, it.icon, it.flag, it.label, it.zone]) o.destroy();
     this.items.delete(e);
   }
 
@@ -143,11 +144,14 @@ export class EnemyMarkers {
       const v = this.showIntents ? intentView(st, e) : null;
       it.icon.setVisible(!!v);
       it.label.setVisible(!!v);
+      it.flag.setVisible(!!v?.ringIcon);
       if (v) {
-        const w = 8 + (v.label ? 2 + v.label.length * 6 : 0), x0 = Math.round(x - w / 2), y0 = top - 18;
+        const lw = v.label ? 2 + v.label.length * 6 : 0, w = 8 + lw + (v.ringIcon ? 9 : 0), x0 = Math.round(x - w / 2), y0 = top - 18;
         it.icon.setTexture(v.icon).setPosition(x0, y0);
         it.label.setText(v.label).setPosition(x0 + 10, y0 + 1);
-        it.label.label.setTint(v.kind === 'charge' ? 0xff6040 : v.kind === 'ambush' ? 0x7fe0ff : 0xffffff);
+        const tint = v.ring === 'red' ? 0xff6060 : v.ring === 'purple' ? 0xd090ff : v.kind === 'charge' ? 0xff6040 : v.kind === 'ambush' ? 0x7fe0ff : 0xffffff;
+        it.label.label.setTint(tint);
+        if (v.ringIcon) it.flag.setTexture(v.ringIcon).setPosition(x0 + 10 + lw, y0);
       }
     }
     const t = this.items.has(target) && this.showIntents ? target : null;

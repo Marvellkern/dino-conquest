@@ -80,32 +80,54 @@ export function attackBar(scene, { rng, sure = false, muddy = false, sweepMs = Q
 
 // Defend QTE: a ring shrinks onto a target circle, meeting it `leadMs` from now
 // (the moment of impact). Resolves 'dodge' | 'block' | 'hit'.
-export function defendRing(scene, { x, y, leadMs, dodgeMs = QTE.dodgeMs, blockMs = QTE.blockMs, noDodge = false }) {
-  devHook({ type: 'ring', leadMs, dodgeMs });
+// Timing profile (data/qteProfiles.js): ease shapes the shrink, pause/pauseAt
+// freeze it mid-way (a delayed attack), resetAt restarts it (a feint).
+// ring: 'red' (can't dodge: perfect blocks) | 'purple' (can't block).
+export function defendRing(scene, {
+  x, y, leadMs, dodgeMs = QTE.dodgeMs, blockMs = QTE.blockMs, noDodge = false,
+  ease = 'linear', pause = 0, pauseAt = 0, resetAt = null, ring = null
+}) {
+  devHook({ type: 'ring', leadMs, dodgeMs, ease, pause, resetAt, ring });
   return new Promise((resolve) => {
     const R0 = 38, RT = 10;
+    const color = ring === 'red' ? 0xff4040 : ring === 'purple' ? 0xc070ff : 0xfff096;
     const g = scene.add.graphics().setDepth(30);
-    const hint = text(scene, W / 2, hintY(), lp('TAP WHEN THE RINGS MEET!', 'TAP WHEN RINGS MEET!'), { origin: 0.5 }).setDepth(31);
+    const msg = ring === 'red' ? lp("RED: CAN'T DODGE - BLOCK!", 'RED: BLOCK IT!') : ring === 'purple' ? lp("PURPLE: CAN'T BLOCK - DODGE!", 'PURPLE: DODGE IT!')
+      : lp('TAP WHEN THE RINGS MEET!', 'TAP WHEN RINGS MEET!');
+    const hint = text(scene, W / 2, hintY(), msg, { origin: 0.5, color: ring ? (ring === 'red' ? '#ff6060' : '#d090ff') : '#f0ecdc' }).setDepth(31);
     // "!" drawn in pixels, symmetric around the ring's center pixel (a font
     // glyph sits off-center in its cell). 3px wide, rows y-6..y+6.
     x = Math.round(x); y = Math.round(y);
     const bang = scene.add.graphics().setDepth(31);
     bang.fillStyle(0x0c0e12).fillRect(x - 2, y - 7, 5, 10).fillRect(x - 2, y + 3, 5, 5);
-    bang.fillStyle(0xfff096).fillRect(x - 1, y - 6, 3, 8).fillRect(x - 1, y + 4, 3, 3);
+    bang.fillStyle(color).fillRect(x - 1, y - 6, 3, 8).fillRect(x - 1, y + 4, 3, 3);
+
+    // 0..1 progress of the shrink at time t.
+    const curve = (k) => (ease === 'in' ? k * k * k : ease === 'out' ? 1 - (1 - k) ** 3 : k);
+    const progress = (t) => {
+      if (resetAt != null && t < resetAt) return 0.7 * (t / resetAt); // the fake ring gets ~70% in, then restarts
+      let a0 = resetAt ?? 0, a = t - a0, span = leadMs - a0;
+      if (pause && resetAt == null) {
+        span -= pause;
+        if (a > pauseAt + pause) a -= pause; else if (a > pauseAt) a = pauseAt;
+      }
+      return curve(Math.min(1, Math.max(0, a / Math.max(1, span))));
+    };
 
     let t = 0, done = false;
     const draw = () => {
       g.clear();
-      const r = Math.max(2, RT + (R0 - RT) * (1 - t / leadMs));
+      const r = Math.max(2, RT + (R0 - RT) * (1 - progress(t)));
       pixelCircle(g, x, y, RT, 0xf0ecdc);
       pixelCircle(g, x, y, RT + 1, 0xf0ecdc, 0.5);
-      pixelCircle(g, x, y, r, 0xfff096);
-      pixelCircle(g, x, y, r - 1, 0xfff096);
+      pixelCircle(g, x, y, r, color);
+      pixelCircle(g, x, y, r - 1, color);
     };
     const judge = (d) => {
-      if (Math.abs(d) <= dodgeMs) return noDodge ? 'block' : 'dodge';
-      if (Math.abs(d) <= blockMs) return 'block';
-      return 'hit';
+      const perfect = Math.abs(d) <= dodgeMs, close = Math.abs(d) <= blockMs;
+      if (ring === 'purple') return perfect ? 'dodge' : 'hit';
+      if (perfect) return noDodge || ring === 'red' ? 'block' : 'dodge';
+      return close ? 'block' : 'hit';
     };
     const finish = (res, early = false) => {
       if (done) return;
@@ -120,7 +142,9 @@ export function defendRing(scene, { x, y, leadMs, dodgeMs = QTE.dodgeMs, blockMs
     };
     const offPress = onPress(scene, () => {
       const d = t - leadMs;
-      finish(judge(d), d < -blockMs);
+      // Pressing during a feint's fake ring, or long before impact, is TOO EARLY (a hit).
+      if ((resetAt != null && t < resetAt) || d < -blockMs) finish('hit', true);
+      else finish(judge(d));
     });
     const offTick = ticker(scene, (dt) => {
       t += dt;

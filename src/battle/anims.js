@@ -1,4 +1,5 @@
 import { QTE } from '../data/moves.js';
+import { FEINT_MS } from '../data/qteProfiles.js';
 import { sfx } from '../systems/sfx.js';
 
 // Attack animations. Each move kind is a set of { approach?, strike, retreat? }.
@@ -8,7 +9,7 @@ import { sfx } from '../systems/sfx.js';
 //   ctx.result()          promise of the QTE result
 //   ctx.impact(result)    apply damage + hit feedback
 //   ctx.tellMult          enemy wind-up speed (boss phase 2 is faster)
-//   ctx.feint             raptor fake-out before the real leap
+//   ctx.timing            enemy wind-up profile (data/qteProfiles.js rollTiming)
 //   ctx.targetRig(i)      Swarm: rig hit by the i-th attacker (spread)
 // scene.fx is the Fx instance.
 
@@ -34,22 +35,61 @@ async function hopTo(s, rig, x, ms, height = 3) {
   s.fx.dust(rig.x, rig.homeY, 4);
 }
 
-// Enemy telegraph: "!" over the head + shudder.
-async function tell(s, rig, ms, pose = {}) {
+// Enemy telegraph: "!" over the head + a shudder that follows the timing
+// profile, so the ring is readable: lunge shudders faster and faster, snap
+// jolts hard then settles, delay freezes mid-windup ("...") while the ring waits.
+async function tell(s, rig, ms, pose = {}, t = {}) {
   const p = rig.top();
   s.fx.pop(p.x, p.y, '!', '#fff096', 2, ms);
   sfx('tell');
   rig.setPose(pose);
   const x0 = rig.x;
-  for (let t = 0, i = 0; t < ms; t += 60, i++) {
-    rig.x = x0 + (i % 2);
-    await wait(s, Math.min(60, ms - t));
+  let el = 0, i = 0, paused = false;
+  while (el < ms) {
+    if (t.pause && !paused && el >= t.pauseAt) { // the hesitation
+      paused = true;
+      rig.x = x0;
+      const q = rig.top();
+      s.fx.pop(q.x, q.y - 10, '...', '#c0cbdc', 1, t.pause);
+      await wait(s, t.pause);
+      el += t.pause;
+      continue;
+    }
+    const k = el / ms;
+    const step = t.ease === 'in' ? Math.round(110 - 80 * k) : t.ease === 'out' ? Math.round(30 + 70 * k) : 60;
+    rig.x = x0 + (i++ % 2) * (t.ease === 'out' && k < 0.3 ? 2 : 1);
+    const until = t.pause && !paused ? t.pauseAt : ms;
+    const dt = Math.max(1, Math.min(step, until - el, ms - el));
+    await wait(s, dt);
+    el += dt;
   }
   rig.x = x0;
 }
 
-const tellOf = (ctx) => Math.round(QTE.tellMs * (ctx.tellMult ?? 1));
-const FEINT_MS = 380;
+
+// A generic fake-out: lurch at the target, stop short, pull back.
+async function fakeLurch(s, rig) {
+  const x0 = rig.x, dir = rig.homeFacing;
+  sfx('whoosh');
+  rig.ghost(0.3);
+  rig.x = x0 + dir * 6; await wait(s, 100);
+  const q = rig.top();
+  s.fx.pop(q.x, q.y, '?', '#ff6040', 2, 300);
+  await wait(s, 120);
+  rig.x = x0 + dir * 2; await wait(s, 80);
+  rig.x = x0; await wait(s, FEINT_MS - 300);
+}
+
+// Enemy wind-up: opens the defend ring for the whole lead (wind-up, a feint's
+// fake-out, and the move's own tailMs until impact), then plays the tell.
+async function windup(s, rig, ctx, tailMs, pose = {}, fake = fakeLurch) {
+  const t = ctx.timing ?? { tell: QTE.tellMs, ease: 'linear', pause: 0, pauseAt: 0, feint: false };
+  const k = ctx.tellMult ?? 1, tellMs = Math.round(t.tell * k), pauseAt = Math.round(t.pauseAt * k);
+  const fakeMs = t.feint ? FEINT_MS : 0;
+  ctx.open(tellMs + fakeMs + tailMs, { ease: t.ease, pause: t.pause, pauseAt, resetAt: t.feint ? tellMs + fakeMs : null });
+  await tell(s, rig, tellMs, pose, { ...t, pauseAt });
+  if (t.feint) await fake(s, rig);
+}
 
 // Where an attacker stands so it overlaps the target by `overlap` px.
 const standX = (rig, target, overlap) => target.homeX - rig.homeFacing * (rig.halfW + target.halfW - overlap);
@@ -81,10 +121,7 @@ async function rexRetreat(s, rig) {
 async function rexBite(s, rig, target, ctx, big = false) {
   const roarGap = big ? 5 : 3, lungeGap = big ? 6 : 4;
   if (ctx.isPlayer) ctx.open();
-  else {
-    ctx.open(tellOf(ctx) + 90 + 90 + 130 + 50);
-    await tell(s, rig, tellOf(ctx), W1);
-  }
+  else await windup(s, rig, ctx, 90 + 90 + 130 + 50, W1);
   rig.setPose(W1); await wait(s, 90);
   rig.setPose(W2); await wait(s, 90);
   rig.setPose({ ...ROAR, gap: roarGap });
@@ -111,14 +148,11 @@ async function pounce(s, rig, target, ctx) {
     rig.setPose({ crouch: true });
     await holdUntil(s, ctx.result(), (i) => rig.setPose({ crouch: true, dx: -(i % 2) }));
   } else {
-    const tellMs = ctx.hit > 0 ? 300 : tellOf(ctx);
-    ctx.open(tellMs + (ctx.feint ? FEINT_MS : 0) + 120 + 140);
-    await tell(s, rig, tellMs);
-    if (ctx.feint) { // fake leap: rises like it's going, then drops back
+    await windup(s, rig, ctx, 120 + 140, {}, async () => { // fake leap: rises like it's going, then drops back
       rig.setPose({ crouch: true }); await wait(s, 100);
       rig.setPose({}); rig.y = rig.homeY - 6; sfx('whoosh'); await wait(s, 120);
       rig.y = rig.homeY; s.fx.pop(rig.top().x, rig.top().y, '?', '#ff6040', 2, 300); await wait(s, 160);
-    }
+    });
     rig.setPose({ crouch: true }); await wait(s, 120);
   }
   const x0 = rig.x;
@@ -171,8 +205,7 @@ async function swarm(s, rig, target, ctx) {
     crouch(true);
     await holdUntil(s, ctx.result(), (i) => rig.setPose({ crouch: true, dx: -(i % 2) }));
   } else {
-    ctx.open(tellOf(ctx) + 120 + 140);
-    await tell(s, rig, tellOf(ctx));
+    await windup(s, rig, ctx, 120 + 140);
     crouch(true);
     await wait(s, 120);
   }
@@ -201,8 +234,7 @@ async function ram(s, rig, target, ctx) {
     rig.setPose(wind);
     await holdUntil(s, ctx.result(), (i) => rig.setPose({ ...wind, dx: -2 - (i % 2) }));
   } else {
-    ctx.open(tellOf(ctx) + 120 + 60);
-    await tell(s, rig, tellOf(ctx));
+    await windup(s, rig, ctx, 120 + 60);
     rig.setPose(wind);
     await wait(s, 120);
   }
@@ -225,10 +257,7 @@ async function charge(s, rig, target, ctx) {
     ctx.open();
     rig.setPose(wind);
     await holdUntil(s, ctx.result(), (i) => { rig.setPose(wind); rig.x = rig.homeX - (i % 2); });
-  } else {
-    ctx.open(tellOf(ctx) + dashMs);
-    await tell(s, rig, tellOf(ctx), wind);
-  }
+  } else await windup(s, rig, ctx, dashMs, wind);
   rig.setPose({ crouch: true });
   sfx('step');
   s.time.addEvent({ delay: 40, repeat: 4, callback: () => rig.ghost(0.3) });
@@ -253,10 +282,7 @@ async function tailWhip(s, rig, target, ctx) {
   if (ctx.isPlayer) {
     ctx.open();
     await holdUntil(s, ctx.result(), (i) => { rig.x = x0 - dir * (4 + (i % 2)); });
-  } else {
-    ctx.open(tellOf(ctx) + 80);
-    await tell(s, rig, tellOf(ctx));
-  }
+  } else await windup(s, rig, ctx, 80);
   rig.ghost();
   rig.x = x0 + dir * 6;
   await wait(s, 80);

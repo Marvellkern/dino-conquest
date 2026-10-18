@@ -1,7 +1,8 @@
 import { MOVES, ENERGY, STREAK } from '../data/moves.js';
 import { RELIC_TUNING as RT } from '../data/relics.js';
 import * as BLD from './build.js';
-import { BRAINS, DEFAULT_BRAIN, INTENT_ICONS, PHASE2_AT } from '../data/brains.js';
+import { BRAINS, DEFAULT_BRAIN, INTENT_ICONS, PHASE2_AT, RING_ICONS } from '../data/brains.js';
+import { zoneTiming, BOSS_RINGS } from '../data/qteProfiles.js';
 import {
   startTurn, endTurn, applyStatus, computeDamage, afterHit, roarStuns, roarTurns
 } from './combat.js';
@@ -13,11 +14,12 @@ import {
 // END TURN → each enemy runs its intent (enemyAct + enemyStrike per hit) →
 // finishEnemyAction → next round.
 
-// build: the run's fossils / mutations / perks (systems/build.js). Call
+// build: the run's fossils / mutations / perks (systems/build.js). timing: the
+// zone's defend windows and ring odds (data/qteProfiles.js zoneTiming). Call
 // startBattle once all enemies are in.
-export function createBattle({ player, enemies, rng, spawn = null, build = null }) {
+export function createBattle({ player, enemies, rng, spawn = null, build = null, timing = zoneTiming('jungle') }) {
   const st = {
-    player, enemies: [], rng, spawn, build: build ?? BLD.emptyBuild(),
+    player, enemies: [], rng, spawn, build: build ?? BLD.emptyBuild(), timing,
     energy: 0, energyNext: 0, streak: 0, turn: 0, empowered: false, pendingEmpower: false, activeEmpower: false, firstTurn: true,
     fight: { braces: 0, dmg: 0, moveKills: 0 } // this fight's tallies (goals)
   };
@@ -82,7 +84,17 @@ export function pickIntent(e) {
 }
 
 export function rollIntents(st) {
-  for (const e of alive(st)) e.intent = pickIntent(e);
+  for (const e of alive(st)) e.intent = decorate(st, e, pickIntent(e));
+}
+
+// Attack intents get a timing profile and maybe a red / purple ring flag.
+export function decorate(st, e, intent) {
+  if (!isStrike(intent) && intent.kind !== 'charge') return intent;
+  const opts = e.brain.profiles?.[intent.move] ?? 'steady';
+  intent.profile = intent.feint ? 'feint' : Array.isArray(opts) ? opts[Math.floor(st.rng.next() * opts.length)] : opts;
+  const odds = e.levelLabel === 'BOSS' ? Math.max(st.timing.rings, BOSS_RINGS) : st.timing.rings;
+  if (intent.kind !== 'charge' && !MOVES[intent.move].sure && odds > 0 && st.rng.next() < odds) intent.ring = st.rng.next() < 0.5 ? 'red' : 'purple';
+  return intent;
 }
 
 // Exact damage per hit on a clean (unblocked) hit, with current statuses.
@@ -98,7 +110,7 @@ export function intentView(st, e) {
   if (!i) return null;
   const d = intentDamage(st, e);
   const label = i.kind === 'multi' ? `${d}X${i.hits}` : d ? String(d) : '';
-  return { icon: INTENT_ICONS[i.kind], label: i.feint ? `${label}?` : label, kind: i.kind };
+  return { icon: INTENT_ICONS[i.kind], label: i.feint ? `${label}?` : label, kind: i.kind, ring: i.ring ?? null, ringIcon: RING_ICONS[i.ring] ?? null };
 }
 
 /* ---------- player turn ---------- */
@@ -267,10 +279,15 @@ export function enemyAct(st, e) {
 export const isStrike = (i) => ['attack', 'multi', 'ambush'].includes(i?.kind);
 
 // One hit of an attack (the intent's move unless given). Bracing turns a
-// missed dodge into a block.
+// missed dodge into a block. Ring flags: red can't be dodged (a perfect press
+// blocks), purple can't be blocked (and Brace doesn't help).
+export const ringOf = (e, moveId) => (moveId === e.intent?.move ? e.intent?.ring ?? null : null);
 export function enemyStrike(st, e, defend, moveId = e.intent.move) {
-  const p = st.player, m = MOVES[moveId];
-  const d = defend === 'hit' && p.status.braced ? 'block' : defend;
+  const p = st.player, m = MOVES[moveId], ring = ringOf(e, moveId);
+  let d = defend;
+  if (ring === 'red' && d === 'dodge') d = 'block';
+  if (ring === 'purple' && d === 'block') d = 'hit';
+  if (d === 'hit' && p.status.braced && ring !== 'purple') d = 'block';
   const dmg = BLD.reduceHit(st, computeDamage(e, p, m, null, { qte: 'good', defend: d, blockMult: BLD.blockMult(st, m) }));
   p.hp = Math.max(0, p.hp - dmg);
   const stunned = !!m.stunOnHit && d === 'hit' && dmg > 0 && p.hp > 0; // Club Swing
@@ -307,6 +324,6 @@ export function checkPhase(st, e) {
   e.tellMult = p2.tellMult ?? 1;
   let minion = null;
   if (p2.summon && st.spawn) minion = st.spawn(p2.summon);
-  if (minion) minion.intent = pickIntent(minion);
+  if (minion) minion.intent = decorate(st, minion, pickIntent(minion));
   return { line: p2.line, minion };
 }

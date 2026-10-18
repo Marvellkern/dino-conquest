@@ -7,6 +7,7 @@ import { sfx } from '../systems/sfx.js';
 import { animSet, roar, chargeUp, wait } from './anims.js';
 import { defendAnim, submergeAnim, surfaceAnim, floodAnim } from './gimmicks.js';
 import { hitFeedback, traitFeedback } from './feedback.js';
+import { rollTiming, MIN_DODGE_MS } from '../data/qteProfiles.js';
 
 // One enemy's action during the enemy phase, exactly as its intent showed.
 export async function enemyAction(scene, e) {
@@ -84,20 +85,26 @@ export async function enemyAttack(scene, e, moveId, { feint = false } = {}) {
   return dodged;
 }
 
+// Defend wiring for one hit: the timing profile is rolled per hit (seeded),
+// windows come from the zone (st.timing), the ring flag from the intent.
 function defendCtx(scene, e, moveId, h, feint, onHit) {
   const st = scene.st, m = MOVES[moveId], p = st.player, tight = m.tight ?? 1;
+  const own = moveId === e.intent?.move;
+  const profile = own ? e.intent.profile ?? 'steady' : (e.brain.profiles?.[moveId] ?? 'snap');
+  const flag = B.ringOf(e, moveId);
   let ring = null;
   return {
     isPlayer: false,
     hit: h,
     tellMult: e.tellMult * (st.build.run?.mods?.tell ?? 1), // Extinction 2+: faster wind-ups
-    feint: feint && h === 0,
-    open: (leadMs = 0) => {
+    timing: rollTiming(st.rng, Array.isArray(profile) ? profile[0] : profile, h),
+    open: (leadMs = 0, shape = {}) => {
       if (ring) return;
       const c = p.rig.center();
       ring = defendRing(scene, {
-        x: c.x, y: c.y, leadMs, noDodge: !!m.sure,
-        dodgeMs: dodgeWindow(p) * dodgeMult(st) * tight, blockMs: QTE.blockMs * (tight < 1 ? 0.8 : 1)
+        x: c.x, y: c.y, leadMs, noDodge: !!m.sure, ring: flag, ...shape,
+        dodgeMs: Math.max(MIN_DODGE_MS, dodgeWindow(p, st.timing.dodgeMs) * dodgeMult(st) * tight),
+        blockMs: st.timing.blockMs * (tight < 1 ? 0.8 : 1)
       });
     },
     result: () => ring,
