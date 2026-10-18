@@ -6,7 +6,7 @@
 // Echo Rock, Pack Instinct + Pack Totem.
 export const RELICS = {
   amberFang:    { name: 'Amber Fang',      desc: 'CRITS HEAL 4 HP' },
-  raptorClaw:   { name: 'Raptor Claw',     desc: 'DODGE COUNTERS HIT 1.0X' },
+  raptorClaw:   { name: 'Raptor Claw',     desc: 'DODGE COUNTERS HIT 1.0X (NOT 0.4X)' },
   tarPitStone:  { name: 'Tar Pit Stone',   desc: 'ENEMIES START POISONED 2' },
   volcanicHeart:{ name: 'Volcanic Heart',  desc: '+1 MAX ENERGY, -2 HP A TURN' },
   packTotem:    { name: 'Pack Totem',      desc: '+3 DMG PER ENEMY ALIVE' },

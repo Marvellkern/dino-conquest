@@ -92,6 +92,7 @@ export class Hud {
       const n = f.status[key];
       if (n > 0) list.push([turns ? `${label}${n}` : label, color]);
     }
+    if (this.st?.fatigue > 0) list.push([`TIRED${Math.min(4, this.st.fatigue)}`, '#f77622']);
     if (this.st?.empowered) list.unshift(['POWER!', '#ffd040']);
     else if (this.st?.streak > 0) list.unshift([`CRIT${this.st.streak}`, '#ffd040']);
     let tx = this.x + 2;

@@ -60,7 +60,7 @@ export async function enemyAction(scene, e) {
   if (!e.status.submerged) resetRig(rig);
   rig.c.setDepth(5);
 
-  if (dodged && e.hp > 0 && p.hp > 0 && !e.status.submerged) await counterAttack(scene, e);
+  if (dodged && e.hp > 0 && p.hp > 0 && !e.status.submerged && B.counterReady(st)) await counterAttack(scene, e);
   B.finishEnemyAction(st, e);
 }
 
@@ -103,7 +103,8 @@ function defendCtx(scene, e, moveId, h, feint, onHit) {
       const c = p.rig.center();
       ring = defendRing(scene, {
         x: c.x, y: c.y, leadMs, noDodge: !!m.sure, ring: flag, ...shape,
-        dodgeMs: Math.max(MIN_DODGE_MS, dodgeWindow(p, st.timing.dodgeMs) * dodgeMult(st) * tight),
+        dodgeMs: Math.max(MIN_DODGE_MS, dodgeWindow(p, st.timing.dodgeMs) * dodgeMult(st) * tight * B.dodgeFatigue(st)),
+        fatigue: st.fatigue,
         blockMs: st.timing.blockMs * (tight < 1 ? 0.8 : 1)
       });
     },
@@ -131,7 +132,7 @@ export async function evadePounce(scene, e) {
   const dodged = await enemyAttack(scene, e, 'pounce');
   resetRig(rig);
   rig.c.setDepth(5);
-  if (dodged && e.hp > 0 && scene.st.player.hp > 0) await counterAttack(scene, e);
+  if (dodged && e.hp > 0 && scene.st.player.hp > 0 && B.counterReady(scene.st)) await counterAttack(scene, e);
 }
 
 // Perfect dodge reward: a free quick bite (0.5×, no energy, no QTE).

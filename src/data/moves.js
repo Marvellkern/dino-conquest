@@ -37,7 +37,7 @@ export const MOVES = {
   magmaTail:    { name: 'Magma Tail',    power: 2.2, anim: 'tail', defIgnore: 0.2, tight: 0.6 },
   goreCharge:   { name: 'Gore Charge',   power: 2.0, anim: 'charge', defIgnore: 0.3 },
   starfall:     { name: 'Starfall',      power: 2.4, anim: 'bigBite', defIgnore: 0.3, tight: 0.5 },
-  counter:      { name: 'Counter',       power: 0.5, anim: 'bite' } // perfect-dodge riposte
+  counter:      { name: 'Counter',       power: 0.4, anim: 'bite' } // perfect-dodge riposte, once per enemy phase
 };
 for (const [id, m] of Object.entries(MOVES)) m.id = id;
 

@@ -29,6 +29,10 @@ export const ZONE_TIMING = {
   crater: { dodgeMs: 55, blockMs: 135, rings: 0.35 }
 };
 export const BOSS_RINGS = 0.35;
+
+// Dodge fatigue: each perfect dodge in a row shrinks the next dodge window.
+export const FATIGUE = { step: 0.8, floor: 0.4 };
+export const fatigueMult = (n) => Math.max(FATIGUE.floor, FATIGUE.step ** n);
 export const EXT_DODGE_MS = 3; // each Extinction level tightens the dodge window
 export const MIN_DODGE_MS = 40; // never tighter than this (touch latency)
 

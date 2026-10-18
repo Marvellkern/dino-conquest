@@ -85,7 +85,7 @@ export function attackBar(scene, { rng, sure = false, muddy = false, sweepMs = Q
 // ring: 'red' (can't dodge: perfect blocks) | 'purple' (can't block).
 export function defendRing(scene, {
   x, y, leadMs, dodgeMs = QTE.dodgeMs, blockMs = QTE.blockMs, noDodge = false,
-  ease = 'linear', pause = 0, pauseAt = 0, resetAt = null, ring = null
+  ease = 'linear', pause = 0, pauseAt = 0, resetAt = null, ring = null, fatigue = 0
 }) {
   devHook({ type: 'ring', leadMs, dodgeMs, ease, pause, resetAt, ring });
   return new Promise((resolve) => {
@@ -101,6 +101,13 @@ export function defendRing(scene, {
     const bang = scene.add.graphics().setDepth(31);
     bang.fillStyle(0x0c0e12).fillRect(x - 2, y - 7, 5, 10).fillRect(x - 2, y + 3, 5, 5);
     bang.fillStyle(color).fillRect(x - 1, y - 6, 3, 8).fillRect(x - 1, y + 4, 3, 3);
+    // Dodge fatigue pips under the target circle (one per perfect dodge in a row, up to 4).
+    const pips = Math.min(4, fatigue);
+    for (let i = 0; i < pips; i++) {
+      const px = x - (pips * 4 - 1) / 2 + i * 4;
+      bang.fillStyle(0x0c0e12).fillRect(Math.round(px) - 1, y + 13, 5, 5);
+      bang.fillStyle(0xf77622).fillRect(Math.round(px), y + 14, 3, 3);
+    }
 
     // 0..1 progress of the shrink at time t.
     const curve = (k) => (ease === 'in' ? k * k * k : ease === 'out' ? 1 - (1 - k) ** 3 : k);

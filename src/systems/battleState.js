@@ -2,7 +2,7 @@ import { MOVES, ENERGY, STREAK } from '../data/moves.js';
 import { RELIC_TUNING as RT } from '../data/relics.js';
 import * as BLD from './build.js';
 import { BRAINS, DEFAULT_BRAIN, INTENT_ICONS, PHASE2_AT, RING_ICONS } from '../data/brains.js';
-import { zoneTiming, BOSS_RINGS } from '../data/qteProfiles.js';
+import { zoneTiming, BOSS_RINGS, fatigueMult } from '../data/qteProfiles.js';
 import {
   startTurn, endTurn, applyStatus, computeDamage, afterHit, roarStuns, roarTurns
 } from './combat.js';
@@ -20,7 +20,8 @@ import {
 export function createBattle({ player, enemies, rng, spawn = null, build = null, timing = zoneTiming('jungle') }) {
   const st = {
     player, enemies: [], rng, spawn, build: build ?? BLD.emptyBuild(), timing,
-    energy: 0, energyNext: 0, streak: 0, turn: 0, empowered: false, pendingEmpower: false, activeEmpower: false, firstTurn: true,
+    energy: 0, energyNext: 0, streak: 0, turn: 0,
+    fatigue: 0, dodgedPhase: false, counterUsed: false, // dodge fatigue, one counter per enemy phase empowered: false, pendingEmpower: false, activeEmpower: false, firstTurn: true,
     fight: { braces: 0, dmg: 0, moveKills: 0 } // this fight's tallies (goals)
   };
   for (const e of enemies) addEnemy(st, e);
@@ -119,6 +120,8 @@ export function beginPlayerTurn(st) {
   const p = st.player, first = st.firstTurn;
   const fast = first && alive(st).every((e) => p.spd > e.spd);
   st.turn++;
+  if (!st.dodgedPhase) st.fatigue = 0; // a whole enemy phase without a perfect dodge lets fatigue go
+  st.dodgedPhase = false;
   const bonus = (fast ? ENERGY.fastStart : 0) + (first ? BLD.firstTurnBonus(st) : 0) + st.energyNext + BLD.turnBonus(st, st.turn);
   const gain = Math.max(0, ENERGY.perTurn + bonus - p.status.drain);
   st.energy = Math.min(BLD.maxEnergy(st), st.energy + gain);
@@ -202,7 +205,14 @@ export function playerStrike(st, id, target, qte) {
 }
 
 // Free riposte after a perfect dodge (no energy, no QTE, no streak).
+// Dodge fatigue: the dodge window multiplier for the next ring (data/qteProfiles.js).
+export const dodgeFatigue = (st) => fatigueMult(st.fatigue);
+
+// The perfect-dodge counter fires at most once per enemy phase.
+export const counterReady = (st) => !st.counterUsed;
+
 export function counterStrike(st, target) {
+  st.counterUsed = true;
   const mult = BLD.counterMult(st);
   const dmg = Math.min(target.hp, computeDamage(st.player, target, MOVES.counter, st.rng, { qte: 'good', mult }));
   target.hp -= dmg;
@@ -237,6 +247,7 @@ export function playerRoar(st) {
 export function playerBrace(st) {
   st.player.status.braced = 1;
   st.fight.braces++;
+  st.fatigue = 0; // bracing resets dodge fatigue
   return BLD.onBrace(st);
 }
 
@@ -247,7 +258,10 @@ export function consumeMuddy(st) {
   return m;
 }
 
-export function endPlayerTurn(st) { endTurn(st.player); }
+export function endPlayerTurn(st) {
+  endTurn(st.player);
+  st.counterUsed = false; // the enemy phase starts: one counter available
+}
 
 /* ---------- enemy phase ---------- */
 
@@ -295,7 +309,8 @@ export function enemyStrike(st, e, defend, moveId = e.intent.move) {
   const healed = d === 'dodge' ? BLD.onDodge(st) : 0;
   afterHit(e, p, dmg);
   st.fight.dmg += dmg;
-  if (d === 'dodge') tally(st, 'dodges');
+  if (d === 'dodge') { tally(st, 'dodges'); st.fatigue++; st.dodgedPhase = true; }
+  else if (d === 'hit' && dmg > 0) st.fatigue = 0; // getting hit resets fatigue
   if (d === 'block' && p.status.braced) tally(st, 'blocks');
   const drained = !!m.drain && d === 'hit';
   if (drained) p.status.drain += m.drain;

@@ -36,7 +36,7 @@ export const hitsAll = (st, id) =>
   || (id === 'swampSurge' && has(st, 'perkTidelord')) || (id === 'diveBomb' && has(st, 'perkStorm'))
   || (id === 'thagomizer' && has(st, 'perkThago'));
 
-export const counterMult = (st) => (has(st, 'raptorClaw') ? RT.raptorClawMult / 0.5 : 1) * (has(st, 'perkShadow') ? RT.shadowMult : 1);
+export const counterMult = (st) => (has(st, 'raptorClaw') ? RT.raptorClawMult / MOVES.counter.power : 1) * (has(st, 'perkShadow') ? RT.shadowMult : 1);
 export const dodgeMult = (st) => (has(st, 'swiftFeather') ? RT.swiftMult : 1) * (has(st, 'perkFeathers') ? RT.feathersMult : 1)
   * (has(st, 'perkSky') ? RT.skyMult : 1);
 
