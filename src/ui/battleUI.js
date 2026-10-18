@@ -45,8 +45,14 @@ export class Hud {
   bind(f) {
     if (this.f === f) return;
     this.f = f;
-    this.name.setText(f.name);
-    this.lv.setText(f.levelLabel ?? `LV${f.level}`);
+    // A name too long for the panel ("ELITE DIMETRODON") drops "Elite " and
+    // turns gold instead; anything still too long is cut.
+    const lv = f.levelLabel ?? `LV${f.level}`, room = Math.floor((this.pw - 18 - lv.length * 6) / 6);
+    let name = String(f.name), elite = false;
+    if (name.length > room && name.startsWith('Elite ')) { name = name.slice(6); elite = true; }
+    this.name.setText(name.slice(0, room));
+    this.name.label.setTint(elite ? 0xffd040 : tint(COLORS.text));
+    this.lv.setText(lv);
     this.lv.label.setTint(f.levelLabel ? 0xff6040 : tint(COLORS.textDim));
     this.shown = this.trail = f.hp;
     this.delay = 0;

@@ -141,6 +141,7 @@ export class Battle extends Phaser.Scene {
   /* ---------- enemies, layout, targeting ---------- */
 
   addEnemy(e) {
+    if (!this.textures.exists(e.skin)) e.skin = e.species; // never draw Phaser's missing-texture box
     e.rig = createRig(this, e.species, W + 80, GROUND_Y, -1, e.skin, scaleOf(e)).addShadow();
     B.addEnemy(this.st, e);
     this.markers.add(e);

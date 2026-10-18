@@ -158,6 +158,13 @@ export const FORM_ART = {
     { spikes: [{ x0: 4, x1: 17, every: 2, key: 'W' }], stretch: { cols: [8, 9], rows: [17] },
       colors: { 1: '#3e2731', 2: '#181425', 3: '#a22633', E: '#fee761' } }
   ],
+  // Dimetrodon is wildlife only, but elites use form 1.
+  dimetro: [
+    { pad: { top: 3 }, grow: [{ x0: 7, x1: 23, h: 2, key: 'f', topKey: 'g' }], stretch: { cols: [15] },
+      colors: { 4: '#733e39', 5: '#3e2731', 6: '#e4a672', f: '#f77622', g: '#feae34' } },
+    { pad: { top: 4 }, grow: [{ x0: 6, x1: 24, h: 3, key: 'f', topKey: 'g' }], spikes: [{ x0: 26, x1: 30, every: 2 }], stretch: { cols: [14, 15] },
+      colors: { 4: '#262b44', 5: '#181425', 6: '#5a6988', f: '#2ce8f5', g: '#124e89' } }
+  ],
   spino: [
     { pad: { top: 4 }, grow: [{ x0: 6, x1: 17, h: 3, key: 'f', topKey: 'g' }], stretch: { cols: [14, 15], rows: [13] } },
     { pad: { top: 6 }, grow: [{ x0: 5, x1: 18, h: 5, key: 'f', topKey: 'g' }], stretch: { cols: [14, 15, 16], rows: [12, 13] },
