@@ -1,4 +1,6 @@
-import { W, H } from '../config.js';
+import { LAND } from '../config.js';
+
+const { W, H } = LAND; // backdrops are drawn in landscape units
 
 // Drawing helpers shared by the zone backdrops (ui/zoneArt.js, ui/zoneArt2.js).
 export const PAD = 8, LW = W + PAD * 2;

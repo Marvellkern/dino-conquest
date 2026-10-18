@@ -1,4 +1,4 @@
-import { W, H } from '../config.js';
+import { W, H, PORTRAIT, setPortrait } from '../config.js';
 
 // Screen fitting and fullscreen.
 //
@@ -16,9 +16,37 @@ function available() {
   return r && r.width > 0 ? { w: r.width, h: r.height } : { w: innerWidth, h: innerHeight };
 }
 
-export function fit(game) {
+// Portrait when the usable area is clearly taller than wide.
+export const wantPortrait = () => { const { w, h } = available(); return h > w * 1.1; };
+
+// Rotating switches the layout right away on calm screens (they are rebuilt from
+// state). Anywhere else (a fight, a hatch, an end screen) it waits for the next
+// scene, which calls syncLayout() first thing in create().
+const SAFE = new Set(['Title', 'Home', 'Nest', 'Map']);
+let pending = null;
+
+function switchLayout(game, portrait) {
+  setPortrait(portrait);
+  game.scale.setGameSize(W, H);
+}
+
+export function syncLayout(scene) {
+  if (pending !== null && pending !== PORTRAIT) { switchLayout(scene.game, pending); fit(scene.game, false); }
+  pending = null;
+}
+
+export function fit(game, checkTurn = true) {
   const dpr = window.devicePixelRatio || 1;
   const { w, h } = available();
+  const portrait = wantPortrait();
+  if (checkTurn && portrait !== PORTRAIT) {
+    const active = game.scene.getScenes(true);
+    if (active.every((s) => SAFE.has(s.scene.key) && !s.busy && !s.inMenu)) {
+      switchLayout(game, portrait);
+      pending = null;
+      for (const s of active) s.scene.restart(s.sys.settings.data);
+    } else pending = portrait;
+  }
   const exact = Math.min((w * dpr) / W, (h * dpr) / H);
   let z = Math.max(1, Math.floor(exact));
   if (dpr >= 2 || (dpr >= 1.5 && z < exact * 0.9)) z = exact; // phones: always fill

@@ -1,7 +1,12 @@
-import { W, H, GROUND_Y } from '../config.js';
+import { LAND, W as SW_, H as SH_, GROUND_Y as SG_ } from '../config.js';
 import { E32 as C } from '../data/palette.js';
 import { PAD, LW, rnd, dither, bands, disc, layer } from './artKit.js';
 import { VOLCANO, CRATER } from './zoneArt2.js';
+
+// Backdrops are always drawn in landscape units; zoneBackdrop() places them for portrait.
+const { W, H, GROUND_Y } = LAND;
+// The scene's current size (portrait or landscape), read at call time.
+const SW = () => SW_, SH = () => SH_, SG = () => SG_;
 
 // Layered zone backdrops (Endesga 32 only). Each zone has 4 layers (sky, far,
 // mid, near/FG), pre-rendered to a texture once and reused. Layers sway by a
@@ -257,21 +262,38 @@ function dragonfly(scene, i) {
 /* ---------- assembly ---------- */
 
 const ZONES = { jungle: JUNGLE, swamp: SWAMP, volcano: VOLCANO, crater: CRATER };
+// Colors that extend the art past its edges in portrait (sky above, ground below).
+const EDGES = {
+  jungle: [C.forest, C.brown], swamp: [C.steel, C.darkBrown], volcano: [C.ink, C.darkBrown], crater: [C.plum, C.ink]
+};
 // Sway amplitude (px) and period (ms), parallax factor per layer.
 const MOTION = { far: [1, 5200, 0.03], mid: [1, 4100, 0.08], near: [2, 2600, 0.2] };
 
 // Returns { shift } — set shift (px, signed) each frame for the lunge parallax.
 // opts.progress (0-1): how far into the zone (the Crater's meteor grows).
+// The art is drawn for landscape; in portrait it sits in two containers moved
+// so its ground line meets the scene's GROUND_Y, cropped to the middle.
 export function zoneBackdrop(scene, zoneId, opts = {}) {
   const z = ZONES[zoneId] ?? JUNGLE, id = ZONES[zoneId] ? zoneId : 'jungle';
-  layer(scene, `bg_${id}_sky`, 0, z.sky);
+  const ox = Math.round((SW() - W) / 2), oy = SG() - GROUND_Y;
+  const back = scene.add.container(ox, oy).setDepth(1), front = scene.add.container(ox, oy).setDepth(8);
+  if (oy > 0) {
+    const [top, ground] = EDGES[id];
+    scene.add.rectangle(0, 0, SW(), oy + 1, top).setOrigin(0).setDepth(0);
+    scene.add.rectangle(0, oy + H - 1, SW(), SH() - oy - H + 1, ground).setOrigin(0).setDepth(0);
+  }
+  const before = new Set(scene.children.list);
+  back.add(layer(scene, `bg_${id}_sky`, 0, z.sky));
   const layers = {
     far: layer(scene, `bg_${id}_far`, 1, z.far),
     mid: layer(scene, `bg_${id}_mid`, 2, z.mid),
     near: layer(scene, `bg_${id}_near`, 8, z.near)
   };
+  back.add([layers.far, layers.mid]);
+  front.add(layers.near);
   const ambient = [];
   z.ambient(scene, (fn) => ambient.push(fn), opts);
+  back.add(scene.children.list.filter((o) => !before.has(o) && o !== back && o !== front && !o.parentContainer));
   const bd = { shift: 0 };
   let t = 0;
   const tick = (_, dt) => {

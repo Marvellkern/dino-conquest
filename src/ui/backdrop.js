@@ -15,15 +15,16 @@ const MAP_TINT = {
 export function drawMapBackground(scene, zone) {
   const t = MAP_TINT[zone] ?? MAP_TINT.jungle;
   const g = scene.add.graphics();
-  t.bands.forEach((c, i) => g.fillStyle(c).fillRect(0, i * 45, W, 45));
+  const bh = Math.ceil(H / 4);
+  t.bands.forEach((c, i) => g.fillStyle(c).fillRect(0, i * bh, W, bh));
   g.fillStyle(t.tuft);
-  for (let i = 0; i < 70; i++) {
-    const x = (i * 53) % W, y = 44 + ((i * 97) % 112);
+  for (let i = 0; i < Math.round((70 * W * H) / (320 * 180)); i++) {
+    const x = (i * 53) % W, y = 44 + ((i * 97) % (H - 68));
     g.fillRect(x, y, 3, 1).fillRect(x + 1, y - 1, 1, 1);
   }
   if (zone === 'swamp') { // a few dark pools
     g.fillStyle(0x0e1a1a);
-    for (let i = 0; i < 8; i++) g.fillRect((i * 89 + 20) % W, 50 + ((i * 41) % 100), 14, 3);
+    for (let i = 0; i < 8; i++) g.fillRect((i * 89 + 20) % W, 50 + ((i * 41) % (H - 80)), 14, 3);
   }
   return g;
 }

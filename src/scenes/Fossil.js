@@ -1,4 +1,5 @@
-import { W, H, COLORS } from '../config.js';
+import { syncLayout } from '../systems/screen.js';
+import { W, H, COLORS, lp } from '../config.js';
 import { text } from '../ui/font.js';
 import { panel } from '../ui/pixel.js';
 import { makeTexture } from '../sprites/renderSprite.js';
@@ -11,7 +12,10 @@ import { sfx } from '../systems/sfx.js';
 import { onPress } from '../systems/qte.js';
 import { wait } from '../battle/anims.js';
 
-const SLAB = { x: 12, y: 34, w: 164, h: 118 };
+// The rock slab and the summary panel: side by side, or stacked in portrait.
+let SLAB = { x: 12, y: 34, w: 164, h: 118 };
+const BOXES = () => lp({ slab: { x: 12, y: 34, w: 164, h: 118 }, panel: [184, 34, 128, 118] },
+  { slab: { x: 8, y: 30, w: 164, h: 118 }, panel: [8, 154, 164, 116] });
 
 // Death screen: the dino turns to stone in the strata, the run is summed up,
 // goals are checked, and the dino passes one fossil or mutation to its heir.
@@ -19,6 +23,8 @@ export class Fossil extends Phaser.Scene {
   constructor() { super('Fossil'); }
 
   create() {
+    syncLayout(this);
+    SLAB = BOXES().slab;
     const run = session.run;
     if (!run) { this.scene.start('Home'); return; }
     this.fx = new Fx(this);
@@ -65,7 +71,8 @@ export class Fossil extends Phaser.Scene {
       await wait(this, 220);
     }
 
-    panel(this.add.graphics(), 184, 34, 128, 118);
+    const [px, py, pw, ph] = BOXES().panel;
+    panel(this.add.graphics(), px, py, pw, ph);
     const lines = [
       [dinoName(d), COLORS.text],
       [`LEVEL ${d.level}`, COLORS.textDim],
@@ -75,13 +82,13 @@ export class Fossil extends Phaser.Scene {
       [`+${amber} AMBER`, '#e8a030'],
       [`GENERATION ${meta.stats.gens + 1}`, '#d6c9a8']
     ];
-    lines.forEach(([s, color], i) => text(this, 190, 40 + i * 15, s, { color, shadow: i === 0 }));
+    lines.forEach(([s, color], i) => text(this, px + 6, py + 6 + i * 15, s, { color, shadow: i === 0 }));
     await wait(this, 900);
 
     await endGoals(this, run, false);
     addAncestor(run, false, await pickHeir(this, run));
 
-    const prompt = text(this, W / 2, 162, 'TAP TO RETURN TO THE NEST', { origin: [0.5, 0], color: COLORS.textDim, shadow: false });
+    const prompt = text(this, W / 2, H - 18, lp('TAP TO RETURN TO THE NEST', 'TAP TO RETURN'), { origin: [0.5, 0], color: COLORS.textDim, shadow: false });
     this.tweens.add({ targets: prompt, alpha: 0.3, duration: 500, yoyo: true, repeat: -1 });
     await wait(this, 300);
     await new Promise((r) => { const off = onPress(this, () => { off(); r(); }); });

@@ -1,4 +1,5 @@
-import { W, GROUND_Y, COLORS } from '../config.js';
+import { syncLayout } from '../systems/screen.js';
+import { W, GROUND_Y, COLORS, lp } from '../config.js';
 import { TRAITS } from '../data/traits.js';
 import { REWARDS, ZONES } from '../data/zones.js';
 import { RETRY_HP } from '../data/progression.js';
@@ -28,10 +29,11 @@ import {
   buildOf
 } from '../run/run.js';
 
-const PLAYER_X = 80;
-// Dinos stand at 3x; small pack members and summoned minions at 2x so a
-// 3-enemy pack still fits on the right.
-const scaleOf = (f) => (f.small ? 2 : 3);
+const playerX = () => lp(80, 36);
+// Dinos stand at 3x (2x in portrait); small pack members and summoned minions
+// one step smaller, so a 3-enemy pack still fits on the right.
+const BIG = () => lp(3, 2);
+const scaleOf = (f) => (f.small ? BIG() - 1 : BIG());
 
 // One fight: the player (left) vs 1–3 enemies (right, mirrored).
 // Each round: enemies show intents → the player spends energy → END TURN →
@@ -59,6 +61,7 @@ export class Battle extends Phaser.Scene {
   }
 
   create() {
+    syncLayout(this);
     this.rng = makeRng(this.cfg.seed);
     this.fx = new Fx(this);
     this.pending = [];
@@ -83,20 +86,22 @@ export class Battle extends Phaser.Scene {
       enemies = this.cfg.enemies.map((tok) => this.testEnemy(tok));
       build = { relics: new Set(this.cfg.relics), mut: { ...this.cfg.mutations } };
     }
-    player.rig = createRig(this, player.species, PLAYER_X, GROUND_Y, 1, pSkin, 3).addShadow();
+    player.rig = createRig(this, player.species, playerX(), GROUND_Y, 1, pSkin, BIG()).addShadow();
+    player.rig.homeX = player.rig.x = Math.max(playerX(), player.rig.halfW + 2); // wide dinos stay on screen
     this.st = B.createBattle({ player, enemies: [], rng: this.rng, spawn: (sp) => this.spawn(sp), build });
     this.markers = new EnemyMarkers(this, (e) => this.setTarget(e));
     for (const e of enemies) this.addEnemy(e);
     this.layout(false);
     B.startBattle(this.st);
-    this.relicBar = new RelicBar(this, 129, 6, { cols: 7, onInfo: (t) => this.say(t) }).set([...build.relics]);
+    // Fossils: between the HUDs (landscape), a row under the enemy HUD (portrait).
+    this.relicBar = new RelicBar(this, lp(129, 6), lp(6, 48), { cols: lp(7, 18), onInfo: (t) => this.say(t) }).set([...build.relics]);
 
     this.playerHud = new Hud(this, 'player', this.st);
     this.playerHud.bind(player);
     this.targetHud = new Hud(this, 'enemy');
     this.target = this.st.enemies[0];
     this.bar = new MoveBar(this, this.st, { onDeny: (why) => why && this.say(why) });
-    this.msg = text(this, W / 2, 47, '', { origin: 0.5 }).setDepth(12); // row y44-50: under the status tags, above the enemy markers
+    this.msg = text(this, W / 2, lp(47, 66), '', { origin: 0.5 }).setDepth(12); // under the status tags, above the enemy markers
 
     this.onKey = (ev) => {
       if (!this.planning || ev.repeat) return;
@@ -144,7 +149,8 @@ export class Battle extends Phaser.Scene {
   layout(animate = true, skip = null) {
     const list = B.alive(this.st), gap = 6;
     const total = list.reduce((t, e) => t + e.rig.halfW * 2, 0) + gap * (list.length - 1);
-    let x = Math.max(136, 312 - total);
+    const pr = this.st.player.rig, minX = lp(136, pr.homeX + pr.halfW + 4); // enemies start right of the player
+    let x = Math.max(minX, W - 8 - total);
     for (const e of list) {
       e.rig.homeX = Math.round(x + e.rig.halfW);
       x += e.rig.halfW * 2 + gap;
@@ -235,7 +241,7 @@ export class Battle extends Phaser.Scene {
         await wait(this, 400);
       }
       if (B.lost(st)) return this.finish(false);
-      if (t.fast) this.fx.pop(PLAYER_X, 70, 'FASTER! +1 ENERGY', '#fff096', 1, 1100);
+      if (t.fast) this.fx.pop(playerX(), lp(70, 110), 'FASTER! +1 ENERGY', '#fff096', 1, 1100);
       if (t.stunned) { this.say('YOU ARE STUNNED!'); await wait(this, 900); }
       else await this.playerTurn(round === 0);
       if (B.won(st)) return this.finish(true);
@@ -280,7 +286,7 @@ export class Battle extends Phaser.Scene {
     p.startIdle();
     for (const e of this.st.enemies) e.rig.startIdle();
     const boss = this.node?.type === 'boss';
-    const t = text(this, W / 2, 84, boss ? 'BOSS!' : 'FIGHT!', { scale: 3, color: boss ? '#ff6040' : COLORS.accent, origin: 0.5 }).setDepth(40);
+    const t = text(this, W / 2, lp(84, 120), boss ? 'BOSS!' : 'FIGHT!', { scale: 3, color: boss ? '#ff6040' : COLORS.accent, origin: 0.5 }).setDepth(40);
     sfx(boss ? 'growl' : 'fight');
     if (boss) this.fx.shake(3, 400);
     await wait(this, boss ? 900 : 650);
@@ -349,8 +355,8 @@ export class Battle extends Phaser.Scene {
 
   async banner(title, won, lines, prompt) {
     const h = 34 + lines.length * 10 + 12;
-    const y = Math.round(84 - h / 2);
-    panel(this.add.graphics().setDepth(40), 70, y, 180, h);
+    const y = Math.round(lp(84, 130) - h / 2), bw = Math.min(180, W - 8);
+    panel(this.add.graphics().setDepth(40), Math.round((W - bw) / 2), y, bw, h);
     text(this, W / 2, y + 14, title, { scale: 2, color: won ? COLORS.accent : '#e06060', origin: 0.5 }).setDepth(41);
     const color = (l) => (l.startsWith('LEVEL') ? '#7fe0ff' : l.startsWith('GOAL') ? '#ffd040' : COLORS.text);
     lines.forEach((l, i) => text(this, W / 2, y + 30 + i * 10, l, { origin: [0.5, 0], color: color(l) }).setDepth(41));

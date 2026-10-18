@@ -1,4 +1,5 @@
-import { W, H, COLORS } from '../config.js';
+import { syncLayout } from '../systems/screen.js';
+import { W, H, COLORS, lp } from '../config.js';
 import { PROGRESSION } from '../data/progression.js';
 import { PERKS } from '../data/relics.js';
 import { text } from '../ui/font.js';
@@ -9,7 +10,8 @@ import { sfx } from '../systems/sfx.js';
 import { onPress } from '../systems/qte.js';
 import { roar, wait } from '../battle/anims.js';
 
-const X = W / 2, GROUND = 138;
+// Stage center and floor, read per layout in create().
+let X = 160, GROUND = 138;
 
 // Evolution moment (~2.5s, tap to skip): screen dims, white silhouettes of the
 // old and new forms flicker faster and faster, flash, particles, and the new
@@ -18,6 +20,9 @@ export class Evolution extends Phaser.Scene {
   constructor() { super('Evolution'); }
 
   create() {
+    syncLayout(this);
+    X = W / 2;
+    GROUND = lp(138, 210);
     this.fx = new Fx(this);
     this.skipped = false;
     this.cameras.main.fadeIn(150);
@@ -55,7 +60,7 @@ export class Evolution extends Phaser.Scene {
     const before = createRig(this, d.species, X, GROUND, 1, oldSkin, 3);
     const after = createRig(this, d.species, X, GROUND, 1, newSkin, 3);
     after.c.setVisible(false);
-    const title = text(this, X, 14, `${oldName} IS EVOLVING!`, { origin: [0.5, 0] });
+    const title = text(this, X, lp(14, 50), `${oldName} IS EVOLVING!`, { origin: [0.5, 0] });
 
     this.skipP = new Promise((r) => { this.offSkip = onPress(this, () => { this.skipped = true; this.offSkip(); r(); }); });
     await this.nap(450);
@@ -90,22 +95,22 @@ export class Evolution extends Phaser.Scene {
     title.destroy();
 
     // The new name slams down from above.
-    const name = text(this, X, -20, `${dinoName(d)}!`, { scale: 3, color: COLORS.accent, origin: [0.5, 0] });
+    const name = text(this, X, lp(-20, 20), `${dinoName(d)}!`, { scale: lp(3, 2), color: COLORS.accent, origin: [0.5, 0] });
     await new Promise((r) => this.tweens.add({ targets: name, y: '+=32', duration: 260, ease: 'Bounce.Out', onComplete: r }));
     this.fx.shake(3, 200);
     sfx('crit');
 
     // Details go on the floor strip, below the (big, 3x) dino.
-    text(this, X, 141, `+${Math.round(PROGRESSION.evoBoost * 100)}% ALL STATS`, { origin: [0.5, 0], color: '#7fe0ff' });
+    text(this, X, GROUND + 3, `+${Math.round(PROGRESSION.evoBoost * 100)}% ALL STATS`, { origin: [0.5, 0], color: '#7fe0ff' });
     if (perk) {
-      text(this, X, 150, `NEW PERK: ${PERKS[perk].name.toUpperCase()}`, { origin: [0.5, 0], color: '#ffd040' });
-      text(this, X, 160, PERKS[perk].desc, { origin: [0.5, 0], color: '#c0cbdc', small: true });
+      text(this, X, GROUND + 12, `NEW PERK: ${PERKS[perk].name.toUpperCase()}`, { origin: [0.5, 0], color: '#ffd040' });
+      text(this, X, GROUND + 22, PERKS[perk].desc, { origin: [0.5, 0], color: '#c0cbdc', small: true });
     }
     after.startIdle();
     if (!this.skipped) { await roar(this, after, () => {}); after.startIdle(); }
     sfx('levelup');
 
-    const prompt = text(this, X, 170, 'TAP TO CONTINUE', { origin: [0.5, 0], color: COLORS.textDim, small: true });
+    const prompt = text(this, X, lp(170, H - 20), 'TAP TO CONTINUE', { origin: [0.5, 0], color: COLORS.textDim, small: true });
     this.tweens.add({ targets: prompt, alpha: 0.3, duration: 500, yoyo: true, repeat: -1 });
     await wait(this, 350);
     await new Promise((r) => { const off = onPress(this, () => { off(); r(); }); });

@@ -1,4 +1,4 @@
-import { W } from '../config.js';
+import { W, lp } from '../config.js';
 import { QTE, MUDDY } from '../data/moves.js';
 import { panel, pixelCircle } from '../ui/pixel.js';
 import { text } from '../ui/font.js';
@@ -22,7 +22,8 @@ function ticker(scene, fn) {
 }
 
 // Text rows under the HUD: status tags y38-46, battle message y48-56, QTE hint y58-66.
-const HINT_Y = 62;
+const hintY = () => lp(62, 78);
+const barY = () => lp(72, 88);
 
 // Dev builds only: lets automated play-tests time their presses.
 const devHook = (info) => { if (import.meta.env.DEV) window.__qteHook?.(info); };
@@ -31,7 +32,7 @@ const devHook = (info) => { if (import.meta.env.DEV) window.__qteHook?.(info); }
 export function attackBar(scene, { rng, sure = false, muddy = false, sweepMs = QTE.sweepMs } = {}) {
   const sweetW = Math.round(QTE.sweetW * (muddy ? MUDDY.sweet : 1)), goodW = Math.round(QTE.goodW * (muddy ? MUDDY.good : 1));
   return new Promise((resolve) => {
-    const BW = 100, BH = 6, x0 = Math.round(W / 2 - BW / 2), y0 = 72;
+    const BW = 100, BH = 6, x0 = Math.round(W / 2 - BW / 2), y0 = barY();
     const c = Math.round(rng.range(0.55, 0.85) * BW);
     devHook({ type: 'bar', sweepMs, center: c, width: BW, muddy });
     const g = scene.add.graphics().setDepth(30);
@@ -40,7 +41,7 @@ export function attackBar(scene, { rng, sure = false, muddy = false, sweepMs = Q
     g.fillStyle(muddy ? 0x5a5030 : 0x3e7a3a).fillRect(x0 + c - goodW / 2, y0, goodW, BH);
     g.fillStyle(0xfff096).fillRect(x0 + c - sweetW / 2, y0, sweetW, BH);
     const m = scene.add.graphics().setDepth(31);
-    const hint = text(scene, W / 2, HINT_Y, muddy ? 'MUDDY! TAP IN THE YELLOW!' : 'TAP IN THE YELLOW!', { origin: 0.5, color: muddy ? '#b09a62' : '#f0ecdc' }).setDepth(31);
+    const hint = text(scene, W / 2, hintY(), muddy ? 'MUDDY! TAP IN THE YELLOW!' : 'TAP IN THE YELLOW!', { origin: 0.5, color: muddy ? '#b09a62' : '#f0ecdc' }).setDepth(31);
 
     let t = 0, done = false;
     const pos = () => Math.min(BW - 2, Math.round((t / sweepMs) * (BW - 2)));
@@ -84,7 +85,7 @@ export function defendRing(scene, { x, y, leadMs, dodgeMs = QTE.dodgeMs, blockMs
   return new Promise((resolve) => {
     const R0 = 38, RT = 10;
     const g = scene.add.graphics().setDepth(30);
-    const hint = text(scene, W / 2, HINT_Y, 'TAP WHEN THE RINGS MEET!', { origin: 0.5 }).setDepth(31);
+    const hint = text(scene, W / 2, hintY(), lp('TAP WHEN THE RINGS MEET!', 'TAP WHEN RINGS MEET!'), { origin: 0.5 }).setDepth(31);
     // "!" drawn in pixels, symmetric around the ring's center pixel (a font
     // glyph sits off-center in its cell). 3px wide, rows y-6..y+6.
     x = Math.round(x); y = Math.round(y);

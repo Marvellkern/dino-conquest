@@ -17,12 +17,13 @@ export class Button {
     this.g = scene.add.graphics().setDepth(depth);
     const cx = x + Math.floor(w / 2);
     this.keyText = text(scene, x + 3, y + 3, key, { color: COLORS.textDim, small: true }).setDepth(depth + 1);
-    // Label (7px) + gap + sub (5px), centered as a block; a lone label is centered alone.
-    const gap = h >= 32 ? 4 : 3, block = 7 + gap + 5;
-    const ly = Math.floor((h - 1 - block) / 2) + textTop, sy = ly + 7 + gap;
-    this.rows = { ly, mid: Math.floor((h - 1 - 7) / 2) + textTop };
-    this.label = text(scene, cx, y + ly, label, { origin: [0.5, 0] }).setDepth(depth + 1);
-    this.sub = text(scene, cx, y + sy, sub, { origin: [0.5, 0], color: '#c0cbdc', small: true }).setDepth(depth + 1);
+    // Label (7px) + gap + sub, centered as a block; a lone label is centered alone.
+    // A sub-line too wide for the button wraps (portrait rows have room for two lines).
+    this.textTop = textTop;
+    this.label = text(scene, cx, y, label, { origin: [0.5, 0] }).setDepth(depth + 1);
+    this.sub = text(scene, cx, y, sub, { origin: [0.5, 0], color: '#c0cbdc', small: true }).setDepth(depth + 1);
+    this.sub.setMaxWidth(w - 8);
+    this.sub.setCenterAlign?.();
     this.hasSub = !!sub;
     this.placeLabel();
     // Depth matters for input: Phaser only hits the top-most interactive object.
@@ -52,9 +53,16 @@ export class Button {
     return this;
   }
 
-  // A label with no sub-line sits in the middle; otherwise on the top row.
-  // (The label is a container whose children were built at the top row.)
-  placeLabel() { this.label.y = this.hasSub ? 0 : this.rows.mid - this.rows.ly; }
+  // Lay out label + sub for the current text. (The label is a container whose
+  // children were built at y, so moving the container moves both layers.)
+  placeLabel() {
+    const { h, textTop } = this, gap = h >= 32 ? 4 : 3;
+    if (!this.hasSub) { this.label.y = Math.floor((h - 1 - 7) / 2) + textTop; return; }
+    const subH = Math.max(5, Math.round(this.sub.height) - 1);
+    const ly = Math.max(2, Math.floor((h - 1 - (7 + gap + subH)) / 2) + textTop);
+    this.label.y = ly;
+    this.sub.y = this.y + ly + 7 + gap;
+  }
 
   destroy() {
     for (const o of [this.g, this.keyText, this.label, this.sub, this.zone]) o.destroy();

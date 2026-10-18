@@ -1,4 +1,5 @@
-import { W, COLORS } from '../config.js';
+import { syncLayout } from '../systems/screen.js';
+import { W, H, COLORS, lp } from '../config.js';
 import { SPECIES } from '../data/species.js';
 import { RARITIES } from '../data/hatch.js';
 import { GOAL_ORDER } from '../data/goals.js';
@@ -15,25 +16,32 @@ import { sfx } from '../systems/sfx.js';
 const DEX_ORDER = ['compy', 'raptor', 'trike', 'rex', 'pachy', 'sarco', 'spino', 'ankylo', 'ptera', 'stego', 'carno'];
 const DEX_PAGE = 4;
 
+// Boxes [x, y, w, h] per layout: landscape side by side, portrait stacked.
+const BOX = () => lp(
+  { dex: [4, 20, 152, 118], nest: [162, 20, 154, 118], hatch: [4, 142, 224, 34], settings: [232, 142, 84, 34] },
+  { dex: [4, 20, 172, 118], nest: [4, 142, 172, 108], hatch: [4, 254, 172, 34], settings: [4, 292, 172, 24] }
+);
+
 // Home / Nest hub: Amber, Dino-dex, the Nest menus (unlocks, goals, family
 // tree, Extinction level), and the way into a new run.
 export class Home extends Phaser.Scene {
   constructor() { super('Home'); }
 
   create() {
+    syncLayout(this);
     this.inMenu = false; // scene instances are reused across restarts
     this.cameras.main.fadeIn(150);
     const g = this.add.graphics();
-    g.fillStyle(0x16181d).fillRect(0, 0, W, 180);
+    g.fillStyle(0x16181d).fillRect(0, 0, W, H);
     text(this, 6, 6, 'DINO-CONQUEST', { color: COLORS.accent });
     text(this, W - 6, 6, `AMBER ${meta.amber}`, { color: '#e8a030', origin: [1, 0] });
 
     this.drawDex();
     this.drawNest();
 
-    const hatch = this.hatchBtn = new Button(this, 4, 142, 224, 34, { label: 'HATCH AN EGG', onClick: () => this.go() });
+    const hatch = this.hatchBtn = new Button(this, ...BOX().hatch, { label: 'HATCH AN EGG', onClick: () => this.go() });
     this.refreshHatch();
-    this.settingsBtn = new Button(this, 232, 142, 84, 34, { key: 'S', label: 'SETTINGS', sub: 'SOUND, SHAKE', onClick: () => this.settings() });
+    this.settingsBtn = new Button(this, ...BOX().settings, { key: 'S', label: 'SETTINGS', sub: 'SOUND, SHAKE', onClick: () => this.settings() });
     this.onKey = (e) => {
       if (e.repeat || this.inMenu) return;
       if (e.code === 'Space' || e.code === 'Enter') hatch.click();
@@ -57,13 +65,15 @@ export class Home extends Phaser.Scene {
 
   // Four species per page; tap the panel or press D to flip pages.
   drawDex() {
-    panel(this.add.graphics(), 4, 20, 152, 118);
+    const [x, y, w, h] = BOX().dex;
+    this.dexBox = BOX().dex;
+    panel(this.add.graphics(), x, y, w, h);
     const seen = DEX_ORDER.filter((id) => meta.dex[id]);
-    text(this, 10, 25, `DINO-DEX ${seen.length}/${DEX_ORDER.length}`, { shadow: false });
+    text(this, x + 6, y + 5, `DINO-DEX ${seen.length}/${DEX_ORDER.length}`, { shadow: false });
     this.dexPages = Math.ceil(DEX_ORDER.length / DEX_PAGE);
     this.dexPage = 0;
-    this.dexPageText = text(this, 150, 25, '', { color: COLORS.textDim, origin: [1, 0], shadow: false });
-    this.add.zone(4, 20, 152, 118).setOrigin(0).setInteractive({ useHandCursor: true }).on('pointerdown', () => this.flipDex());
+    this.dexPageText = text(this, x + w - 6, y + 5, '', { color: COLORS.textDim, origin: [1, 0], shadow: false });
+    this.add.zone(x, y, w, h).setOrigin(0).setInteractive({ useHandCursor: true }).on('pointerdown', () => this.flipDex());
     this.drawDexPage();
   }
 
@@ -80,7 +90,8 @@ export class Home extends Phaser.Scene {
     if (this.dexPages > 1) this.dexPageText.setText(`D ${this.dexPage + 1}/${this.dexPages}`);
     // Cards: 66x48 with a 4px gap, inside the panel (y 20-138).
     DEX_ORDER.slice(this.dexPage * DEX_PAGE, (this.dexPage + 1) * DEX_PAGE).forEach((id, i) => {
-      const cx = 8 + (i % 2) * 74 + 36, top = 34 + Math.floor(i / 2) * 52;
+      const [bx, by, bw] = this.dexBox;
+      const cx = bx + Math.floor(bw / 2) + (i % 2 ? 37 : -37), top = by + 14 + Math.floor(i / 2) * 52;
       const entry = meta.dex[id], rar = RARITIES[SPECIES[id].rarity];
       if (entry) { // rarity-colored card behind each discovered species
         const card = this.add.graphics(), rc = parseInt(rar.color.slice(1), 16);
@@ -107,10 +118,11 @@ export class Home extends Phaser.Scene {
 
   // The Nest panel: heir, then a 2x2 grid of menu buttons.
   drawNest() {
-    panel(this.add.graphics(), 162, 20, 154, 118);
-    text(this, 168, 25, 'THE NEST', { shadow: false });
+    const [x, y, w, h] = BOX().nest;
+    panel(this.add.graphics(), x, y, w, h);
+    text(this, x + 6, y + 5, 'THE NEST', { shadow: false });
     const heir = meta.heir;
-    text(this, 168, 35, heir ? `HEIR: ${heir.name.toUpperCase()}` : 'NO HEIR YET', { color: heir ? '#e8a030' : COLORS.textDim, shadow: false });
+    text(this, x + 6, y + 15, heir ? `HEIR: ${heir.name.toUpperCase()}` : 'NO HEIR YET', { color: heir ? '#e8a030' : COLORS.textDim, shadow: false });
     const open = (mode) => () => this.open(mode);
     const ext = extUnlocked();
     const btns = [
@@ -121,12 +133,13 @@ export class Home extends Phaser.Scene {
     ];
     this.nestKeys = {};
     btns.forEach(([code, key, label, sub, fn], i) => {
-      const b = new Button(this, 166 + (i % 2) * 74, 46 + Math.floor(i / 2) * 34, 72, 32, { key, label, sub, onClick: fn });
+      const bw = Math.floor((w - 10) / 2);
+      const b = new Button(this, x + 4 + (i % 2) * (bw + 2), y + 26 + Math.floor(i / 2) * 34, bw, 32, { key, label, sub, onClick: fn });
       if (i === 3) { b.setEnabled(ext); b.onDeny = () => this.say('CLEAR THE SWAMP TO UNLOCK'); this.extBtn = b; }
       this.nestKeys[code] = b;
     });
     const { runs, wins } = meta.stats;
-    this.status = text(this, 168, 126, `RUNS ${runs}  WINS ${wins}`, { color: COLORS.textDim, shadow: false });
+    this.status = text(this, x + 6, y + h - 12, `RUNS ${runs}  WINS ${wins}`, { color: COLORS.textDim, shadow: false });
   }
 
   say(s) { this.status.setText(s); }

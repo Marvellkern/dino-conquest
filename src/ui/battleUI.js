@@ -1,4 +1,4 @@
-import { W, H, COLORS } from '../config.js';
+import { W, H, COLORS, PORTRAIT, lp } from '../config.js';
 import { MOVES } from '../data/moves.js';
 import { MUTATIONS } from '../data/mutations.js';
 import { blocked, affordable, intentView, maxEnergy, moveCost } from '../systems/battleState.js';
@@ -7,9 +7,10 @@ import { Button } from './button.js';
 import { panel } from './pixel.js';
 import { text } from './font.js';
 
-const PW = 120;
-const MARK_TOP = 78; // highest sprite top the enemy markers stack above
-const HP_W = PW - 12;
+// HUD panel width: landscape side by side, portrait full width (enemy top, player under the stage).
+const panelW = () => lp(120, W - 8);
+export const PLAYER_HUD_Y = () => lp(4, 202);
+const markTop = () => lp(78, 116); // highest sprite top the enemy markers stack above
 
 // Status tags: [status key, label, color, show turns?]
 const PLAYER_TAGS = [
@@ -30,7 +31,8 @@ export class Hud {
   constructor(scene, side, st = null) {
     this.side = side;
     this.st = st;
-    const x = side === 'player' ? 4 : W - 4 - PW, y = 4;
+    const PW = this.pw = panelW(), x = side === 'player' ? 4 : W - 4 - PW, y = side === 'player' ? PLAYER_HUD_Y() : 4;
+    this.hpW = PW - 12;
     Object.assign(this, { x, y, bx: x + 6, by: y + 15 });
     panel(scene.add.graphics().setDepth(10), x, y, PW, 32);
     this.name = text(scene, x + 6, y + 5, '').setDepth(11);
@@ -64,6 +66,7 @@ export class Hud {
     const k = this.shown / f.maxHp;
     const col = k > 0.5 ? 0x5ca048 : k > 0.25 ? 0xe0b040 : 0xc8281e;
     const g = this.bar.clear(), { bx, by } = this;
+    const HP_W = this.hpW;
     g.fillStyle(0x0c0e12).fillRect(bx - 1, by - 1, HP_W + 2, 7);
     g.fillStyle(0x1a1d23).fillRect(bx, by, HP_W, 5);
     g.fillStyle(0xffffff).fillRect(bx, by, Math.round((HP_W * this.trail) / f.maxHp), 5);
@@ -74,7 +77,7 @@ export class Hud {
     if (this.st) { // energy pips, right of the HP text
       const max = maxEnergy(this.st);
       for (let i = 0; i < max; i++) {
-        const px = this.x + PW - 8 - (max - 1 - i) * 8, py = this.y + 23;
+        const px = this.x + this.pw - 8 - (max - 1 - i) * 8, py = this.y + 23;
         g.fillStyle(0x0c0e12).fillRect(px - 1, py - 1, 7, 7);
         g.fillStyle(i < this.st.energy ? 0xfff096 : 0x3a3e48).fillRect(px, py, 5, 5);
         if (i < this.st.energy) g.fillStyle(0xffffff).fillRect(px, py, 2, 1);
@@ -132,7 +135,7 @@ export class EnemyMarkers {
   update(st, target, time) {
     for (const [e, it] of this.items) {
       // Tall 3x sprites: keep the marker stack (arrow, intent, HP) below the HUD panels.
-      const r = e.rig, x = Math.round(r.homeX), top = Math.max(MARK_TOP, r.homeY - r.h * r.scale);
+      const r = e.rig, x = Math.round(r.homeX), top = Math.max(markTop(), r.homeY - r.h * r.scale);
       it.zone.setPosition(x, r.homeY).setSize(r.halfW * 2, r.h * r.scale);
       const g = it.g.clear(), bw = 28, k = Math.max(0, e.hp / e.maxHp);
       g.fillStyle(0x0c0e12).fillRect(x - bw / 2 - 1, top - 7, bw + 2, 4);
@@ -149,7 +152,7 @@ export class EnemyMarkers {
     }
     const t = this.items.has(target) && this.showIntents ? target : null;
     this.arrow.setVisible(!!t);
-    if (t) this.arrow.setPosition(t.rig.homeX, Math.max(MARK_TOP, t.rig.homeY - t.rig.h * t.rig.scale) - 27 + (Math.floor(time / 250) % 2));
+    if (t) this.arrow.setPosition(t.rig.homeX, Math.max(markTop(), t.rig.homeY - t.rig.h * t.rig.scale) - 27 + (Math.floor(time / 250) % 2));
   }
 }
 
@@ -162,16 +165,18 @@ export class MoveBar {
     this.st = st;
     this.on = false;
     this.cb = null;
-    const top = 140;
+    // Landscape: one row of 6 along the bottom. Portrait: a 3x2 grid.
+    const top = lp(140, 246);
     const bg = scene.add.graphics().setDepth(10);
     bg.fillStyle(0x16181d).fillRect(0, top, W, H - top);
     bg.fillStyle(0x0c0e12).fillRect(0, top, W, 1);
     bg.fillStyle(0x2e333d).fillRect(0, top + 1, W, 1);
 
-    const p = st.player, gap = 3, bw = 49;
+    const p = st.player, gap = 3, bw = lp(49, 56), bh = 34;
+    const cell = (i) => (PORTRAIT ? [3 + (i % 3) * (bw + 3), top + 3 + Math.floor(i / 3) * (bh + 2)] : [3 + i * (bw + gap), top + 4]);
     this.btns = p.moves.map((id, i) => {
       const mu = MUTATIONS[id]?.[mutation(st, id)]; // mutated moves get new text + a colored badge
-      const b = new Button(scene, 3 + i * (bw + gap), top + 4, bw, 34, {
+      const b = new Button(scene, ...cell(i), bw, bh, {
         key: String(i + 1), label: (mu?.btn ?? MOVES[id].btn) + '+'.repeat(p.moveUps[id] ?? 0), sub: mu?.desc ?? MOVES[id].desc,
         cost: moveCost(st, id), textTop: 4, onClick: () => this.pick(id), onDeny: () => this.on && onDeny(blocked(st, id))
       });
@@ -179,9 +184,9 @@ export class MoveBar {
       b.icon = scene.add.image(b.x + Math.floor(bw / 2) - 4, b.y + 2, iconOf(id, p.species)).setOrigin(0).setDepth(13);
       return b;
     });
-    const ex = 3 + 5 * (bw + gap);
-    this.end = new Button(scene, ex, top + 4, W - 3 - ex, 34, { key: 'E', label: 'END', sub: 'TURN', textTop: 4, onClick: () => this.pick('end') });
-    this.end.icon = scene.add.image(ex + Math.floor((W - 3 - ex) / 2) - 4, top + 6, 'mi_end').setOrigin(0).setDepth(13);
+    const [ex, ey] = cell(5), ew = PORTRAIT ? bw : W - 3 - ex;
+    this.end = new Button(scene, ex, ey, ew, bh, { key: 'E', label: 'END', sub: 'TURN', textTop: 4, onClick: () => this.pick('end') });
+    this.end.icon = scene.add.image(ex + Math.floor(ew / 2) - 4, ey + 2, 'mi_end').setOrigin(0).setDepth(13);
 
     this.onKey = (e) => {
       if (e.repeat) return;

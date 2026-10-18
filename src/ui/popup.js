@@ -8,14 +8,15 @@ import { Button } from './button.js';
 // Resolves with the chosen index. Click/tap or keys 1–N. bh: button height.
 export function choose(scene, { title, lines = [], options, bh = 32 }) {
   return new Promise((resolve) => {
-    const PW = 236, x = (W - PW) / 2, gap = bh < 32 ? 3 : 4;
+    const PW = Math.min(236, W - 8), x = Math.round((W - PW) / 2), gap = bh < 32 ? 3 : 4;
     const ph = 20 + lines.length * 10 + 4 + options.length * (bh + gap) + 4;
     const y = Math.max(2, Math.round((H - ph) / 2));
     const objs = [
       scene.add.rectangle(0, 0, W, H, 0x000000, 0.55).setOrigin(0).setDepth(60).setInteractive(), // swallows clicks
       panel(scene.add.graphics().setDepth(61), x, y, PW, ph),
       text(scene, W / 2, y + 6, title, { color: COLORS.accent, origin: [0.5, 0] }).setDepth(62),
-      ...lines.map((l, i) => text(scene, W / 2, y + 19 + i * 10, l, { origin: [0.5, 0], shadow: false }).setDepth(62))
+      // A line too wide for the panel (narrow portrait popups) drops to the small font.
+      ...lines.map((l, i) => text(scene, W / 2, y + 19 + i * 10 + (String(l).length * 6 > PW - 8 ? 1 : 0), l, { origin: [0.5, 0], shadow: false, small: String(l).length * 6 > PW - 8 }).setDepth(62))
     ];
     const by = y + 20 + lines.length * 10 + 4;
     let picked = false;

@@ -1,4 +1,5 @@
-import { W, GROUND_Y, COLORS } from '../config.js';
+import { syncLayout } from '../systems/screen.js';
+import { W, H, GROUND_Y, COLORS, lp } from '../config.js';
 import { drawJungle } from '../ui/backdrop.js';
 import { text } from '../ui/font.js';
 import { createRig } from '../sprites/rig.js';
@@ -14,21 +15,22 @@ export class Title extends Phaser.Scene {
   constructor() { super('Title'); }
 
   create() {
+    syncLayout(this);
     this.fx = new Fx(this);
     this.cameras.main.fadeIn(150);
     drawJungle(this);
     this.alive = true;
     this.events.once('shutdown', () => { this.alive = false; });
 
-    this.rex = { rig: createRig(this, 'rex', 96, GROUND_Y, 1).addShadow() };
-    this.raptor = { rig: createRig(this, 'raptor', 232, GROUND_Y, -1).addShadow() };
+    this.rex = { rig: createRig(this, 'rex', lp(96, 48), GROUND_Y, 1).addShadow() };
+    this.raptor = { rig: createRig(this, 'raptor', lp(232, 136), GROUND_Y, -1).addShadow() };
     this.rex.rig.startIdle();
     this.raptor.rig.startIdle();
 
-    text(this, W / 2, 14, 'DINO-CONQUEST', { scale: 3, color: COLORS.accent, origin: [0.5, 0] }).setDepth(30);
-    text(this, W / 2, 42, 'A PREHISTORIC ROGUELIKE', { color: COLORS.text, origin: [0.5, 0] }).setDepth(30);
+    text(this, W / 2, lp(14, 44), 'DINO-CONQUEST', { scale: lp(3, 2), color: COLORS.accent, origin: [0.5, 0] }).setDepth(30);
+    text(this, W / 2, lp(42, 66), 'A PREHISTORIC ROGUELIKE', { color: COLORS.text, origin: [0.5, 0] }).setDepth(30);
     const touch = this.sys.game.device.input.touch;
-    const prompt = text(this, W / 2, 160, touch ? 'TAP TO START' : 'CLICK OR PRESS SPACE TO START', { origin: [0.5, 0] }).setDepth(30);
+    const prompt = text(this, W / 2, lp(160, H - 50), touch ? 'TAP TO START' : 'CLICK OR PRESS SPACE TO START', { origin: [0.5, 0] }).setDepth(30);
     this.tweens.add({ targets: prompt, alpha: 0.25, duration: 550, yoyo: true, repeat: -1 });
 
     const off = onPress(this, () => {

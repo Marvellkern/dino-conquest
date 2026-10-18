@@ -1,4 +1,5 @@
-import { W, COLORS } from '../config.js';
+import { syncLayout } from '../systems/screen.js';
+import { W, H, COLORS, lp } from '../config.js';
 import { text } from '../ui/font.js';
 import { panel } from '../ui/pixel.js';
 import { createRig } from '../sprites/rig.js';
@@ -16,6 +17,7 @@ export class RunEnd extends Phaser.Scene {
   constructor() { super('RunEnd'); }
 
   async create(data) {
+    syncLayout(this);
     const run = session.run;
     if (!run) { this.scene.start('Home'); return; }
     const d = run.dino, won = !!data.won, zone = zoneOf(run);
@@ -24,11 +26,11 @@ export class RunEnd extends Phaser.Scene {
     session.run = null;
 
     this.cameras.main.fadeIn(150);
-    this.add.graphics().fillStyle(0x16181d).fillRect(0, 0, W, 180);
-    panel(this.add.graphics(), 40, 12, 240, 150);
+    this.add.graphics().fillStyle(0x16181d).fillRect(0, 0, W, H);
+    panel(this.add.graphics(), ...lp([40, 12, 240, 150], [4, 12, 172, 272]));
     text(this, W / 2, 20, won ? 'RUN CLEARED!' : 'YOUR DINO FELL', { scale: 2, color: won ? COLORS.accent : '#e06060', origin: [0.5, 0] });
 
-    const rig = createRig(this, d.species, 92, 112, 1, dinoSkin(d));
+    const rig = createRig(this, d.species, lp(92, 90), lp(112, 112), 1, dinoSkin(d));
     if (won) rig.startIdle();
     else rig.c.setAlpha(0.5);
 
@@ -40,14 +42,14 @@ export class RunEnd extends Phaser.Scene {
       [`+${amber} AMBER`, '#e8a030']
     ];
     if (run.ext) lines.splice(4, 0, [`EXTINCTION ${run.ext} CLEARED`, '#ff8060']);
-    lines.forEach(([s, color], i) => text(this, 140, 52 + i * 14, s, { color }));
+    lines.forEach(([s, color], i) => text(this, lp(140, 14), lp(52, 130) + i * 14, s, { color }));
     sfx(won ? 'win' : 'lose');
 
     await wait(this, 1200);
     await endGoals(this, run, won);
     addAncestor(run, won, await pickHeir(this, run));
 
-    const prompt = text(this, W / 2, 148, 'TAP TO RETURN TO THE NEST', { origin: [0.5, 0], color: COLORS.textDim, shadow: false });
+    const prompt = text(this, W / 2, lp(148, 266), lp('TAP TO RETURN TO THE NEST', 'TAP TO RETURN'), { origin: [0.5, 0], color: COLORS.textDim, shadow: false });
     this.tweens.add({ targets: prompt, alpha: 0.3, duration: 500, yoyo: true, repeat: -1 });
     await wait(this, 600);
     await new Promise((r) => { const off = onPress(this, () => { off(); r(); }); });

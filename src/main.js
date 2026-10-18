@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { W, H, COLORS } from './config.js';
+import { W, H, COLORS, setPortrait } from './config.js';
 import { Boot } from './scenes/Boot.js';
 import { Battle } from './scenes/Battle.js';
 import { Title } from './scenes/Title.js';
@@ -10,9 +10,10 @@ import { Evolution } from './scenes/Evolution.js';
 import { RunEnd } from './scenes/RunEnd.js';
 import { Fossil } from './scenes/Fossil.js';
 import { Nest } from './scenes/Nest.js';
-import { fit } from './systems/screen.js';
+import { fit, wantPortrait } from './systems/screen.js';
 
 window.Phaser = Phaser;
+setPortrait(wantPortrait()); // pick the layout before the game is sized
 
 const game = new Phaser.Game({
   type: Phaser.AUTO,
@@ -37,3 +38,5 @@ game.events.once('ready', refit);
 window.addEventListener('resize', refit);
 window.visualViewport?.addEventListener('resize', refit); // phone browser bars sliding in and out
 document.addEventListener('fullscreenchange', () => setTimeout(refit, 50));
+window.matchMedia?.('(orientation: portrait)').addEventListener?.('change', () => setTimeout(refit, 50)); // rotating the phone
+window.addEventListener('orientationchange', () => setTimeout(refit, 150));

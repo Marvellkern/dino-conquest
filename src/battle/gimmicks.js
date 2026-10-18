@@ -1,4 +1,4 @@
-import { W, H, GROUND_Y } from '../config.js';
+import { W, H, GROUND_Y, lp } from '../config.js';
 import { text } from '../ui/font.js';
 import { pixelCircle } from '../ui/pixel.js';
 import { sfx } from '../systems/sfx.js';
@@ -94,7 +94,7 @@ export async function enterAnim(s, rig) {
 export async function phaseAnim(s, rig, line) {
   const f = s.add.rectangle(0, 0, W, H, 0xc8281e, 0.45).setOrigin(0).setDepth(45);
   s.tweens.add({ targets: f, alpha: 0, duration: 700, onComplete: () => f.destroy() });
-  const t = text(s, W / 2, 70, line, { scale: 2, color: '#ff6040', origin: 0.5 }).setDepth(46);
+  const t = text(s, W / 2, lp(70, 110), line, { scale: lp(2, 1), color: '#ff6040', origin: 0.5 }).setDepth(46);
   s.fx.shake(4, 500);
   rig.stopIdle();
   await roar(s, rig, () => {});

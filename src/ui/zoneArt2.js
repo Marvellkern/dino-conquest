@@ -1,6 +1,9 @@
-import { W, GROUND_Y, H } from '../config.js';
+import { LAND } from '../config.js';
+
 import { E32 as C } from '../data/palette.js';
 import { LW, rnd, dither, bands, disc } from './artKit.js';
+
+const { W, H, GROUND_Y } = LAND; // drawn in landscape units (see zoneArt.js)
 
 // Volcano and Meteor Crater backdrops (same layer contract as ui/zoneArt.js).
 
