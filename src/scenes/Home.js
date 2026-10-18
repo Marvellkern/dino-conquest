@@ -1,4 +1,5 @@
 import { syncLayout } from '../systems/screen.js';
+import { amberCount } from '../ui/amber.js';
 import { W, H, COLORS, lp } from '../config.js';
 import { SPECIES } from '../data/species.js';
 import { RARITIES } from '../data/hatch.js';
@@ -34,7 +35,7 @@ export class Home extends Phaser.Scene {
     const g = this.add.graphics();
     g.fillStyle(0x16181d).fillRect(0, 0, W, H);
     text(this, 6, 6, 'DINO-CONQUEST', { color: COLORS.accent });
-    text(this, W - 6, 6, `AMBER ${meta.amber}`, { color: '#e8a030', origin: [1, 0] });
+    amberCount(this, W - 6, 6, meta.amber);
 
     this.drawDex();
     this.drawNest();

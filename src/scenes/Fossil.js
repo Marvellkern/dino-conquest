@@ -1,4 +1,5 @@
 import { syncLayout } from '../systems/screen.js';
+import { AMB } from '../ui/amber.js';
 import { W, H, COLORS, lp } from '../config.js';
 import { text } from '../ui/font.js';
 import { panel } from '../ui/pixel.js';
@@ -79,7 +80,7 @@ export class Fossil extends Phaser.Scene {
       [`${zone.name} ${col}/${zone.rows + 1}`, COLORS.textDim],
       ['FELL TO', COLORS.textDim],
       [String(run.cause ?? '???'), '#e06060'],
-      [`+${amber} AMBER`, '#e8a030'],
+      [`+${amber}${AMB}`, '#e8a030'],
       [`GENERATION ${meta.stats.gens + 1}`, '#d6c9a8']
     ];
     lines.forEach(([s, color], i) => text(this, px + 6, py + 6 + i * 15, s, { color, shadow: i === 0 }));

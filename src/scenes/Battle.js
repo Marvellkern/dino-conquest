@@ -1,4 +1,5 @@
 import { syncLayout } from '../systems/screen.js';
+import { AMB } from '../ui/amber.js';
 import { W, GROUND_Y, COLORS, lp } from '../config.js';
 import { TRAITS } from '../data/traits.js';
 import { REWARDS, ZONES } from '../data/zones.js';
@@ -327,7 +328,7 @@ export class Battle extends Phaser.Scene {
     this.levelBefore = d.level;
     const rw = REWARDS[type], amber = Math.round(rw.amber * amberMult(buildOf(run))); // Amber Geode
     run.amber += amber;
-    const lines = [`+${rw.xp} XP   +${amber} AMBER`];
+    const lines = [`+${rw.xp} XP   +${amber}${AMB}`];
     if (gainXp(d, rw.xp)) { lines.push(`LEVEL UP! LV${d.level}`); sfx('levelup'); }
     const goals = checkGoals(run, this.fightEvents(run));
     const next = type === 'boss' ? advanceZone(run) : null;

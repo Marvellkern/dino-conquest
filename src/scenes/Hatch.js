@@ -1,4 +1,5 @@
 import { syncLayout } from '../systems/screen.js';
+import { amberCount, AMB } from '../ui/amber.js';
 import { W, H, COLORS, lp } from '../config.js';
 import { SPECIES } from '../data/species.js';
 import { MOVES } from '../data/moves.js';
@@ -47,7 +48,7 @@ export class Hatch extends Phaser.Scene {
     const L = this.L = LAYOUT(), PX = L.px + 6, PY = L.py;
     drawNestRoom(this, L.x, L.ground);
     text(this, 6, 6, 'HATCHERY', { color: COLORS.accent });
-    this.amberText = text(this, W - 6, 6, '', { color: '#e8a030', origin: [1, 0] });
+    this.amber = amberCount(this, W - 6, 6, meta.amber);
 
     panel(this.add.graphics().setDepth(10), L.px, PY, 164, 116);
     text(this, PX, PY + 5, 'SPECIES', { color: COLORS.textDim, small: true }).setDepth(11);
@@ -60,8 +61,8 @@ export class Hatch extends Phaser.Scene {
 
     const [b1, b2, b3] = L.btns;
     this.buttons = [
-      new Button(this, ...b1, { key: '1', label: 'REROLL DINO', sub: `${REROLL_COST.species} AMBER`, onClick: () => this.rerollSpecies() }),
-      new Button(this, ...b2, { key: '2', label: 'REROLL TRAIT', sub: `${REROLL_COST.trait} AMBER`, onClick: () => this.rerollTrait() }),
+      new Button(this, ...b1, { key: '1', label: 'REROLL DINO', sub: `${REROLL_COST.species}${AMB}`, subColor: '#e8a030', onClick: () => this.rerollSpecies() }),
+      new Button(this, ...b2, { key: '2', label: 'REROLL TRAIT', sub: `${REROLL_COST.trait}${AMB}`, subColor: '#e8a030', onClick: () => this.rerollTrait() }),
       new Button(this, ...b3, {
         key: '3', label: 'START RUN', sub: this.setup.ext ? `EXTINCTION ${this.setup.ext}` : 'THE JUNGLE', onClick: () => this.go()
       })
@@ -143,7 +144,7 @@ export class Hatch extends Phaser.Scene {
     const options = eggs.map((sp, i) => (sp
       ? { label: `EGG ${i + 1}`, sub: `A ${RARITIES[SPECIES[sp].rarity].name} EGG` }
       : { label: 'PLAIN EGG', sub: 'ANY RARITY' }));
-    if (gold) options.push({ label: 'GOLDEN EGG', sub: `RARE OR BETTER - ${GOLDEN_EGG_COST} AMBER`, disabled: meta.amber < GOLDEN_EGG_COST ? `NEED ${GOLDEN_EGG_COST} AMBER` : null });
+    if (gold) options.push({ label: 'GOLDEN EGG', sub: `RARE OR BETTER - ${GOLDEN_EGG_COST}${AMB}`, disabled: meta.amber < GOLDEN_EGG_COST ? `NEED ${GOLDEN_EGG_COST}${AMB}` : null });
     const i = await choose(this, { title: 'CHOOSE AN EGG', options });
     if (i < eggs.length) return eggs[i];
     meta.amber -= GOLDEN_EGG_COST;
@@ -285,9 +286,9 @@ export class Hatch extends Phaser.Scene {
   }
 
   refresh() {
-    this.amberText.setText(`AMBER ${meta.amber}`);
+    this.amber.set(meta.amber);
     const [bs, bt, bg] = this.buttons;
-    const price = (c) => (this.free > 0 ? `FREE (${this.free})` : `${c} AMBER`);
+    const price = (c) => (this.free > 0 ? `FREE (${this.free})` : `${c}${AMB}`);
     bs.setText(null, price(REROLL_COST.species)).setEnabled(!this.busy && (this.free > 0 || meta.amber >= REROLL_COST.species));
     bt.setText(null, price(REROLL_COST.trait)).setEnabled(!this.busy && (this.free > 0 || meta.amber >= REROLL_COST.trait));
     bg.setEnabled(!this.busy);

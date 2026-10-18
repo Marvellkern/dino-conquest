@@ -9,7 +9,7 @@ import { text } from './font.js';
 // cost: energy pips drawn in the top-right corner. The sub-line and key hint
 // use the small 3x5 font. textTop: push the text block down (room for an icon).
 export class Button {
-  constructor(scene, x, y, w, h, { key = '', label = '', sub = '', onClick = () => {}, onDeny = null, cost = 0, depth = 11, textTop = 0 } = {}) {
+  constructor(scene, x, y, w, h, { key = '', label = '', sub = '', onClick = () => {}, onDeny = null, cost = 0, depth = 11, textTop = 0, subColor = '#c0cbdc' } = {}) {
     Object.assign(this, { scene, x, y, w, h, onClick, onDeny, cost });
     this.enabled = true;
     this.hover = false;
@@ -21,7 +21,7 @@ export class Button {
     // A sub-line too wide for the button wraps (portrait rows have room for two lines).
     this.textTop = textTop;
     this.label = text(scene, cx, y, label, { origin: [0.5, 0] }).setDepth(depth + 1);
-    this.sub = text(scene, cx, y, sub, { origin: [0.5, 0], color: '#c0cbdc', small: true }).setDepth(depth + 1);
+    this.sub = text(scene, cx, y, sub, { origin: [0.5, 0], color: subColor, small: true }).setDepth(depth + 1);
     this.sub.setMaxWidth(w - 8);
     this.sub.setCenterAlign?.();
     this.hasSub = !!sub;

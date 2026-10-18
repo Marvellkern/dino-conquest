@@ -1,4 +1,5 @@
 import { NEST_HEAL, SHOP } from '../data/zones.js';
+import { AMB } from '../ui/amber.js';
 import { EVENTS } from '../data/events.js';
 import { RELICS } from '../data/relics.js';
 import { choose } from '../ui/popup.js';
@@ -44,12 +45,12 @@ export async function visitShop(scene, run) {
   stock.push({ kind: 'heal', price: price(SHOP.heal) });
   for (;;) {
     const options = stock.map((s) => ({
-      label: `${label(s)}  ${s.price}A`,
+      label: `${label(s)}  ${s.price}${AMB}`,
       sub: s.sold ? 'SOLD' : s.kind === 'relic' ? RELICS[s.id].desc : s.kind === 'heal' ? `HEAL ${SHOP.healFrac * 100}% HP` : 'PICK A MOVE MUTATION',
-      disabled: s.sold ? 'SOLD' : run.amber < s.price ? `NEED ${s.price} AMBER` : null
+      disabled: s.sold ? 'SOLD' : run.amber < s.price ? `NEED ${s.price}${AMB}` : null
     }));
     options.push({ label: 'LEAVE', sub: '' });
-    const i = await choose(scene, { title: `SHOP - YOU HAVE ${run.amber} AMBER`, options, bh: 26 });
+    const i = await choose(scene, { title: `SHOP - YOU HAVE ${run.amber}${AMB}`, options, bh: 26 });
     if (i >= stock.length) return;
     const s = stock[i];
     run.amber -= s.price;
@@ -77,7 +78,7 @@ function eventCtx(scene, run) {
       const lv = gainXp(d, n);
       return [`+${n} XP`, lv ? `LEVEL UP! LV${d.level}` : null];
     },
-    amber: (n) => { const before = run.amber; run.amber = Math.max(0, run.amber + n); return `${n > 0 ? '+' : ''}${run.amber - before} AMBER`; },
+    amber: (n) => { const before = run.amber; run.amber = Math.max(0, run.amber + n); return `${n > 0 ? '+' : ''}${run.amber - before}${AMB}`; },
     amberLeft: () => run.amber,
     relicCount: () => run.relics.length,
     relic: async () => { const id = await pickRelic(scene, run, 'FOSSIL', ['TAKE ONE:']); return id ? `GOT ${RELICS[id].name.toUpperCase()}` : 'NO NEW FOSSILS LEFT'; },

@@ -12,6 +12,8 @@ export const ICONS = {
   int_spikes:   ['O..O..O.', 'xO.xO.xO', 'xOOxOOxO', 'OTTTTTTO', 'OTTTTTTO', '.OTTTTO.', '..OTTO..', '...OO...'],
   int_flood:    ['...OO...', '..OQQO..', '..OQQO..', '.OQQQQO.', 'OQQQQWQO', 'OQQQQWQO', '.OQQQQO.', '..OOOO..'],
   target_arrow: ['OOOOOOO', 'OSSSSSO', '.OSSSO.', '..OSO..', '...O...'],
+  // Amber: a gold drop with a shine and a trapped bug.
+  icon_amber: ['...O...', '..OSO..', '.OSFFO.', 'OFFFFxO', 'OFFKFxO', 'OxFFxxO', '.OxxxO.', '..OOO..'],
   heart: ['.OO.OO.', 'OEEOEEO', 'OEEEEEO', '.OEEEO.', '..OEO..', '...O...'],
   crown: ['S..S..S', 'SS.S.SS', 'SSSSSSS', 'SFSFSFS', 'SSSSSSS', 'OOOOOOO'],
   heart_empty: ['.OO.OO.', 'OPPOPPO', 'OPPPPPO', '.OPPPO.', '..OPO..', '...O...'],

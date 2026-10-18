@@ -1,4 +1,5 @@
 import { syncLayout } from '../systems/screen.js';
+import { amberCount } from '../ui/amber.js';
 import { W, H, COLORS, PORTRAIT, lp } from '../config.js';
 import { NODE_INFO } from '../data/zones.js';
 import { RelicBar } from '../ui/relicBar.js';
@@ -155,7 +156,7 @@ export class MapScene extends Phaser.Scene {
     this.hHp = text(this, 112, 18, '', { color: COLORS.textDim, small: true }).setDepth(11);
     this.hXp = text(this, 112, 26, '', { color: COLORS.textDim, small: true }).setDepth(11);
     text(this, W - 8, 8, zoneOf(this.run).name + (this.run.ext ? ` EXT${this.run.ext}` : ''), { color: COLORS.accent, origin: [1, 0] }).setDepth(11);
-    this.hAmber = text(this, W - 8, 17, '', { color: '#e8a030', origin: [1, 0], shadow: false }).setDepth(11);
+    this.hAmber = amberCount(this, W - 8, 17, 0);
     this.hTraits = text(this, W - 8, 27, '', { color: COLORS.textDim, origin: [1, 0], small: true }).setDepth(11);
     // Owned fossils + perks (2 rows of 7); tap one to read it in the tooltip bar.
     this.relicBar = new RelicBar(this, 178, 7, { cols: 7, onInfo: (t) => this.tip.setText(t) });
@@ -172,7 +173,7 @@ export class MapScene extends Phaser.Scene {
     this.hXp = text(this, 96, 26, '', { color: COLORS.textDim, small: true }).setDepth(11);
     this.hTraits = text(this, W - 8, 26, '', { color: COLORS.textDim, origin: [1, 0], small: true }).setDepth(11);
     text(this, 8, 34, zoneOf(this.run).name + (this.run.ext ? ` EXT${this.run.ext}` : ''), { color: COLORS.accent, small: true }).setDepth(11);
-    this.hAmber = text(this, W - 8, 34, '', { color: '#e8a030', origin: [1, 0], small: true }).setDepth(11);
+    this.hAmber = amberCount(this, W - 8, 34, 0, { small: true });
     this.relicBar = new RelicBar(this, 8, 44, { cols: 18, onInfo: (t) => this.tip.setText(t) });
   }
 
@@ -188,7 +189,7 @@ export class MapScene extends Phaser.Scene {
     g.fillStyle(0x5aa0e0).fillRect(8, 27, Math.round((bw * d.xp) / need), 3);
     this.hHp.setText(`HP ${d.hp}/${max}`);
     this.hXp.setText(`XP ${d.xp}/${need}`);
-    this.hAmber.setText(`+${this.run.amber} AMBER`);
+    this.hAmber.set(`+${this.run.amber}`);
     this.hTraits.setText(d.traits.map((t) => TRAITS[t].short).join(' '));
     const owned = [...this.run.relics, ...this.run.perks].slice(0, 14);
     if (owned.join() !== this.ownedKey) { this.ownedKey = owned.join(); this.relicBar.set(owned); }

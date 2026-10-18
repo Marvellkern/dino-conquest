@@ -1,4 +1,5 @@
 import { syncLayout } from '../systems/screen.js';
+import { AMB } from '../ui/amber.js';
 import { W, H, COLORS, lp } from '../config.js';
 import { text } from '../ui/font.js';
 import { panel } from '../ui/pixel.js';
@@ -39,7 +40,7 @@ export class RunEnd extends Phaser.Scene {
       [`LEVEL ${d.level}`, COLORS.textDim],
       [`${zone.name} ${col}/${zone.rows + 1}`, COLORS.textDim],
       won ? [`${zone.boss.name.toUpperCase()} DEFEATED`, '#7fe0ff'] : [`FELL TO ${String(run.cause ?? '???').toUpperCase()}`, '#e06060'],
-      [`+${amber} AMBER`, '#e8a030']
+      [`+${amber}${AMB}`, '#e8a030']
     ];
     if (run.ext) lines.splice(4, 0, [`EXTINCTION ${run.ext} CLEARED`, '#ff8060']);
     lines.forEach(([s, color], i) => text(this, lp(140, 14), lp(52, 130) + i * 14, s, { color }));

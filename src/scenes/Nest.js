@@ -1,4 +1,5 @@
 import { syncLayout } from '../systems/screen.js';
+import { amberCount, AMB } from '../ui/amber.js';
 import { W, H, COLORS, PORTRAIT, lp } from '../config.js';
 import { UNLOCKS, UNLOCK_ORDER, levelsOf, priceOf } from '../data/unlocks.js';
 import { GOALS, GOAL_ORDER } from '../data/goals.js';
@@ -35,7 +36,7 @@ export class Nest extends Phaser.Scene {
     this.cameras.main.fadeIn(150);
     this.add.graphics().fillStyle(0x16181d).fillRect(0, 0, W, H);
     this.titleText = text(this, 6, 6, '', { color: COLORS.accent });
-    this.amberText = text(this, W - 6, 6, '', { color: '#e8a030', origin: [1, 0] });
+    this.amber = amberCount(this, W - 6, 6, meta.amber);
 
     const foot = H - 28;
     const [pw, bw] = lp([70, 84], [46, 46]);
@@ -77,7 +78,7 @@ export class Nest extends Phaser.Scene {
     const { title } = MODES[this.mode], per = MODES[this.mode].per();
     const sub = this.mode === 'goals' ? ` ${goalsDone()}/${GOAL_ORDER.length}` : this.mode === 'family' ? ` ${meta.fossils.length}` : '';
     this.titleText.setText(title + sub);
-    this.amberText.setText(lp(`AMBER ${meta.amber}`, `${meta.amber}A`));
+    this.amber.set(meta.amber);
     const n = this.pages();
     this.page = Math.min(this.page, n - 1);
     this.pageText.setText(`${this.page + 1}/${n}`);
@@ -97,7 +98,7 @@ export class Nest extends Phaser.Scene {
     const tag = max > 1 ? ` ${lv}/${max}` : '';
     const locked = u.needs && !owned(u.needs);
     const b = new Button(this, 4, y, W - 8, rh - 2, {
-      label: `${u.name.toUpperCase()}${tag}${maxed ? '' : `  ${price}${lp(' AMBER', 'A')}`}`,
+      label: `${u.name.toUpperCase()}${tag}${maxed ? '' : `  ${price}${AMB}`}`,
       sub: maxed ? 'OWNED' : locked ? `NEEDS ${UNLOCKS[u.needs].name.toUpperCase()}` : u.desc,
       onClick: () => this.buy(id)
     }).setEnabled(!locked && !maxed && meta.amber >= price);

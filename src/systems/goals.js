@@ -1,4 +1,5 @@
 import { GOALS, GOAL_ORDER } from '../data/goals.js';
+import { AMB } from '../ui/amber.js';
 import { RELICS } from '../data/relics.js';
 import { MUTATIONS } from '../data/mutations.js';
 import { meta, persist } from './meta.js';
@@ -30,7 +31,7 @@ function grant(r) {
 }
 
 export function rewardText(r) {
-  if (r.amber) return `+${r.amber} AMBER`;
+  if (r.amber) return `+${r.amber}${AMB}`;
   if (r.relic) return `FOSSIL: ${RELICS[r.relic].name.toUpperCase()}`;
   if (r.mutation) { const [mv, id] = r.mutation.split(':'); return `MUTATION: ${MUTATIONS[mv][id].name.toUpperCase()}`; }
   return r.label;
