@@ -5,6 +5,7 @@ import { dodgeMult } from '../systems/build.js';
 import { defendRing } from '../systems/qte.js';
 import { sfx } from '../systems/sfx.js';
 import { animSet, roar, chargeUp, wait } from './anims.js';
+import './anims2.js'; // spit + claws sets
 import { defendAnim, submergeAnim, surfaceAnim, floodAnim } from './gimmicks.js';
 import { hitFeedback, traitFeedback } from './feedback.js';
 import { rollTiming, MIN_DODGE_MS } from '../data/qteProfiles.js';

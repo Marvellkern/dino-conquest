@@ -96,6 +96,7 @@ export function decorate(st, e, intent) {
   if (!isStrike(intent) && intent.kind !== 'charge') return intent;
   const opts = e.brain.profiles?.[intent.move] ?? 'steady';
   intent.profile = intent.feint ? 'feint' : Array.isArray(opts) ? opts[Math.floor(st.rng.next() * opts.length)] : opts;
+  if (e.calm && isStrike(intent)) { intent.profile = 'steady'; intent.feint = false; e.calm = 0; } // Venom Spit
   const odds = e.levelLabel === 'BOSS' ? Math.max(st.timing.rings, BOSS_RINGS) : st.timing.rings;
   if (intent.kind !== 'charge' && MOVES[intent.move].ring) intent.ring = MOVES[intent.move].ring;
   else if (intent.kind !== 'charge' && !MOVES[intent.move].sure && odds > 0 && st.rng.next() < odds) intent.ring = st.rng.next() < st.timing.redShare ? 'red' : 'purple';
@@ -216,12 +217,23 @@ export function playerStrike(st, id, target, qte) {
   const trait = afterHit(p, target, dmg);
   const fx = BLD.onPlayerHit(st, id, target, qte, dmg);
   const killed = target.hp <= 0;
+  const calmed = !!m.calm && !killed && calm(target);
+  const defGain = m.critDef && qte === 'crit' ? m.critDef : 0; // Scythe Claws: lasts the fight
+  p.def += defGain;
   noteKill(st, killed);
   if (id === 'tail' && dmg > 0) tally(st, 'tailHits');
   // Spiky guard (Stego): the attacker is pricked, but never killed by it.
   const recoil = target.thorns && dmg > 0 ? Math.min(p.hp - 1, Math.max(1, Math.round(dmg * RT.thornsFrac))) : 0;
   p.hp -= recoil;
-  return { dmg, killed, trait, fx, recoil, kill: killed ? BLD.onKill(st) : null, phase: checkPhase(st, target) };
+  return { dmg, killed, trait, fx, recoil, calmed, defGain, kill: killed ? BLD.onKill(st) : null, phase: checkPhase(st, target) };
+}
+
+// Venom Spit: the target's next attack loses its timing profile (plain steady, no feint).
+// If that attack is already its intent it changes now; otherwise it waits for it.
+export function calm(e) {
+  if (isStrike(e.intent)) { e.intent.profile = 'steady'; e.intent.feint = false; e.calm = 0; }
+  else e.calm = 1;
+  return true;
 }
 
 // Free riposte after a perfect dodge (no energy, no QTE, no streak).

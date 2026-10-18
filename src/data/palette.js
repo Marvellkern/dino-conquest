@@ -93,5 +93,23 @@ export const PAL = {
   4: '#5a6988', // dimetrodon slate
   5: '#3a4466', // dimetrodon shade
   6: '#c0cbdc', // dimetrodon belly
+  // Tidal Coast species (sprites/grids3.js)
+  7: '#e4a672', // dilophosaurus sand
+  8: '#b86f50', // dilophosaurus stripes / shade
+  9: '#f6757a', // dilophosaurus crests
+  0: '#0099db', // dilophosaurus frill
+  '(': '#c28569', // therizinosaurus feathers
+  ')': '#733e39', // therizinosaurus shade
+  '+': '#8b9bb4', // plesiosaur slate
+  '=': '#5a6988', // plesiosaur shade / flippers
+  '-': '#c0cbdc', // plesiosaur belly
+  '*': '#0099db', // ichthyosaur blue
+  '~': '#124e89', // ichthyosaur shade
+  '&': '#3e8948', // baryonyx green
+  '%': '#265c42', // baryonyx shade
+  '@': '#193c3e', // mosasaur deep teal
+  '!': '#124e89', // mosasaur paddles / ridge
+  '<': '#5a6988', // mosasaur belly
+  '?': '#2ce8f5', // mosasaur glowing eye
   '.': null      // transparent
 };

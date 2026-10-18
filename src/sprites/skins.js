@@ -45,7 +45,7 @@ export function shiftedColor({ h, s, l }) {
 export const SKIN_GRIDS = {};
 
 // Fossil: bone-colored cast with dark sockets.
-const SHADE_KEYS = new Set(['D', 'B', 'K', 'H', 'U', 'Z', 'M', 'Q', 'q', 'k', 't', 'g']);
+const SHADE_KEYS = new Set(['D', 'B', 'K', 'H', 'U', 'Z', 'M', 'Q', 'q', 'k', 't', 'g', '8', ')', '=', '~', '%', '!']);
 export const fossilColor = (ch) =>
   ch === 'O' || ch === 'E' ? '#2e2418' : ch === 'W' ? '#f2ead6' : SHADE_KEYS.has(ch) ? '#a8977a' : '#d6c9a8';
 

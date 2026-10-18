@@ -11,5 +11,7 @@ export const FORMS = {
   ankylo: [{ name: 'Ankylo' }, { name: 'Euoplo',     perk: 'perkClubber' },   { name: 'Bastion',       perk: 'perkBastion' }],
   ptera:  [{ name: 'Pteranodon' }, { name: 'Skyhunter', perk: 'perkSky' },    { name: 'Stormwing',     perk: 'perkStorm' }],
   stego:  [{ name: 'Stego' },  { name: 'Spikeback',  perk: 'perkSpikes' },    { name: 'Thunderspike',  perk: 'perkThago' }],
-  carno:  [{ name: 'Carno' },  { name: 'Bullhorn',   perk: 'perkBullhorn' },  { name: 'Doomhorn',      perk: 'perkDoom' }]
+  carno:  [{ name: 'Carno' },  { name: 'Bullhorn',   perk: 'perkBullhorn' },  { name: 'Doomhorn',      perk: 'perkDoom' }],
+  dilo:   [{ name: 'Dilopho' }, { name: 'Frill Spitter', perk: 'perkFrillSpit' }, { name: 'Toxic Crown', perk: 'perkToxic' }],
+  theri:  [{ name: 'Therizino' }, { name: 'Reaper',   perk: 'perkReaper' },    { name: 'Grim Harvester', perk: 'perkHarvest' }]
 };

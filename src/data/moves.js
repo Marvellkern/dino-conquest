@@ -22,6 +22,9 @@ export const MOVES = {
   diveBomb:     { name: 'Dive Bomb',     btn: 'DIVE',    desc: 'SURE',     cost: 2, power: 1.3, anim: 'charge', sure: true },
   thagomizer:   { name: 'Thagomizer',    btn: 'SPIKES',  desc: 'PSN 2',    cost: 2, power: 1.1, anim: 'tail', poison: 2 },
   goreRush:     { name: 'Gore Rush',     btn: 'GORE',    desc: 'EXECUTE',  cost: 2, power: 1.4, anim: 'charge', execute: 0.5 },
+  // calm: the target's next attack loses its timing profile (plain 'steady'). critDef: +DEF per crit, for the fight.
+  venomSpit:    { name: 'Venom Spit',    btn: 'SPIT',    desc: 'PSN+CLM',  cost: 1, power: 0.6, anim: 'spit', poison: 2, calm: true },
+  scytheClaws:  { name: 'Scythe Claws',  btn: 'SCYTHE',  desc: '3 HITS',   cost: 2, power: 0.5, anim: 'claws', hits: 3, critDef: 1 },
 
   // Enemy-only moves (picked by systems/brains.js).
   hornRam:      { name: 'Horn Ram',      power: 2.2, anim: 'charge', blockMult: 0.8 },
@@ -39,7 +42,7 @@ export const MOVES = {
   starfall:     { name: 'Starfall',      power: 2.4, anim: 'bigBite', defIgnore: 0.3, tight: 0.5 },
   // Tidal Coast. blinds: a hit (not dodged) hides the start of the player's next attack bar.
   // ring: every use gets this ring flag. hooks: a hit grabs the player for their next turn.
-  spitBlind:    { name: 'Venom Spit',    power: 0.8, anim: 'bite', blinds: true },
+  spitBlind:    { name: 'Venom Spit',    power: 0.8, anim: 'spit', blinds: true },
   tideLunge:    { name: 'Tide Lunge',    power: 1.6, anim: 'charge', ring: 'purple' },
   finFlurry:    { name: 'Fin Flurry',    power: 0.5, anim: 'bite', hits: 2 },
   fishHook:     { name: 'Fish Hook',     power: 0.9, anim: 'bite', hooks: true },

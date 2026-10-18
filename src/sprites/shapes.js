@@ -1,9 +1,13 @@
 // A tiny shape builder for character grids: fill ellipses, thick lines and
 // triangles with palette keys, then shade and outline automatically. Used for
 // the v2 species (sprites/grids2.js); the result is a normal grid of strings.
-export function shapeGrid(w, h, draw) {
+// margin: empty pixels added around the drawing area (coordinates stay the same), so
+// shapes that touch the edge still get their outline.
+export function shapeGrid(w0, h0, draw, { margin = 0 } = {}) {
+  const m = margin, w = w0 + 2 * m, h = h0 + 2 * m;
   const rows = Array.from({ length: h }, () => Array(w).fill('.'));
-  const set = (x, y, k) => { x = Math.round(x); y = Math.round(y); if (rows[y]?.[x] !== undefined) rows[y][x] = k; };
+  const put = (x, y, k) => { x = Math.round(x); y = Math.round(y); if (rows[y]?.[x] !== undefined) rows[y][x] = k; };
+  const set = (x, y, k) => put(x + m, y + m, k);
   const api = {
     px: set,
     ellipse(cx, cy, rx, ry, k, { top = false, bottom = false } = {}) {
@@ -35,15 +39,15 @@ export function shapeGrid(w, h, draw) {
       }
     },
     // Lowest `depth` filled pixels of each column of key `k` become `to` (belly / shade).
-    shadeBottom(k, to, depth = 2, x0 = 0, x1 = w - 1) {
-      for (let x = x0; x <= x1; x++) {
+    shadeBottom(k, to, depth = 2, x0 = 0, x1 = w0 - 1) {
+      for (let x = x0 + m; x <= x1 + m; x++) {
         let n = 0;
         for (let y = h - 1; y >= 0 && n < depth; y--) if (rows[y][x] === k) { rows[y][x] = to; n++; } else if (n) break;
       }
     },
     // Top `depth` pixels of each column of key `k` become `to` (highlight / shade line).
-    shadeTop(k, to, depth = 1, x0 = 0, x1 = w - 1) {
-      for (let x = x0; x <= x1; x++) {
+    shadeTop(k, to, depth = 1, x0 = 0, x1 = w0 - 1) {
+      for (let x = x0 + m; x <= x1 + m; x++) {
         let n = 0;
         for (let y = 0; y < h && n < depth; y++) if (rows[y][x] === k) { rows[y][x] = to; n++; } else if (n) break;
       }

@@ -2,11 +2,12 @@ import { MOVES } from '../data/moves.js';
 import { MUTATION_TUNING } from '../data/mutations.js';
 import { applyStatus } from '../systems/combat.js';
 import * as B from '../systems/battleState.js';
-import { hitsAll, spreadCount } from '../systems/build.js';
+import { hitsAll, spreadCount, moveHits } from '../systems/build.js';
 import { attackBar } from '../systems/qte.js';
 import { rollBar } from '../data/qteProfiles.js';
 import { sfx } from '../systems/sfx.js';
 import { animSet, roar } from './anims.js';
+import './anims2.js'; // spit + claws sets
 import { braceAnim } from './gimmicks.js';
 import { hitFeedback, traitFeedback, dodgeHop } from './feedback.js';
 
@@ -42,7 +43,7 @@ export async function playerMove(scene, id) {
     scene.say(`${m.name.toUpperCase()}!`);
     if (set.approach) await set.approach(scene, rig, target.rig);
     let muddy = B.consumeMuddy(st), blind = B.consumeBlind(st);
-    let strikes = m.spread ? 1 : (m.hits ?? 1), chains = 0;
+    let strikes = m.spread ? 1 : moveHits(st, m), chains = 0;
     for (let i = 0; i < strikes && target.hp > 0; i++) {
       const aoe = hitsAll(st, id);
       const victims = aoe ? B.targetable(st) : m.spread ? spread(st, target, spreadCount(st, m)) : [target];
@@ -132,6 +133,8 @@ function strikeOne(scene, id, v, qte, k, evaders, ctx) {
   if (r.fx.poisoned) scene.fx.pop(t.x, t.y - 4, 'POISON', '#80d060', 1, 700);
   if (r.fx.stunned) scene.fx.pop(t.x, t.y - 14, 'STUNNED!', '#fff096', 1, 900);
   if (r.fx.chain) ctx.chained = true;
+  if (r.calmed) scene.fx.pop(t.x, t.y - 14, 'CALMED', '#9ab8ff', 1, 900);
+  if (r.defGain) { const pt = st.player.rig.top(); scene.fx.pop(pt.x, pt.y - 12, `DEF+${r.defGain}`, '#7fb0ff', 1, 800); }
   if (r.recoil) { // Stego spikes prick the attacker
     const pt = st.player.rig.hitPoint();
     scene.fx.number(pt.x, pt.y - 10, r.recoil, { color: '#f77622' });

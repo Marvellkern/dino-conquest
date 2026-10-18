@@ -17,7 +17,7 @@ import { canFullscreen, isFullscreen, enterFullscreen, exitFullscreen } from '..
 import { choose } from '../ui/popup.js';
 import { sfx } from '../systems/sfx.js';
 
-const DEX_ORDER = ['compy', 'raptor', 'trike', 'rex', 'pachy', 'sarco', 'spino', 'ankylo', 'ptera', 'stego', 'carno'];
+const DEX_ORDER = ['compy', 'raptor', 'trike', 'rex', 'pachy', 'sarco', 'spino', 'ankylo', 'ptera', 'stego', 'carno', 'dilo', 'theri'];
 const DEX_PAGE = 4;
 
 // Boxes [x, y, w, h] per layout: landscape side by side, portrait stacked.
@@ -184,7 +184,7 @@ export class Home extends Phaser.Scene {
       const best = entry?.best ? `BEST LV${entry.best}${entry.ext ? `  EXT ${entry.ext}` : ''}` : null;
       this.dexCells.push(
         img,
-        text(this, cx, top + 32, entry ? SPECIES[id].name : '???', { origin: [0.5, 0], color: entry ? rar.color : COLORS.textDim, shadow: false }),
+        text(this, cx, top + 32, entry ? SPECIES[id].short ?? SPECIES[id].name : '???', { origin: [0.5, 0], color: entry ? rar.color : COLORS.textDim, shadow: false }),
         text(this, cx, top + 41, best ?? (entry ? 'NO RUNS YET' : locked ? 'NEST EGG' : rar.name), { origin: [0.5, 0], color: locked ? rar.color : COLORS.textDim, small: true })
       );
     });

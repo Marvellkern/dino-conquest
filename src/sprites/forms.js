@@ -165,6 +165,36 @@ export const FORM_ART = {
     { pad: { top: 4 }, grow: [{ x0: 6, x1: 24, h: 3, key: 'f', topKey: 'g' }], spikes: [{ x0: 26, x1: 30, every: 2 }], stretch: { cols: [14, 15] },
       colors: { 4: '#262b44', 5: '#181425', 6: '#5a6988', f: '#2ce8f5', g: '#124e89' } }
   ],
+  // Dilophosaurus: the frill opens (Frill Spitter), then a crown of crests (Toxic Crown).
+  dilo: [
+    { rays: [{ x: 19, y: 8, dx: -1, dy: -1, len: 4, key: '0' }, { x: 19, y: 9, dx: -1, dy: 0, len: 4, key: '0' },
+      { x: 20, y: 6, dx: -1, dy: -1, len: 3, key: '0' }, { x: 19, y: 10, dx: -1, dy: 1, len: 2, key: '0' }],
+      paint: [{ key: '0', pts: [[16, 7], [17, 7], [18, 7], [16, 8], [17, 8], [18, 8], [17, 6], [18, 6]] }],
+      stretch: { cols: [13] },
+      colors: { 7: '#feae34', 8: '#be4a2f', 9: '#e43b44', 0: '#2ce8f5' } },
+    { pad: { top: 2 },
+      rays: [{ x: 19, y: 8, dx: -1, dy: -1, len: 5, key: '0' }, { x: 19, y: 9, dx: -1, dy: 0, len: 5, key: '0' },
+        { x: 20, y: 6, dx: -1, dy: -1, len: 4, key: '0' }, { x: 19, y: 10, dx: -1, dy: 1, len: 3, key: '0' },
+        { x: 23, y: 1, dx: 0, dy: -1, len: 2, key: '9' }, { x: 25, y: 2, dx: 1, dy: -1, len: 2, key: '9' }, { x: 21, y: 2, dx: -1, dy: -1, len: 2, key: '9' }],
+      paint: [{ key: '0', pts: [[15, 7], [16, 7], [17, 7], [18, 7], [15, 8], [16, 8], [17, 8], [18, 8], [16, 6], [17, 6], [18, 6], [16, 9], [17, 9]] }],
+      stretch: { cols: [12, 13], rows: [13] },
+      colors: { 7: '#63c74d', 8: '#265c42', 9: '#b55088', 0: '#68386c', L: '#c0cbdc', E: '#fee761' } }
+  ],
+  // Therizinosaurus: longer claws and a feathered back (Reaper), then darker and longer still (Grim Harvester).
+  theri: [
+    { pad: { right: 2 }, spikes: [{ x0: 8, x1: 18, every: 2, key: ')' }],
+      rays: [{ x: 31, y: 16, dx: 1, dy: 0, len: 2 }, { x: 31, y: 20, dx: 1, dy: 1, len: 1 }, { x: 27, y: 23, dx: 1, dy: 1, len: 1 }],
+      stretch: { rows: [14] } },
+    { pad: { top: 2, right: 3 }, spikes: [{ x0: 6, x1: 20, every: 2, key: ')' }],
+      rays: [{ x: 31, y: 16, dx: 1, dy: 0, len: 3 }, { x: 31, y: 20, dx: 1, dy: 1, len: 2 }, { x: 27, y: 23, dx: 1, dy: 1, len: 2 },
+        { x: 23, y: 0, dx: -1, dy: -1, len: 2, key: ')' }, { x: 25, y: 0, dx: 0, dy: -1, len: 2, key: ')' }],
+      stretch: { cols: [13, 14], rows: [14] },
+      colors: { '(': '#3a4466', ')': '#262b44', L: '#8b9bb4', E: '#e43b44' } }
+  ],
+  // Baryonyx is wildlife only; the elite uses form 1.
+  bary: [
+    { spikes: [{ x0: 10, x1: 22, every: 2, key: 'W' }], stretch: { cols: [16] } }
+  ],
   spino: [
     { pad: { top: 4 }, grow: [{ x0: 6, x1: 17, h: 3, key: 'f', topKey: 'g' }], stretch: { cols: [14, 15], rows: [13] } },
     { pad: { top: 6 }, grow: [{ x0: 5, x1: 18, h: 5, key: 'f', topKey: 'g' }], stretch: { cols: [14, 15, 16], rows: [12, 13] },

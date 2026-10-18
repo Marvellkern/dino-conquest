@@ -333,7 +333,7 @@ const REX_SETS = {
   tail: { approach: rexApproach, strike: tailWhip, retreat: rexRetreat }
 };
 
-const SPRITE_SETS = {
+export const SPRITE_SETS = {
   bite: { strike: pounce, retreat: hopHome },
   tail: { approach: hopIn, strike: tailWhip, retreat: hopHome },
   swarm: { strike: swarm, retreat: hopHome },
@@ -346,6 +346,9 @@ const SETS = {
   trike: { ...SPRITE_SETS, bite: { approach: hopIn, strike: ram, retreat: hopHome } },
   pachy: { ...SPRITE_SETS, bite: { approach: hopIn, strike: ram, retreat: hopHome } }
 };
+
+// Shared helpers for battle/anims2.js (the Tidal Coast animations).
+export { holdUntil, hopTo, windup, standX, hopIn, hopHome };
 
 export function animSet(species, kind) {
   const sets = SETS[species] ?? SPRITE_SETS;

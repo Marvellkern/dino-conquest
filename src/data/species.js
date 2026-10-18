@@ -1,6 +1,7 @@
 // Base stats per species. Tune freely — all combat math reads from here.
 // enemyOnly: true keeps a species out of the hatch spin and the Dino-dex (Dimetrodon).
 // unlock: a Nest unlock (data/unlocks.js) that has to be bought before it can hatch.
+// short: a shorter name for tight spots (Dino-dex cards).
 export const SPECIES = {
   compy:  { name: 'Compy',  rarity: 'common',    hp: 52,  atk: 11, def: 4, spd: 9, special: 'swarm' },
   raptor: { name: 'Raptor', rarity: 'rare',      hp: 60,  atk: 13, def: 4, spd: 8, special: 'doubleSlash' },
@@ -14,8 +15,10 @@ export const SPECIES = {
   stego:  { name: 'Stego',  rarity: 'epic',      hp: 74,  atk: 12, def: 7, spd: 3, special: 'thagomizer', unlock: 'eggStego' },
   carno:  { name: 'Carno',  rarity: 'legendary', hp: 72,  atk: 13, def: 4, spd: 6, special: 'goreRush', unlock: 'eggCarno' },
   dimetro: { name: 'Dimetrodon', rarity: 'rare', hp: 64,  atk: 12, def: 5, spd: 4, special: 'deathRoll', enemyOnly: true },
-  // Tidal Coast wildlife. Dilophosaurus becomes hatchable with its sprite (v2.2 step 3).
-  dilo:   { name: 'Dilophosaurus', rarity: 'rare', hp: 54, atk: 12, def: 3, spd: 9, special: 'doubleSlash', enemyOnly: true },
+  // v2.2 Nest eggs: a fast debuffer and a tanky bruiser.
+  dilo:   { name: 'Dilophosaurus', short: 'Dilopho', rarity: 'rare', hp: 54, atk: 12, def: 3, spd: 9, special: 'venomSpit', unlock: 'eggDilo' },
+  theri:  { name: 'Therizinosaurus', short: 'Therizino', rarity: 'epic', hp: 82, atk: 11, def: 7, spd: 3, special: 'scytheClaws', unlock: 'eggTheri' },
+  // Tidal Coast wildlife.
   plesio: { name: 'Plesiosaur', rarity: 'rare', hp: 70,  atk: 12, def: 6, spd: 5, special: 'deathRoll', enemyOnly: true },
   ichthy: { name: 'Ichthyosaur', rarity: 'common', hp: 44, atk: 10, def: 2, spd: 11, special: 'swarm', enemyOnly: true },
   bary:   { name: 'Baryonyx', rarity: 'epic', hp: 78,    atk: 13, def: 5, spd: 5, special: 'deathRoll', enemyOnly: true },

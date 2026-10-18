@@ -99,7 +99,7 @@ function playerTurn(st, play, S) {
     else if (m.brace) B.playerBrace(st);
     else {
       const muddy = B.consumeMuddy(st), blind = B.consumeBlind(st);
-      let strikes = m.spread ? 1 : (m.hits ?? 1), chains = 0;
+      let strikes = m.spread ? 1 : BLD.moveHits(st, m), chains = 0;
       const main = tgts.find((t) => t.hp > 0);
       for (let h = 0; h < strikes && main && main.hp > 0; h++) {
         const q = B.finalQte(st, attackQte(st, play, m, muddy && h === 0, S, blind && h === 0)).qte;

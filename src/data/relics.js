@@ -61,7 +61,11 @@ export const PERKS = {
   perkSpikes:    { name: 'Spikeback',     desc: 'BRACED BLOCKS REFLECT 30%' },
   perkThago:     { name: 'Thunderspike',  desc: 'THAGOMIZER HITS ALL' },
   perkBullhorn:  { name: 'Bullhorn',      desc: 'GORE RUSH COSTS 1' },
-  perkDoom:      { name: 'Doomhorn',      desc: 'KILLS GIVE +1 ENERGY' }
+  perkDoom:      { name: 'Doomhorn',      desc: 'KILLS GIVE +1 ENERGY' },
+  perkFrillSpit: { name: 'Frill Spitter', desc: 'VENOM SPIT HITS ALL' },
+  perkToxic:     { name: 'Toxic Crown',   desc: 'POISONED FOES TAKE +25%' },
+  perkReaper:    { name: 'Reaper',        desc: 'SCYTHE CLAWS HIT 4 TIMES' },
+  perkHarvest:   { name: 'Grim Harvester', desc: 'KILLS HEAL 15% HP' }
 };
 
 export const RELIC_TUNING = {
@@ -71,5 +75,5 @@ export const RELIC_TUNING = {
   echoDmg: 4, feathersMult: 1.2, shadowMult: 1.5, frillBlock: 0.3, ghostBite: 3,
   emberDmg: 2, obsidianArmor: 2, lavaPoison: 2, starEvery: 3, crystalHp: 15, geodeMult: 1.5,
   twinHornMult: 1.6, pteraHeal: 4, bastionTurns: 2, spikesReflect: 0.3, skyMult: 1.2, thornsFrac: 0.3,
-  baskHeal: 0.2
+  baskHeal: 0.2, toxicMult: 1.25, harvestHeal: 0.15
 };

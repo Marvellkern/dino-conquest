@@ -28,13 +28,16 @@ export function moveCost(st, id) {
 }
 
 export const streakNeed = (st) => (has(st, 'glowShard') ? 2 : STREAK.need);
+// Strikes in a move (Reaper: Scythe Claws gets a 4th).
+export const moveHits = (st, m) => (m.hits ?? 1) + (m.id === 'scytheClaws' && has(st, 'perkReaper') ? 1 : 0);
+
 export const spreadCount = (st, m) => m.spread + (m.id === 'swarm' && has(st, 'perkSwarmlord') ? 1 : 0);
 
 // Moves that hit every enemy at once (one QTE).
 export const hitsAll = (st, id) =>
   (id === 'tail' && mutation(st, 'tail') === 'sweep') || (id === 'hornCharge' && has(st, 'perkWarhorn'))
   || (id === 'swampSurge' && has(st, 'perkTidelord')) || (id === 'diveBomb' && has(st, 'perkStorm'))
-  || (id === 'thagomizer' && has(st, 'perkThago'));
+  || (id === 'thagomizer' && has(st, 'perkThago')) || (id === 'venomSpit' && has(st, 'perkFrillSpit'));
 
 export const counterMult = (st) => (has(st, 'raptorClaw') ? RT.raptorClawMult / MOVES.counter.power : 1) * (has(st, 'perkShadow') ? RT.shadowMult : 1);
 export const dodgeMult = (st) => (has(st, 'swiftFeather') ? RT.swiftMult : 1) * (has(st, 'perkFeathers') ? RT.feathersMult : 1)
@@ -55,6 +58,7 @@ export function strikeMods(st, id, target) {
   if (has(st, 'huntersEye') && target.hp < target.maxHp * RT.huntersBelow) mult *= RT.huntersMult;
   if (id === 'tail' && has(st, 'twinHorn')) mult *= RT.twinHornMult;
   if (MOVES[id].execute && target.hp < target.maxHp / 2) mult *= 1 + MOVES[id].execute;
+  if (has(st, 'perkToxic') && target.status.poison > 0) mult *= RT.toxicMult;
   const flat = (has(st, 'packTotem') ? RT.packTotemDmg * aliveCount(st) : 0) + (has(st, 'emberCore') ? RT.emberDmg : 0);
   return { mult, flat };
 }
@@ -128,6 +132,7 @@ export function onPlayerHit(st, id, target, qte, dmg) {
 export function onKill(st) {
   const out = { healed: 0, energy: 0 };
   if (has(st, 'bloodAmber')) out.healed = heal(st.player, RT.bloodAmberHeal);
+  if (has(st, 'perkHarvest')) out.healed += heal(st.player, Math.round(st.player.maxHp * RT.harvestHeal));
   if (has(st, 'perkAlpha') || has(st, 'perkDoom')) { out.energy = 1; st.energy = Math.min(maxEnergy(st), st.energy + 1); }
   return out;
 }
