@@ -18,6 +18,7 @@ export function choose(scene, { title, lines = [], options, bh = 32 }) {
       // A line too wide for the panel (narrow portrait popups) drops to the small font.
       ...lines.map((l, i) => text(scene, W / 2, y + 19 + i * 10 + (String(l).length * 6 > PW - 8 ? 1 : 0), l, { origin: [0.5, 0], shadow: false, small: String(l).length * 6 > PW - 8 }).setDepth(62))
     ];
+    for (const o of objs) o.setScrollFactor(0); // stay put on a scrolled camera (portrait map)
     const by = y + 20 + lines.length * 10 + 4;
     let picked = false;
     const done = (i) => {
@@ -32,7 +33,7 @@ export function choose(scene, { title, lines = [], options, bh = 32 }) {
     };
     const btns = options.map((o, i) => new Button(scene, x + 8, by + i * (bh + gap), PW - 16, bh, {
       key: options.length > 1 ? String(i + 1) : '', label: o.label, sub: o.disabled ?? o.sub ?? '', depth: 62, onClick: () => done(i)
-    }).setEnabled(!o.disabled));
+    }).setEnabled(!o.disabled).pin());
     const onKey = (e) => {
       if (e.repeat) return;
       const i = options.length === 1 && (e.code === 'Space' || e.code === 'Enter') ? 0 : '123456'.indexOf(e.key);

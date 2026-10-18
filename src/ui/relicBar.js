@@ -15,6 +15,7 @@ export class RelicBar {
       const img = this.scene.add.image(px, py, PERKS[id] ? 'relic_perk' : `relic_${id}`).setOrigin(0).setDepth(12);
       // Tap area a little taller than the icon, so it's easier to hit with a finger.
       const zone = this.scene.add.zone(px - 1, py - 2, 10, 13).setOrigin(0).setDepth(13).setInteractive({ useHandCursor: true });
+      if (this.fixed) { img.setScrollFactor(0); zone.setScrollFactor(0); } // pinned HUD on a scrolling map
       const info = relicInfo(id);
       const show = () => this.onInfo(`${info.name.toUpperCase()}: ${info.desc}`);
       zone.on('pointerover', show);

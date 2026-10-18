@@ -47,6 +47,12 @@ export class Button {
 
   setEnabled(on) { this.enabled = on; this.draw(); return this; }
 
+  // Ignore camera scroll (popups over the scrolling portrait map).
+  pin() {
+    for (const o of [this.g, this.keyText, this.label, this.sub, this.zone]) o.setScrollFactor(0);
+    return this;
+  }
+
   setText(label, sub) {
     if (label != null) this.label.setText(label);
     if (sub != null) { this.sub.setText(sub); this.hasSub = !!sub; this.placeLabel(); }

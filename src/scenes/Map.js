@@ -20,7 +20,11 @@ import { sfx } from '../systems/sfx.js';
 const LANE_Y = [72, 104, 136];
 const colX = (row) => 34 + row * 38;
 const LANE_X = [46, 90, 134];
-const rowY = (row) => 252 - row * 24;
+// Portrait rows are 44px apart (room for the dino above a node), so the map is
+// taller than the screen: it scrolls (drag / wheel) and follows the dino.
+const ROW_GAP = 44, WORLD_H = 470;
+const rowY = (row) => WORLD_H - 72 - row * ROW_GAP;
+const MAP_TOP = 62, MAP_BOTTOM = () => H - 24; // visible band between the HUD and the tooltip
 const ICON = { fight: 'icon_fight', elite: 'icon_elite', nest: 'icon_nest', fossil: 'icon_fossil', meteor: 'icon_meteor', shop: 'icon_shop' };
 
 // Zone map: pick the next node, travel, resolve it.
@@ -36,7 +40,7 @@ export class MapScene extends Phaser.Scene {
     this.busy = false;
     this.cameras.main.fadeIn(150);
 
-    drawMapBackground(this, this.run.zone);
+    this.bg = drawMapBackground(this, this.run.zone);
     this.edges = this.add.graphics().setDepth(2);
     this.rings = this.add.graphics().setDepth(4);
     this.time.addEvent({ delay: 380, loop: true, callback: () => this.rings.setVisible(!this.rings.visible) });
@@ -46,6 +50,11 @@ export class MapScene extends Phaser.Scene {
     const here = this.pos(this.run.at);
     this.marker.setPosition(Math.max(here.x, Math.ceil(this.marker.width / 2) + 1), here.y - 6); // wide dinos stay on screen at the start
 
+    const before = new Set(this.children.list);
+    if (PORTRAIT) { // solid strips behind the pinned HUD and tooltip, so scrolled nodes don't peek around them
+      this.add.rectangle(0, 0, W, MAP_TOP, 0x16181d).setOrigin(0).setDepth(9);
+      this.add.rectangle(0, MAP_BOTTOM(), W, H - MAP_BOTTOM(), 0x16181d).setOrigin(0).setDepth(9);
+    }
     this.buildHud();
     if (PORTRAIT) { // two small lines, so fossil descriptions fit
       panel(this.add.graphics().setDepth(10), 4, H - 22, W - 8, 18);
@@ -54,6 +63,8 @@ export class MapScene extends Phaser.Scene {
       panel(this.add.graphics().setDepth(10), 4, 160, W - 8, 16);
       this.tip = text(this, W / 2, 164, '', { origin: [0.5, 0] }).setDepth(11);
     }
+
+    if (PORTRAIT) this.setupScroll(before);
 
     this.onKey = (e) => this.key(e);
     this.input.keyboard.on('keydown', this.onKey);
@@ -66,7 +77,7 @@ export class MapScene extends Phaser.Scene {
 
   pos(id) {
     if (PORTRAIT) {
-      if (!id) return { x: LANE_X[1], y: rowY(0) + 38 };
+      if (!id) return { x: LANE_X[1], y: rowY(0) + 40 };
       const n = this.run.map.nodes[id];
       return { x: id === 'boss' ? LANE_X[1] : LANE_X[n.lane], y: id === 'boss' ? rowY(n.row) - 4 : rowY(n.row) };
     }
@@ -93,7 +104,8 @@ export class MapScene extends Phaser.Scene {
     this.icons[n.id] = img;
     const zone = this.add.zone(x, y, lp(36, 40), lp(32, 25)).setInteractive({ useHandCursor: true });
     zone.on('pointerover', () => { const i = this.options().indexOf(n.id); if (i >= 0) { this.sel = i; this.refresh(); } });
-    zone.on('pointerdown', () => { if (this.options().includes(n.id)) this.go(n.id); });
+    // pointerup, so dragging the portrait map doesn't pick a node
+    zone.on('pointerup', () => { if (!this.dragged && this.options().includes(n.id)) this.go(n.id); });
   }
 
   refresh() {
@@ -196,6 +208,37 @@ export class MapScene extends Phaser.Scene {
     this.refresh();
   }
 
+  /* ---------- portrait scrolling ---------- */
+
+  // HUD, tooltip and background stay put; everything else is the scrolling map.
+  setupScroll(before) {
+    const fixed = (o) => o.setScrollFactor?.(0);
+    for (const o of this.children.list) if (!before.has(o)) fixed(o);
+    this.bg.setScrollFactor(0);
+    this.relicBar.fixed = true;
+    const cam = this.cameras.main;
+    cam.setBounds(0, 0, W, WORLD_H + (H - MAP_BOTTOM()));
+    this.dragged = false;
+    let start = null;
+    this.input.on('pointerdown', (p) => { start = { y: p.y, scroll: cam.scrollY }; this.dragged = false; });
+    this.input.on('pointermove', (p) => {
+      if (!start || !p.isDown) return;
+      if (Math.abs(p.y - start.y) > 4) this.dragged = true;
+      if (this.dragged) cam.setScroll(0, start.scroll - (p.y - start.y));
+    });
+    this.input.on('pointerup', () => { start = null; this.time.delayedCall(0, () => { this.dragged = false; }); });
+    this.input.on('wheel', (p, objs, dx, dy) => cam.setScroll(0, cam.scrollY + dy * 0.3));
+    this.follow(false);
+  }
+
+  // Scroll so the dino sits low in the visible band (its next choices are above it).
+  follow(animate = true) {
+    if (!PORTRAIT) return;
+    const cam = this.cameras.main, y = Math.round(this.marker.y - (MAP_BOTTOM() - 40));
+    if (animate) this.tweens.add({ targets: cam, scrollY: y, duration: 220, ease: 'Sine.InOut' });
+    else cam.setScroll(0, y);
+  }
+
   async go(id) {
     if (this.busy) return;
     this.busy = true;
@@ -208,6 +251,7 @@ export class MapScene extends Phaser.Scene {
       }));
       sfx('step');
     }
+    this.follow();
     this.enter(this.run.map.nodes[id]);
   }
 
