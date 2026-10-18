@@ -7,6 +7,7 @@ import { makeTexture } from '../sprites/renderSprite.js';
 import { SKIN_GRIDS, fossilColor } from '../sprites/skins.js';
 import { session, dinoName, dinoSkin, zoneOf } from '../run/run.js';
 import { meta, bankRun, addAncestor } from '../systems/meta.js';
+import { checkpoint, clearRun } from '../systems/runStore.js';
 import { pickHeir, endGoals } from '../ui/bloodline.js';
 import { Fx } from '../systems/fx.js';
 import { sfx } from '../systems/sfx.js';
@@ -50,7 +51,9 @@ export class Fossil extends Phaser.Scene {
     const d = run.dino, zone = zoneOf(run);
     const col = run.at ? run.map.nodes[run.at].row + 1 : 0;
     const skin = dinoSkin(d);
-    const amber = bankRun(run, false);
+    // Banked once: a reload on this screen resumes here without banking again.
+    if (run.banked == null) { run.banked = bankRun(run, false); checkpoint(run, { kind: 'end', won: false }); }
+    const amber = run.banked;
     session.run = null;
 
     this.drawStrata();
@@ -88,6 +91,7 @@ export class Fossil extends Phaser.Scene {
 
     await endGoals(this, run, false);
     addAncestor(run, false, await pickHeir(this, run));
+    clearRun(); // everything is banked: the run save goes
 
     const prompt = text(this, W / 2, H - 18, lp('TAP TO RETURN TO THE NEST', 'TAP TO RETURN'), { origin: [0.5, 0], color: COLORS.textDim, shadow: false });
     this.tweens.add({ targets: prompt, alpha: 0.3, duration: 500, yoyo: true, repeat: -1 });

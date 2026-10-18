@@ -3,7 +3,8 @@ import { amberCount } from '../ui/amber.js';
 import { W, H, COLORS, PORTRAIT, lp } from '../config.js';
 import { NODE_INFO } from '../data/zones.js';
 import { RelicBar } from '../ui/relicBar.js';
-import { visitNest, visitFossil, visitMeteor, visitShop, nestHeal } from './mapNodes.js';
+import { visitNest, visitFossil, visitMeteor, visitShop, nestHeal, fightRewards, afterFight } from './mapNodes.js';
+import { checkpoint, takeResume } from '../systems/runStore.js';
 import { TRAITS } from '../data/traits.js';
 import { xpToNext } from '../data/progression.js';
 import { text } from '../ui/font.js';
@@ -74,6 +75,22 @@ export class MapScene extends Phaser.Scene {
     this.events.once('shutdown', () => this.input.keyboard?.off('keydown', this.onKey));
     this.sel = 0;
     this.refresh();
+    this.resume(takeResume());
+  }
+
+  // A run reloaded mid-node or mid-rewards picks up there (its earlier choices replay);
+  // otherwise this is a fresh save point.
+  async resume(phase) {
+    if (phase?.kind === 'node') { this.busy = true; return this.visit(this.run.map.nodes[phase.id]); }
+    if (phase?.kind === 'rewards') {
+      this.busy = true;
+      await fightRewards(this, this.run, phase);
+      const next = afterFight(this.run, phase);
+      if (next !== 'Map') { this.scene.start(next, next === 'RunEnd' ? { won: true } : undefined); return; }
+      this.busy = false;
+      this.refresh();
+    }
+    checkpoint(this.run, { kind: 'map' });
   }
 
   update(_, dt) { this.fx.update(dt); }
@@ -259,23 +276,35 @@ export class MapScene extends Phaser.Scene {
   }
 
   async enter(node) {
-    const run = this.run, d = this.d;
+    const run = this.run;
     run.at = node.id;
     node.done = true;
     this.refresh();
 
     if (node.enemies) {
+      // The fight's seed comes from the run, and the checkpoint is taken before it starts:
+      // reloading mid-fight restarts this exact fight (same enemies, intents, timings).
+      const seed = run.rng.int(1, 2 ** 31 - 1);
+      checkpoint(run, { kind: 'battle', node: node.id, seed });
       sfx('tell');
       this.fx.pop(this.marker.x, this.marker.y - 30, '!', '#fff096', 2, 400);
       this.time.delayedCall(220, () => this.cameras.main.fadeOut(150));
-      this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Battle', { node: node.id }));
+      this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Battle', { node: node.id, seed }));
       return;
     }
+    checkpoint(run, { kind: 'node', id: node.id });
+    await this.visit(node);
+  }
+
+  // A non-battle node's content (popups), then back to picking a path.
+  async visit(node) {
+    const run = this.run, d = this.d;
     const visit = { nest: visitNest, fossil: visitFossil, meteor: visitMeteor, shop: visitShop }[node.type];
     if (visit) await visit(this, run);
     if (d.pendingEvo) { this.scene.start('Evolution'); return; }
     this.busy = false;
     this.sel = 0;
     this.refresh();
+    checkpoint(this.run, { kind: 'map' });
   }
 }

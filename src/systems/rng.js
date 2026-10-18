@@ -1,6 +1,7 @@
 // Seedable RNG (mulberry32). Use this for every gameplay roll so runs replay.
-export function makeRng(seed) {
-  let s = seed >>> 0;
+// state: resume from a saved state() instead of the seed (run saving).
+export function makeRng(seed, state = seed) {
+  let s = state >>> 0;
   const next = () => {
     s = (s + 0x6d2b79f5) >>> 0;
     let t = s;
@@ -11,6 +12,7 @@ export function makeRng(seed) {
   return {
     seed,
     next,
+    state: () => s,
     range: (a, b) => a + next() * (b - a),
     int: (a, b) => a + Math.floor(next() * (b - a + 1)),
     chance: (p) => next() < p,

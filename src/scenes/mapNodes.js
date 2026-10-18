@@ -6,8 +6,22 @@ import { choose } from '../ui/popup.js';
 import { pickRelic, pickMutation } from '../ui/buildPicks.js';
 import { heal, hurt, addStat, gainXp, relicOffers, addRelic, mutationOffer, removeRandomRelic, relicInfo } from '../run/run.js';
 import { sfx } from '../systems/sfx.js';
+import { checkpoint } from '../systems/runStore.js';
 
 // What happens at the non-battle map nodes. Each takes the Map scene and the run.
+
+// After a won fight (Battle, or Map when a reload lands here): the elite's fossil
+// and one mutation pick per level gained. phase: { elite, levels, done }.
+export async function fightRewards(scene, run, { elite, levels }) {
+  if (elite) await pickRelic(scene, run, 'ELITE DROP', ['IT GUARDED A FOSSIL.']);
+  for (let i = 0; i < levels; i++) await pickMutation(scene, run, { title: 'LEVEL UP: MUTATION' });
+}
+
+// Where the run goes after the rewards. The final boss saves the end screen as the resume point.
+export function afterFight(run, { done }) {
+  if (done) { checkpoint(run, { kind: 'end', won: true }); return 'RunEnd'; }
+  return run.dino.pendingEvo ? 'Evolution' : 'Map';
+}
 
 export const nestHeal = (run) => run.mods?.nestHeal ?? NEST_HEAL; // Extinction 7 lowers it
 

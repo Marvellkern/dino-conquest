@@ -124,7 +124,29 @@ The difficulty levers live in data:
 
 ### The run
 
-`run/run.js` holds the run state (dino stats, XP, evolution, upgrades) and `run/mapgen.js` builds the branching map. The scenes are `Map` (travel; Nest / Fossil Dig / Meteor / Shop visits live in `scenes/mapNodes.js`) → `Battle` → `Evolution` (at LV5 / LV10) → `RunEnd` (victory: banks Amber and crowns the species in the Dino-dex). Each run has 2 lives (3 with Nine Lives). Losing a fight costs one and restarts that fight at 40% HP. At 0 lives the dino goes to the `Fossil` screen, which banks Amber. Both end screens run the final goal check and the Bloodline pick (`ui/bloodline.js`), and add the dino to the family tree. `Home` is the hub: Dino-dex, the Nest menus, and stats. The current run itself is not saved; refreshing mid-run returns you to Home.
+`run/run.js` holds the run state (dino stats, XP, evolution, upgrades) and `run/mapgen.js` builds the branching map. The scenes are `Map` (travel; Nest / Fossil Dig / Meteor / Shop visits live in `scenes/mapNodes.js`) → `Battle` → `Evolution` (at LV5 / LV10) → `RunEnd` (victory: banks Amber and crowns the species in the Dino-dex). Each run has 2 lives (3 with Nine Lives). Losing a fight costs one and restarts that fight at 40% HP. At 0 lives the dino goes to the `Fossil` screen, which banks Amber. Both end screens run the final goal check and the Bloodline pick (`ui/bloodline.js`), and add the dino to the family tree. `Home` is the hub: Dino-dex, the Nest menus, and stats.
+
+### Run saving (v2.2)
+
+The run in progress has its own localStorage slot, `dino-conquest:run`, apart from the meta save, so a bad run save can never touch meta progress. Refreshing, closing the tab, or a phone killing it resumes the run: Home shows **CONTINUE RUN**, with the dino, level, zone and lives.
+
+- **What's saved:** a checkpoint plus the choices made since it. The checkpoint is the whole run as JSON (`run/runSave.js` `serializeRun` / `deserializeRun`, no Phaser, so the sim can round-trip runs). It includes the RNG's current state, not just the seed.
+- **When:** checkpoints are taken (`systems/runStore.js` `checkpoint(run, phase)`) at these points:
+  - hatching;
+  - back on the map;
+  - arriving at a node, before its content;
+  - a fight starting (with its seed);
+  - a fight won, before the banner;
+  - an evolution;
+  - the end screens.
+- **Choices:** every popup choice in Map / Battle / Evolution is appended to the save (`ui/popup.js`). On a reload the snapshot is restored and those choices replay instantly, so the player picks up at the first unanswered popup.
+- **No rerolls:** the RNG state is restored, so the same fight, Fossil Dig, mutation offer, event or shop stock comes back.
+  - A reload mid-fight restarts that fight from its start. It's the same fight, and it costs no life.
+  - The Bloodline offers are seeded by the run.
+- **Ending:** the run save is deleted after the end screen's Bloodline pick, once everything is banked. A reload on an end screen resumes it without banking Amber twice (`run.banked`).
+- **Abandoning:** **NEW EGG** asks first, then sends the saved run through the normal death flow (Fossil screen, Amber banked, Bloodline pick, family tree).
+- **Safety:** the run save has its own version (`RUN_VERSION`, `migrateRun()`). An unreadable save is dropped, and Home says "RUN LOST". Zone order is stored in the run, so a run from before a new zone existed resumes as it was.
+- **Clearing it:** to drop a stuck run, run `localStorage.removeItem('dino-conquest:run')` in the browser console.
 
 ### Zones
 

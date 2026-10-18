@@ -6,6 +6,7 @@ import { panel } from '../ui/pixel.js';
 import { createRig } from '../sprites/rig.js';
 import { session, dinoName, dinoSkin, zoneOf } from '../run/run.js';
 import { bankRun, addAncestor } from '../systems/meta.js';
+import { checkpoint, clearRun } from '../systems/runStore.js';
 import { pickHeir, endGoals } from '../ui/bloodline.js';
 import { sfx } from '../systems/sfx.js';
 import { onPress } from '../systems/qte.js';
@@ -23,7 +24,9 @@ export class RunEnd extends Phaser.Scene {
     if (!run) { this.scene.start('Home'); return; }
     const d = run.dino, won = !!data.won, zone = zoneOf(run);
     const col = run.at ? run.map.nodes[run.at].row + 1 : 0;
-    const amber = bankRun(run, won);
+    // Banked once: a reload on this screen resumes here without banking again.
+    if (run.banked == null) { run.banked = bankRun(run, won); checkpoint(run, { kind: 'end', won }); }
+    const amber = run.banked;
     session.run = null;
 
     this.cameras.main.fadeIn(150);
@@ -49,6 +52,7 @@ export class RunEnd extends Phaser.Scene {
     await wait(this, 1200);
     await endGoals(this, run, won);
     addAncestor(run, won, await pickHeir(this, run));
+    clearRun(); // everything is banked: the run save goes
 
     const prompt = text(this, W / 2, lp(148, 266), lp('TAP TO RETURN TO THE NEST', 'TAP TO RETURN'), { origin: [0.5, 0], color: COLORS.textDim, shadow: false });
     this.tweens.add({ targets: prompt, alpha: 0.3, duration: 500, yoyo: true, repeat: -1 });

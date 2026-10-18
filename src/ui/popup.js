@@ -2,11 +2,21 @@ import { W, H, COLORS } from '../config.js';
 import { panel } from './pixel.js';
 import { text } from './font.js';
 import { Button } from './button.js';
+import { replaying, takeReplay, dropReplay, logPick } from '../systems/runStore.js';
+
+// Scenes whose popups are part of the saved run (recorded, replayed after a reload).
+const RUN_SCENES = new Set(['Map', 'Battle', 'Evolution']);
 
 // Modal choice box over a dimmed screen. options: [{ label, sub?, disabled? }]
 // (disabled: a reason string; the option is greyed out and shows it).
 // Resolves with the chosen index. Click/tap or keys 1–N. bh: button height.
 export function choose(scene, { title, lines = [], options, bh = 32 }) {
+  const inRun = RUN_SCENES.has(scene.scene.key);
+  if (inRun && replaying()) { // a resumed run: answer as the player did before the reload
+    const i = takeReplay();
+    if (Number.isInteger(i) && options[i] && !options[i].disabled) return Promise.resolve(i);
+    dropReplay(); // out of step: ask from here on
+  }
   return new Promise((resolve) => {
     const PW = Math.min(236, W - 8), x = Math.round((W - PW) / 2), gap = bh < 32 ? 3 : 4;
     const ph = 20 + lines.length * 10 + 4 + options.length * (bh + gap) + 4;
@@ -24,6 +34,7 @@ export function choose(scene, { title, lines = [], options, bh = 32 }) {
     const done = (i) => {
       if (picked) return;
       picked = true;
+      if (inRun) logPick(i);
       scene.input.keyboard.off('keydown', onKey);
       scene.time.delayedCall(100, () => {
         objs.forEach((o) => o.destroy());

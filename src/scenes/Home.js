@@ -2,6 +2,9 @@ import { syncLayout } from '../systems/screen.js';
 import { amberCount } from '../ui/amber.js';
 import { W, H, COLORS, lp } from '../config.js';
 import { SPECIES } from '../data/species.js';
+import { ZONES } from '../data/zones.js';
+import { session, dinoName, dinoSkin } from '../run/run.js';
+import { peekRun, resumeRun, takeResume } from '../systems/runStore.js';
 import { RARITIES } from '../data/hatch.js';
 import { GOAL_ORDER } from '../data/goals.js';
 import { EXTINCTION } from '../data/extinction.js';
@@ -18,10 +21,18 @@ const DEX_ORDER = ['compy', 'raptor', 'trike', 'rex', 'pachy', 'sarco', 'spino',
 const DEX_PAGE = 4;
 
 // Boxes [x, y, w, h] per layout: landscape side by side, portrait stacked.
+// With a run saved, CONTINUE RUN takes the hatch box; NEW EGG and SETTINGS share the settings box.
 const BOX = () => lp(
-  { dex: [4, 20, 152, 118], nest: [162, 20, 154, 118], hatch: [4, 142, 224, 34], settings: [232, 142, 84, 34] },
-  { dex: [4, 20, 172, 118], nest: [4, 142, 172, 108], hatch: [4, 254, 172, 34], settings: [4, 292, 172, 24] }
+  { dex: [4, 20, 152, 118], nest: [162, 20, 154, 118], hatch: [4, 142, 224, 34], settings: [232, 142, 84, 34], egg: [232, 142, 84, 16], set2: [232, 160, 84, 16] },
+  { dex: [4, 20, 172, 118], nest: [4, 142, 172, 108], hatch: [4, 254, 172, 34], settings: [4, 292, 172, 24], egg: [4, 292, 84, 24], set2: [92, 292, 84, 24] }
 );
+
+// Where a resumed run picks up, by its saved phase.
+const RESUME = {
+  map: () => ['Map'], node: () => ['Map'], rewards: () => ['Map'], evolve: () => ['Evolution'],
+  battle: (p) => ['Battle', { node: p.node, seed: p.seed }],
+  end: (p) => (p.won ? ['RunEnd', { won: true }] : ['Fossil'])
+};
 
 // Home / Nest hub: Amber, Dino-dex, the Nest menus (unlocks, goals, family
 // tree, Extinction level), and the way into a new run.
@@ -40,12 +51,22 @@ export class Home extends Phaser.Scene {
     this.drawDex();
     this.drawNest();
 
-    const hatch = this.hatchBtn = new Button(this, ...BOX().hatch, { label: 'HATCH AN EGG', onClick: () => this.go() });
-    this.refreshHatch();
-    this.settingsBtn = new Button(this, ...BOX().settings, { key: 'S', label: 'SETTINGS', sub: 'SOUND, SHAKE', onClick: () => this.settings() });
+    const saved = peekRun();
+    this.saved = saved.run ? saved : null;
+    let main;
+    if (this.saved) {
+      main = this.drawContinue();
+      this.hatchBtn = new Button(this, ...BOX().egg, { key: 'N', label: 'NEW EGG', onClick: () => this.abandon() });
+      this.settingsBtn = new Button(this, ...BOX().set2, { key: 'S', label: 'SETTINGS', onClick: () => this.settings() });
+    } else {
+      main = this.hatchBtn = new Button(this, ...BOX().hatch, { label: 'HATCH AN EGG', onClick: () => this.go() });
+      this.refreshHatch();
+      this.settingsBtn = new Button(this, ...BOX().settings, { key: 'S', label: 'SETTINGS', sub: 'SOUND, SHAKE', onClick: () => this.settings() });
+    }
     this.onKey = (e) => {
       if (e.repeat || this.inMenu) return;
-      if (e.code === 'Space' || e.code === 'Enter') hatch.click();
+      if (e.code === 'Space' || e.code === 'Enter') main.click();
+      else if (e.code === 'KeyN' && this.saved) this.hatchBtn.click();
       else if (e.code === 'KeyS') this.settingsBtn.click();
       else if (e.code === 'KeyD') this.flipDex();
       else if (this.nestKeys[e.code]) this.nestKeys[e.code].click();
@@ -53,6 +74,58 @@ export class Home extends Phaser.Scene {
     this.input.keyboard.on('keydown', this.onKey);
     this.events.once('shutdown', () => this.input.keyboard?.off('keydown', this.onKey));
     if (meta.notice) this.notice();
+    else if (saved.error) this.runLost();
+  }
+
+  // The saved run's button: its dino, level, zone and lives.
+  drawContinue() {
+    const [x, y, w, h] = BOX().hatch, { run } = this.saved, d = run.dino;
+    const sub = `${lp(`${dinoName(d)} `, '')}LV${d.level}  ${ZONES[run.zone].name}  ${run.lives} ${run.lives === 1 ? 'LIFE' : 'LIVES'}`;
+    const btn = new Button(this, x, y, w, h, { label: 'CONTINUE RUN', sub, onClick: () => this.continueRun() });
+    const skin = dinoSkin(d);
+    if (this.textures.exists(skin)) {
+      const img = this.add.image(x + 4, y + h - 3, skin).setOrigin(0, 1).setDepth(12);
+      if (img.height > h - 6) img.setScale(0.5); // big dinos at half size so they fit the button
+      const shift = Math.ceil((img.displayWidth + 4) / 2); // center the text in the room right of the icon
+      btn.label.x += shift;
+      btn.sub.x += shift;
+    }
+    return btn;
+  }
+
+  async runLost() {
+    this.inMenu = true;
+    await choose(this, { title: 'RUN LOST', lines: ['YOUR LAST RUN COULD NOT', 'BE RESTORED.'], options: [{ label: 'OK' }] });
+    this.inMenu = false;
+  }
+
+  continueRun() {
+    if (this.inMenu) return;
+    const phase = resumeRun();
+    if (!phase) { this.scene.restart(); return; }
+    const [to, data] = (RESUME[phase.kind] ?? RESUME.map)(phase);
+    this.inMenu = true;
+    this.cameras.main.fadeOut(150);
+    this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start(to, data));
+  }
+
+  // A new egg ends the saved run first, as a death: Fossil screen, Amber banked, Bloodline pick.
+  async abandon() {
+    if (this.inMenu) return;
+    if (this.saved.phase.kind === 'end') return this.continueRun(); // already over: finish its end screen
+    this.inMenu = true;
+    const yes = await choose(this, {
+      title: 'ABANDON CURRENT RUN?',
+      lines: ['IT COUNTS AS A DEATH.'],
+      options: [{ label: 'CANCEL' }, { label: 'ABANDON IT', sub: 'YOUR DINO FOSSILIZES' }]
+    });
+    if (yes !== 1 || !resumeRun()) { this.inMenu = false; return; }
+    takeResume();
+    const run = session.run;
+    run.cause = 'ABANDONED';
+    run.lives = 0;
+    this.cameras.main.fadeOut(150);
+    this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Fossil'));
   }
 
   // One-time message (the v2 save upgrade).
@@ -146,6 +219,7 @@ export class Home extends Phaser.Scene {
   say(s) { this.status.setText(s); }
 
   refreshHatch() {
+    if (this.saved) return; // NEW EGG has no room for the lives line
     const set = runSetup();
     this.hatchBtn.setText(null, `${set.lives} LIVES${set.ext ? `  EXTINCTION ${set.ext}` : ''}`);
   }

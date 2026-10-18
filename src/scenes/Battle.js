@@ -12,7 +12,8 @@ import { text } from '../ui/font.js';
 import { panel } from '../ui/pixel.js';
 import { Hud, EnemyMarkers, MoveBar } from '../ui/battleUI.js';
 import { RelicBar } from '../ui/relicBar.js';
-import { pickRelic, pickMutation } from '../ui/buildPicks.js';
+import { fightRewards, afterFight } from './mapNodes.js';
+import { checkpoint } from '../systems/runStore.js';
 import { RELICS } from '../data/relics.js';
 import { MUTATIONS } from '../data/mutations.js';
 import { createRig } from '../sprites/rig.js';
@@ -317,12 +318,15 @@ export class Battle extends Phaser.Scene {
       run.lives--;
       if (run.lives > 0) {
         d.hp = Math.max(1, Math.round(dinoStats(d).hp * RETRY_HP));
+        const seed = run.rng.int(1, 2 ** 31 - 1);
+        checkpoint(run, { kind: 'battle', node: this.node.id, seed }); // the life is spent: a reload retries
         await this.banner('DEFEATED', false, [`-1 LIFE  (${run.lives} LEFT)`, `BACK UP AT ${Math.round(RETRY_HP * 100)}% HP`], 'TAP TO RETRY');
-        this.leave('Battle', { node: this.node.id });
+        this.leave('Battle', { node: this.node.id, seed });
         return;
       }
       d.hp = 0;
       run.cause = this.lastHitBy ?? this.st.enemies[0].name;
+      checkpoint(run, { kind: 'end', won: false });
       await this.banner('DEFEATED', false, ['NO LIVES LEFT...'], 'TAP TO CONTINUE');
       this.leave('Fossil');
       return;
@@ -340,11 +344,13 @@ export class Battle extends Phaser.Scene {
     if (next) lines.push(`ONWARD TO THE ${ZONES[next].name}!`);
     lines.push(...goalLines(goals));
     const levels = d.level - (this.levelBefore ?? d.level);
+    // Saved as won before the banner: a reload now goes straight to the reward picks.
+    const rewards = { kind: 'rewards', elite: type === 'elite', levels, done };
+    checkpoint(run, rewards);
     await this.banner(type === 'boss' ? 'ZONE CLEAR!' : 'VICTORY!', true, lines, 'TAP TO CONTINUE');
-    if (type === 'elite') await pickRelic(this, run, 'ELITE DROP', ['IT GUARDED A FOSSIL.']);
-    for (let i = 0; i < levels; i++) await pickMutation(this, run, { title: 'LEVEL UP: MUTATION' });
-    if (done) this.leave('RunEnd', { won: true });
-    else this.leave(d.pendingEvo ? 'Evolution' : 'Map');
+    await fightRewards(this, run, rewards);
+    const to = afterFight(run, rewards);
+    this.leave(to, to === 'RunEnd' ? { won: true } : undefined);
   }
 
   // Goal events for a won fight (systems/goals.js), after updating run stats.

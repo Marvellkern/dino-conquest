@@ -12,6 +12,7 @@ import { Fossil } from './scenes/Fossil.js';
 import { Nest } from './scenes/Nest.js';
 import { ZoneIntro } from './scenes/ZoneIntro.js';
 import { fit, wantPortrait } from './systems/screen.js';
+import { quickSave } from './systems/runStore.js';
 
 window.Phaser = Phaser;
 setPortrait(wantPortrait()); // pick the layout before the game is sized
@@ -29,6 +30,10 @@ const game = new Phaser.Game({
   audio: { noAudio: true }, // SFX are our own WebAudio synth (systems/sfx.js)
   scene: [Boot, Title, Home, Hatch, MapScene, Battle, Evolution, RunEnd, Fossil, Nest, ZoneIntro]
 });
+
+// A last save when the tab hides or closes (phones kill background tabs).
+document.addEventListener('visibilitychange', () => { if (document.hidden) quickSave(); });
+window.addEventListener('pagehide', quickSave);
 
 // Scaling and fullscreen live in systems/screen.js.
 const refit = () => fit(game);

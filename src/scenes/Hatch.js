@@ -18,6 +18,7 @@ import { checkGoals } from '../systems/goals.js';
 import { showGoals } from '../ui/bloodline.js';
 import { choose } from '../ui/popup.js';
 import { newRun, skinOf } from '../run/run.js';
+import { checkpoint } from '../systems/runStore.js';
 import { Fx } from '../systems/fx.js';
 import { sfx } from '../systems/sfx.js';
 import { onPress } from '../systems/qte.js';
@@ -278,7 +279,7 @@ export class Hatch extends Phaser.Scene {
   go() {
     if (this.busy) return;
     this.busy = true; // ignore repeat clicks during the fade
-    newRun({ ...runSetup(), species: this.species, trait: this.trait, seed: randomSeed(), skin: this.skin() });
+    checkpoint(newRun({ ...runSetup(), species: this.species, trait: this.trait, seed: randomSeed(), skin: this.skin() }), { kind: 'map' });
     meta.heir = null; // the heir's item is now in this run
     persist();
     this.cameras.main.fadeOut(150);
