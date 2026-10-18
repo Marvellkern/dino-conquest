@@ -25,15 +25,18 @@ export const PAUSE_AT = 0.55; // where in the wind-up a `delay` freezes
 // Attack bar per zone: sweet / good zone widths (px of 100), the chance a
 // bar's marker moves on an eased curve, and the chance its sweet spot drifts.
 export const ZONE_TIMING = {
-  jungle: { dodgeMs: 85, blockMs: 180, rings: 0, sweetW: 8, goodW: 30, curved: 0.2, drift: 0 },
-  swamp: { dodgeMs: 75, blockMs: 165, rings: 0.15, sweetW: 7, goodW: 28, curved: 0.35, drift: 0 },
-  volcano: { dodgeMs: 65, blockMs: 150, rings: 0.25, sweetW: 6, goodW: 26, curved: 0.45, drift: 0.3 },
-  crater: { dodgeMs: 55, blockMs: 135, rings: 0.35, sweetW: 5, goodW: 24, curved: 0.55, drift: 0.3 }
+  jungle: { dodgeMs: 85, blockMs: 195, rings: 0, sweetW: 8, goodW: 30, curved: 0.2, drift: 0 },
+  swamp: { dodgeMs: 72, blockMs: 210, rings: 0.35, sweetW: 7, goodW: 28, curved: 0.35, drift: 0 },
+  volcano: { dodgeMs: 62, blockMs: 190, rings: 0.4, sweetW: 6, goodW: 26, curved: 0.45, drift: 0.3 },
+  crater: { dodgeMs: 52, blockMs: 180, rings: 0.45, sweetW: 5, goodW: 24, curved: 0.55, drift: 0.3 }
 };
 export const SWEEP_MS = [650, 950]; // each bar rolls its sweep time
 export const SWEET_AT = [0.2, 0.85]; // sweet spot center range along the bar
 export const MIN_SWEET_W = 3;
 export const BOSS_RINGS = 0.35;
+// Share of flagged attacks that are red (block only); the rest are purple (dodge only).
+// Red-heavy on purpose: it costs perfect-dodgers more than it costs blockers.
+export const RED_SHARE = 0.85;
 
 // Dodge fatigue: each perfect dodge in a row shrinks the next dodge window.
 export const FATIGUE = { step: 0.8, floor: 0.4 };
@@ -44,7 +47,7 @@ export const MIN_DODGE_MS = 40; // never tighter than this (touch latency)
 export function zoneTiming(zone, ext = 0) {
   const z = ZONE_TIMING[zone] ?? ZONE_TIMING.jungle;
   return {
-    dodgeMs: Math.max(MIN_DODGE_MS, z.dodgeMs - EXT_DODGE_MS * ext), blockMs: z.blockMs, rings: z.rings,
+    dodgeMs: Math.max(MIN_DODGE_MS, z.dodgeMs - EXT_DODGE_MS * ext), blockMs: z.blockMs, rings: z.rings, redShare: RED_SHARE,
     // Extinction: the sweet spot loses 1px every 2 levels.
     bar: { sweetW: Math.max(MIN_SWEET_W, z.sweetW - Math.floor(ext / 2)), goodW: z.goodW, curved: z.curved, drift: z.drift }
   };

@@ -63,37 +63,64 @@ src/
 - `src/data/events.js`: the 8 Meteor Shard events (options, tradeoffs, `need` checks).
 - `src/data/zones.js` also holds `SHOP` prices and `LANE_BIAS` (risky top lane, safe bottom lane).
 
-**Balance sim.** The numbers are tuned with a headless sim that plays full runs on the real combat rules (`systems/battleState.js` + `systems/build.js`) with probabilistic QTE results, a simple "brace big hits, special when affordable, else bite" policy, and random fossil / mutation picks. `src/systems` and `src/run` contain no Phaser code, so the sim imports them directly. Three player profiles:
-- **Skilled:** 40% crits, 45% perfect dodges, 45% blocks.
-- **Decent:** 25% crits, 30% dodges, 45% blocks.
-- **Average:** 10% crits, 10% dodges, 40% blocks.
+**QTE tuning** (`src/data/qteProfiles.js`):
+
+- **Timing profiles:** each enemy move has one or more: steady, lunge, snap, delay, feint, combo. They're assigned per move in `data/brains.js` and rolled fresh on every hit with the seeded RNG. A profile sets the wind-up length, the ring's shrink curve, a mid-windup pause, a fake-out, and uneven gaps between combo hits. The wind-up animation follows the profile (`battle/anims.js` `windup()`), so it can be read.
+- **Per zone (`ZONE_TIMING`):**
+  - the dodge and block windows;
+  - how often an attack gets a red ring (can't be dodged: a perfect press blocks) or a purple ring (can't be blocked, and Brace doesn't help);
+  - the attack bar's sweet and good widths;
+  - the chance of an eased marker;
+  - the chance of a drifting sweet spot.
+- **Extinction:** it tightens the dodge window by 3ms per level and the sweet spot by 1px per 2 levels. No dodge window ever goes under 40ms (touch latency).
+- **Dodge fatigue (`FATIGUE`):** each perfect dodge in a row shrinks the next dodge window by 20%, down to 40%. It resets on a hit, on Brace, or after an enemy phase with no perfect dodge.
+- **Counter:** the perfect-dodge counter is 0.4× Bite, once per enemy phase.
+- **Crit streak:** it counts whole attacks. A move only adds to it if every bar in it crits.
+
+**Balance sim** (`tools/sim.mjs`). It plays full runs on the real rules (`systems/` + `run/` contain no Phaser code, so it imports them directly). Its QTE model is timing-based:
+
+- **Timing error:** every press lands with a normal timing error, whose spread is set by skill.
+- **Defend:** a ring's profile widens that spread (lunge/snap ×1.43; delay/combo/feint ×1.96). The press is judged against the real window: zone, fatigue, the Quick Reflexes trait, fossils, tight moves.
+- **Attack:** each bar is rolled exactly like the game's. The error turns into pixels at the marker's speed (sweep time and curve). Drift adds error.
+- **Skill levels:**
+  - Expert: about 90% perfect on steady rings, 75% on lunge/snap, 60% on the hard profiles, about 70% Jungle crits.
+  - Skilled.
+  - Decent.
+  - Average.
+- **Picks:** fossils and mutations are chosen by a simple value ranking, like a player would.
+
+```
+node tools/sim.mjs 200                       # fresh save, Expert / Skilled / Decent, all 4 zones
+VET=1 node tools/sim.mjs 200                 # veteran: every pack, Sturdy Blood 3, Nine Lives, a Bloodline heir
+PLAYS=expert ONLY=compy,rex EXT=3 node tools/sim.mjs 100
+```
+
+It prints the share of runs that clear each zone per species, a row weighted by hatch odds, and per-zone QTE stats: perfect dodges per enemy hit, crits per bar, damage taken per fight.
+
+Results (fresh save, 200 runs per species, weighted by hatch odds):
+
+| Profile | Jungle | Swamp | Volcano | Crater | Brief target |
+|---|---|---|---|---|---|
+| Expert | 99% | 74% | 51% | 34% | 90 / 65 / 45 / 25–35 |
+| Skilled | 95% | 47% | 24% | 9% | 80 / 45 / 25 / 10 |
+| Decent | 53% | 11% | 2% | 1% | 55 / 20 / 8 / 2 |
+
+With a veteran save, Experts clear the Crater 54% of the time (target ~50%).
+
+| Expert QTE stats | Jungle | Swamp | Volcano | Crater |
+|---|---|---|---|---|
+| Perfect dodges per enemy hit | 62% | 41% | 38% | 26% |
+| Crits per bar | 71% | 63% | 56% | 48% |
+
+Perfect dodges per hit look low late on because red rings turn perfect presses into blocks (45% of Crater attacks are flagged, mostly red). That's on purpose: red rings cost perfect-dodgers more than blockers, which keeps the skill levels closer together.
+
+The Jungle stays easy for good players by design: it's the teaching zone, and making it hard for Experts would crush first-timers.
 
 The difficulty levers live in data:
 - **Lives and retries:** `BASE_LIVES` (2) and `RETRY_HP` (40%) in `data/progression.js`.
-- **Zone strength:** each zone's `scale` in `data/zones.js`, plus `RAMP` (enemies go from 80% at a zone's first column to 130% at its last).
-- **Healing:** `NEST_HEAL` (30%) and `ZONE_HEAL` (35%).
-
-Fresh save (base fossil pool, 2 lives), 300 runs each. Each column is the share of runs that cleared that zone:
-
-| Species | Skilled: Jungle | Skilled: Swamp | Decent: Jungle | Decent: Swamp |
-|---|---|---|---|---|
-| Compy (Common) | 79% | 36% | 39% | 5% |
-| Raptor (Rare) | 93% | 51% | 64% | 18% |
-| Trike (Epic) | 95% | 71% | 70% | 34% |
-| T-Rex (Legendary) | 100% | 75% | 94% | 44% |
-
-A strong player can win early. A decent one clears the Jungle within a few runs and the Swamp after some unlocks and practice. Average players mostly die in the Jungle until they learn the timing.
-
-All four zones with a veteran save (every fossil pack, Sturdy Blood 3, Nine Lives), 400 runs each:
-
-| Species | Skilled (J / S / V / Crater) | Decent (J / S / V / Crater) |
-|---|---|---|
-| Compy | 77 / 35 / 17 / 5% | 42 / 9 / 2 / 0% |
-| Raptor | 90 / 54 / 30 / 8% | 59 / 12 / 4 / 1% |
-| Trike | 92 / 72 / 39 / 14% | 64 / 27 / 9 / 2% |
-| T-Rex | 99 / 81 / 63 / 20% | 91 / 40 / 18 / 2% |
-
-Usage: `node sim2.mjs <root> 300`. Env: `NEW=1` (fresh pool), `ZONES=4`, `VET=1`, `EXT=n`, `ONLY=compy,rex`, `PLAYS=skilled,decent`.
+- **Zone strength:** each zone's `scale` and boss `base` in `data/zones.js`, plus `RAMP` (enemies from 80% at a zone's first column to 130% at its last).
+- **Healing:** `NEST_HEAL` and `ZONE_HEAL`.
+- **QTEs:** the windows, rings and bar widths above.
 
 ### The run
 

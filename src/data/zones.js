@@ -8,7 +8,7 @@ export const ZONES = {
   jungle: {
     name: 'JUNGLE',
     rows: 7,                       // map columns before the boss
-    scale: { hp: 1.75, atk: 1.45 },  // whole-zone difficulty (fights, elites, boss)
+    scale: { hp: 1.9, atk: 1.75 },  // whole-zone difficulty (fights, elites, boss)
     fights: [
       { w: 3, maxRow: 1, members: [['compy', SMALL], ['compy', SMALL]] },
       { w: 3, minRow: 2, members: [['compy', SMALL], ['compy', SMALL], ['compy', SMALL]] },
@@ -17,7 +17,7 @@ export const ZONES = {
     ],
     elites: [{ w: 1, members: [['trike', { elite: true }], ['compy', SMALL]] }],
     // base: the boss's own stat block, so tuning the hatchable T-Rex doesn't move the boss.
-    boss: { species: 'rex', skin: 'alpharex', name: 'Alpha Rex', brain: 'alphaRex', level: 1, base: { hp: 110, atk: 16, def: 6, spd: 4 } },
+    boss: { species: 'rex', skin: 'alpharex', name: 'Alpha Rex', brain: 'alphaRex', level: 1, base: { hp: 150, atk: 22, def: 6, spd: 4 } },
     levelAt: (row) => 1 + Math.floor(row / 2), // enemy level by column
     // Wildlife stat blocks, so tuning the hatchable versions doesn't move the Jungle.
     enemyBase: {
@@ -29,7 +29,7 @@ export const ZONES = {
   swamp: {
     name: 'SWAMP',
     rows: 7,
-    scale: { hp: 2.5, atk: 2.0 },
+    scale: { hp: 2.35, atk: 1.95 },
     fights: [
       { w: 3, members: [['pachy']] },
       { w: 3, members: [['sarco']] },
@@ -40,7 +40,7 @@ export const ZONES = {
       { w: 1, members: [['sarco', { elite: true }], ['pachy', SMALL]] },
       { w: 1, members: [['raptor', { elite: true }], ['compy', SMALL]] }
     ],
-    boss: { species: 'spino', skin: 'spino', name: 'Bog Spino', brain: 'bogSpino', level: 6, base: { hp: 90, atk: 21, def: 4, spd: 5 } },
+    boss: { species: 'spino', skin: 'spino', name: 'Bog Spino', brain: 'bogSpino', level: 6, base: { hp: 125, atk: 26, def: 4, spd: 5 } },
     levelAt: (row) => 5 + Math.floor(row / 2),
     // Wildlife stat blocks for this zone, so tuning the hatchable versions doesn't move the Swamp.
     enemyBase: {
@@ -54,7 +54,7 @@ export const ZONES = {
     name: 'VOLCANO',
     rows: 7,
     unlock: 'zoneVolcano',
-    scale: { hp: 2.6, atk: 2.1 },
+    scale: { hp: 3.1, atk: 2.35 },
     fights: [
       { w: 3, members: [['dimetro']] },
       { w: 3, members: [['ankylo']] },
@@ -66,7 +66,7 @@ export const ZONES = {
       { w: 1, members: [['ankylo', { elite: true }], ['ptera', SMALL]] },
       { w: 1, members: [['dimetro', { elite: true }], ['ptera', SMALL]] }
     ],
-    boss: { species: 'stego', skin: 'cinderstego', name: 'Cinder Stego', brain: 'cinderStego', level: 10, base: { hp: 110, atk: 17, def: 8, spd: 3 } },
+    boss: { species: 'stego', skin: 'cinderstego', name: 'Cinder Stego', brain: 'cinderStego', level: 10, base: { hp: 135, atk: 21, def: 8, spd: 3 } },
     levelAt: (row) => 9 + Math.floor(row / 2),
     enemyBase: {
       ankylo: { hp: 70, atk: 10, def: 9, spd: 3 },

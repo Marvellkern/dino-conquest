@@ -95,7 +95,7 @@ export function decorate(st, e, intent) {
   const opts = e.brain.profiles?.[intent.move] ?? 'steady';
   intent.profile = intent.feint ? 'feint' : Array.isArray(opts) ? opts[Math.floor(st.rng.next() * opts.length)] : opts;
   const odds = e.levelLabel === 'BOSS' ? Math.max(st.timing.rings, BOSS_RINGS) : st.timing.rings;
-  if (intent.kind !== 'charge' && !MOVES[intent.move].sure && odds > 0 && st.rng.next() < odds) intent.ring = st.rng.next() < 0.5 ? 'red' : 'purple';
+  if (intent.kind !== 'charge' && !MOVES[intent.move].sure && odds > 0 && st.rng.next() < odds) intent.ring = st.rng.next() < st.timing.redShare ? 'red' : 'purple';
   return intent;
 }
 
