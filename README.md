@@ -154,7 +154,17 @@ A run goes through the zones it has (`run.zones`: `ZONE_ORDER` in `data/zones.js
 - **Jungle**: Compy, Raptor, Elite Trike, boss Alpha Rex (summons a Compy).
 - **Swamp** (LV5–8): Pachy, Sarco, Elite Sarco / Raptor, boss Bog Spino (floods the arena).
 - **Volcano** (LV9–12, a 200 Amber Nest unlock): Ankylo (guards, then a charged Club Swing that stuns on a clean hit), Dimetrodon (basks to heal 20%), Pteranodon (dives; dodges sloppy attacks), Elite Ankylo / Dimetrodon, boss **Cinder Stego** (spiked guard, Magma Tail; phase 2 summons a Pteranodon).
-- **Meteor Crater** (LV13–16, 400 Amber, needs the Volcano): Carno (enrages at half HP), Stego (raises spikes: hitting it while guarded pricks you), Raptor packs, Elite Carno / Stego, final boss **Meteor Titan** (Starfall; phase 2 summons a Raptor and speeds up).
+- **Tidal Coast** (LV13–16, 300 Amber, needs the Volcano). The gimmicks live in `systems/battleState.js` and each shows in the intent first:
+  - **Dilophosaurus:** Venom Spit (eye icon). Unless you perfect-dodge it, your next attack bar starts hidden (`BLIND.hide`, 30%).
+  - **Plesiosaur:** sits low in the water (LOW tag, −30% damage taken, `COAST.lowMult`) except on the turn its purple-ring Tide Lunge comes (every 3rd action).
+  - **Ichthyosaur packs:** fragile and fast, with `combo` timing. They slip away from missed bars (no pounce), so Tail Whip (can't miss) and Sweep counter them.
+  - **Elite Baryonyx:** Fish Hook (hook icon). A block still gets you hooked: next turn you can only attack, but it takes double damage while holding you (`COAST.hookMult`).
+  - **Elite Dilophosaurus.**
+  - **Boss: Abyss Mosasaur.**
+    - Phase 1: Deep Bite (`lunge`) and Undertow (−1 energy next turn on a hit).
+    - Phase 2: it dives every third action (untargetable) and surfaces with a purple, `delay`-profile Breach. It summons one Ichthyosaur.
+  - **Stand-ins for now:** the species are recolored stand-ins (`STAND_INS` in `scenes/Boot.js`) and the backdrop is the Swamp's, until their own art lands.
+- **Meteor Crater** (LV17–20, 400 Amber, needs the Tidal Coast; old saves that owned the Crater get the Coast free in `migrate()`): Carno (enrages at half HP), Stego (raises spikes: hitting it while guarded pricks you), Raptor packs, Elite Carno / Stego, final boss **Meteor Titan** (Starfall; phase 2 summons a Raptor and speeds up).
 
 Beating a zone boss gives XP and Amber, heals `ZONE_HEAL` (35%), and `advanceZone()` in `run/run.js` builds the next zone's map. Level, XP, traits, lives and Amber carry over. `RunEnd` only comes after the run's last zone. Battle and Map pick their backdrop per zone (`ui/zoneArt.js` for Jungle / Swamp, `ui/zoneArt2.js` for Volcano / Crater, `drawMapBackground` in `ui/backdrop.js`). The Crater's meteor grows in the sky as you get closer to the boss. To add a zone, add an entry to `ZONES` and `ZONE_ORDER`, plus its layers in the zone art registry.
 

@@ -1,7 +1,7 @@
-import { MOVES, ENERGY, STREAK } from '../data/moves.js';
+import { MOVES, ENERGY, STREAK, COAST } from '../data/moves.js';
 import { RELIC_TUNING as RT } from '../data/relics.js';
 import * as BLD from './build.js';
-import { BRAINS, DEFAULT_BRAIN, INTENT_ICONS, PHASE2_AT, RING_ICONS } from '../data/brains.js';
+import { BRAINS, DEFAULT_BRAIN, INTENT_ICONS, MOVE_INTENT_ICONS, PHASE2_AT, RING_ICONS } from '../data/brains.js';
 import { zoneTiming, BOSS_RINGS, fatigueMult } from '../data/qteProfiles.js';
 import {
   startTurn, endTurn, applyStatus, computeDamage, afterHit, roarStuns, roarTurns
@@ -80,7 +80,7 @@ const cycleOf = (e) => (e.phase === 2 ? e.brain.phase2.cycle : e.brain.cycle);
 export function pickIntent(e) {
   if (e.status.stun > 0) return { kind: 'stunned' };
   if (e.status.charging > 0) return atkIntent(e.chargeMove, { charged: true });
-  if (e.status.submerged > 0) return { ...atkIntent('ambush'), kind: 'ambush' };
+  if (e.status.submerged > 0) return { ...atkIntent(e.brain.ambush ?? 'ambush'), kind: 'ambush' };
   const cycle = cycleOf(e);
   return fromToken(cycle[e.step % cycle.length]);
 }
@@ -89,13 +89,16 @@ export function rollIntents(st) {
   for (const e of alive(st)) e.intent = decorate(st, e, pickIntent(e));
 }
 
-// Attack intents get a timing profile and maybe a red / purple ring flag.
+// Attack intents get a timing profile and a red / purple ring flag (a move's own,
+// or rolled by the zone). A Plesiosaur sits low in the water unless it's about to lunge.
 export function decorate(st, e, intent) {
+  if (e.brain.lowWater) e.status.lowWater = intent.move === e.brain.lowWater ? 0 : 1;
   if (!isStrike(intent) && intent.kind !== 'charge') return intent;
   const opts = e.brain.profiles?.[intent.move] ?? 'steady';
   intent.profile = intent.feint ? 'feint' : Array.isArray(opts) ? opts[Math.floor(st.rng.next() * opts.length)] : opts;
   const odds = e.levelLabel === 'BOSS' ? Math.max(st.timing.rings, BOSS_RINGS) : st.timing.rings;
-  if (intent.kind !== 'charge' && !MOVES[intent.move].sure && odds > 0 && st.rng.next() < odds) intent.ring = st.rng.next() < st.timing.redShare ? 'red' : 'purple';
+  if (intent.kind !== 'charge' && MOVES[intent.move].ring) intent.ring = MOVES[intent.move].ring;
+  else if (intent.kind !== 'charge' && !MOVES[intent.move].sure && odds > 0 && st.rng.next() < odds) intent.ring = st.rng.next() < st.timing.redShare ? 'red' : 'purple';
   return intent;
 }
 
@@ -112,7 +115,8 @@ export function intentView(st, e) {
   if (!i) return null;
   const d = intentDamage(st, e);
   const label = i.kind === 'multi' ? `${d}X${i.hits}` : d ? String(d) : '';
-  return { icon: INTENT_ICONS[i.kind], label: i.feint ? `${label}?` : label, kind: i.kind, ring: i.ring ?? null, ringIcon: RING_ICONS[i.ring] ?? null };
+  const icon = (isStrike(i) && MOVE_INTENT_ICONS[i.move]) || INTENT_ICONS[i.kind];
+  return { icon, label: i.feint ? `${label}?` : label, kind: i.kind, ring: i.ring ?? null, ringIcon: RING_ICONS[i.ring] ?? null };
 }
 
 /* ---------- player turn ---------- */
@@ -139,11 +143,18 @@ export function beginPlayerTurn(st) {
 
 export const moveCost = (st, id) => BLD.moveCost(st, id);
 
+// Fish Hook: while a Baryonyx holds the player, only attacks are allowed.
+export const hooked = (st) => st.player.status.hooked > 0 && alive(st).some((e) => e.status.hooking > 0);
+
+// Damage multiplier on an enemy: low in the water (less), holding the player (more).
+export const takenMult = (e) => (e.status.lowWater ? COAST.lowMult : 1) * (e.status.hooking ? COAST.hookMult : 1);
+
 // Why a move can't be used right now (null = usable).
 export function blocked(st, id) {
   const m = MOVES[id];
   if (st.energy < moveCost(st, id)) return 'NOT ENOUGH ENERGY';
   if (m.brace && st.player.status.braced) return 'ALREADY BRACED';
+  if ((m.brace || m.status) && hooked(st)) return 'HOOKED: ATTACK ONLY';
   if (!m.status && !m.brace && !targetable(st).length) return 'NO TARGET';
   return null;
 }
@@ -199,7 +210,7 @@ export function playerStrike(st, id, target, qte) {
   const m = MOVES[id], p = st.player;
   if (qte === 'miss' && target.brain.evadeMiss && !m.sure) return { dmg: 0, evaded: true };
   const mods = BLD.strikeMods(st, id, target);
-  const mult = (st.activeEmpower ? 1 + STREAK.bonus : 1) * mods.mult;
+  const mult = (st.activeEmpower ? 1 + STREAK.bonus : 1) * mods.mult * takenMult(target);
   const dmg = Math.min(target.hp, computeDamage(p, target, m, st.rng, { qte, mult }) + mods.flat);
   target.hp -= dmg;
   const trait = afterHit(p, target, dmg);
@@ -222,7 +233,7 @@ export const counterReady = (st) => !st.counterUsed;
 
 export function counterStrike(st, target) {
   st.counterUsed = true;
-  const mult = BLD.counterMult(st);
+  const mult = BLD.counterMult(st) * takenMult(target);
   const dmg = Math.min(target.hp, computeDamage(st.player, target, MOVES.counter, st.rng, { qte: 'good', mult }));
   target.hp -= dmg;
   const killed = target.hp <= 0;
@@ -267,8 +278,16 @@ export function consumeMuddy(st) {
   return m;
 }
 
+// Venom Spit: the next attack bar starts hidden. Used up by that attack.
+export function consumeBlind(st) {
+  const b = st.player.status.blind > 0;
+  st.player.status.blind = 0;
+  return b;
+}
+
 export function endPlayerTurn(st) {
   endTurn(st.player);
+  st.player.status.hooked = 0; // the hold lasts one player turn
   st.counterUsed = false; // the enemy phase starts: one counter available
 }
 
@@ -277,6 +296,7 @@ export function endPlayerTurn(st) {
 // Start of an enemy's action: poison and stun. Returns { poison, stunned }.
 export function beginEnemyAction(st, e) {
   e.status.guard = 0;
+  e.status.hooking = 0; // a Baryonyx lets go when it acts again
   e.thorns = false;
   const tick = startTurn(e);
   if (tick.poison && e.hp <= 0) tally(st, 'poisonKills');
@@ -323,9 +343,14 @@ export function enemyStrike(st, e, defend, moveId = e.intent.move) {
   if (d === 'block' && p.status.braced) tally(st, 'blocks');
   const drained = !!m.drain && d === 'hit';
   if (drained) p.status.drain += m.drain;
+  // Tidal Coast: anything but a perfect dodge lets Venom Spit blind and Fish Hook grab.
+  const blinded = !!m.blinds && d !== 'dodge' && p.hp > 0;
+  if (blinded) p.status.blind = 1;
+  const grabbed = !!m.hooks && d !== 'dodge' && p.hp > 0;
+  if (grabbed) { p.status.hooked = 1; e.status.hooking = 1; }
   const reflect = BLD.onEnemyHit(st, e, d, dmg);
   const revived = BLD.tryRevive(st);
-  return { dmg, defend: d, drained, reflect, revived, stunned, healed };
+  return { dmg, defend: d, drained, reflect, revived, stunned, healed, blinded, grabbed };
 }
 
 // After the action: advance the cycle, clear one-shot states.

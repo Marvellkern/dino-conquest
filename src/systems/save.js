@@ -42,6 +42,9 @@ function migrate(data) {
     out.notice = refund ? `LINEAGE BONUSES BECAME ${refund} AMBER` : null;
   }
   delete out.lineage;
+  // v2.2: the Tidal Coast sits before the Crater and the Crater needs it. Players who
+  // already own the Crater get the Coast free, so nobody loses access.
+  if (out.unlocks?.zoneCrater && !out.unlocks.zoneCoast) out.unlocks = { ...out.unlocks, zoneCoast: 1 };
   return out;
 }
 

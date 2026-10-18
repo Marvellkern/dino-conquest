@@ -53,7 +53,7 @@ export async function enemyAction(scene, e) {
     await wait(scene, 650);
   }
   else {
-    if (i.kind === 'ambush') { scene.say(`${e.name} AMBUSHES!`); await surfaceAnim(scene, rig); }
+    if (i.kind === 'ambush') { scene.say(i.move === 'ambush' ? `${e.name} AMBUSHES!` : `${e.name}: ${MOVES[i.move].name.toUpperCase()}!`); await surfaceAnim(scene, rig); }
     else scene.say(`${e.name}: ${MOVES[i.move].name.toUpperCase()}`);
     dodged = await enemyAttack(scene, e, i.move, { feint: !!i.feint });
   }
@@ -118,6 +118,8 @@ function defendCtx(scene, e, moveId, h, feint, onHit) {
       if (r.revived) scene.revivePop();
       if (r.stunned) { const t = p.rig.top(); scene.fx.pop(t.x, t.y - 12, 'STUNNED!', '#fff096', 1, 900); }
       if (r.healed) { const t = p.rig.top(); scene.fx.number(t.x, t.y, `+${r.healed}`, { color: '#80d060' }); }
+      if (r.blinded) { const t = p.rig.top(); scene.fx.pop(t.x, t.y - 12, 'BLINDED!', '#c070ff', 1, 900); }
+      if (r.grabbed) { const t = p.rig.top(); scene.fx.pop(t.x, t.y - 12, 'HOOKED!', '#ff6040', 1, 900); }
       onHit(r);
     }
   };

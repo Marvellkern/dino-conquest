@@ -261,10 +261,11 @@ function dragonfly(scene, i) {
 
 /* ---------- assembly ---------- */
 
-const ZONES = { jungle: JUNGLE, swamp: SWAMP, volcano: VOLCANO, crater: CRATER };
+// coast: the Swamp's art stands in until the Tidal Coast's own (v2.2 step 4).
+const ZONES = { jungle: JUNGLE, swamp: SWAMP, volcano: VOLCANO, coast: SWAMP, crater: CRATER };
 // Colors that extend the art past its edges in portrait (sky above, ground below).
 const EDGES = {
-  jungle: [C.forest, C.brown], swamp: [C.steel, C.darkBrown], volcano: [C.ink, C.darkBrown], crater: [C.plum, C.ink]
+  jungle: [C.forest, C.brown], swamp: [C.steel, C.darkBrown], volcano: [C.ink, C.darkBrown], coast: [C.steel, C.darkBrown], crater: [C.plum, C.ink]
 };
 // Sway amplitude (px) and period (ms), parallax factor per layer.
 const MOTION = { far: [1, 5200, 0.03], mid: [1, 4100, 0.08], near: [2, 2600, 0.2] };

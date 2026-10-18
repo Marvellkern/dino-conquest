@@ -16,7 +16,8 @@ export const UNLOCKS = {
   eggStego:    { name: 'Stego Egg',       desc: 'EPIC: SPIKED TAIL POISONS', short: 'NEW SPECIES', cost: 120 },
   eggCarno:    { name: 'Carno Egg',       desc: 'LEGENDARY: GORE RUSH FINISHES THE WOUNDED', short: 'NEW SPECIES', cost: 150 },
   zoneVolcano: { name: 'The Volcano',     desc: 'ZONE 3 AFTER THE SWAMP: CINDER STEGO', short: 'ZONE 3', cost: 200 },
-  zoneCrater:  { name: 'Meteor Crater',   desc: 'ZONE 4: THE FINAL BOSS', short: 'ZONE 4', cost: 400, needs: 'zoneVolcano' }
+  zoneCoast:   { name: 'Tidal Coast',     desc: 'ZONE 4 AFTER THE VOLCANO: ABYSS MOSASAUR', short: 'ZONE 4', cost: 300, needs: 'zoneVolcano' },
+  zoneCrater:  { name: 'Meteor Crater',   desc: 'ZONE 5: THE FINAL BOSS', short: 'ZONE 5', cost: 400, needs: 'zoneCoast' }
 };
 
 export const UNLOCK_ORDER = Object.keys(UNLOCKS);

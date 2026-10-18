@@ -41,13 +41,14 @@ export async function playerMove(scene, id) {
     const set = animSet(p.species, m.anim);
     scene.say(`${m.name.toUpperCase()}!`);
     if (set.approach) await set.approach(scene, rig, target.rig);
-    let muddy = B.consumeMuddy(st);
+    let muddy = B.consumeMuddy(st), blind = B.consumeBlind(st);
     let strikes = m.spread ? 1 : (m.hits ?? 1), chains = 0;
     for (let i = 0; i < strikes && target.hp > 0; i++) {
       const aoe = hitsAll(st, id);
       const victims = aoe ? B.targetable(st) : m.spread ? spread(st, target, spreadCount(st, m)) : [target];
-      const ctx = strikeCtx(scene, id, victims, aoe, muddy, evaders);
+      const ctx = strikeCtx(scene, id, victims, aoe, muddy, evaders, blind);
       muddy = false;
+      blind = false;
       await set.strike(scene, rig, target.rig, ctx);
       if (ctx.chained && chains < MUTATION_TUNING.chainMax && target.hp > 0) { chains++; strikes++; scene.say('CHAIN BITE!'); }
     }
@@ -85,7 +86,7 @@ function spread(st, first, n) {
 
 // QTE + damage wiring for one strike of a player move. aoe: one impact hits
 // every victim. Otherwise impact i hits victims[i] (Swarm spreads its hits).
-function strikeCtx(scene, id, victims, aoe, muddy, evaders) {
+function strikeCtx(scene, id, victims, aoe, muddy, evaders, blind = false) {
   const st = scene.st;
   let bar = null, n = 0, qte = null;
   const ctx = {
@@ -93,7 +94,7 @@ function strikeCtx(scene, id, victims, aoe, muddy, evaders) {
     hit: 0,
     chained: false,
     spread: victims.length,
-    open: () => { if (!bar) bar = attackBar(scene, { rng: st.rng, sure: !!MOVES[id].sure, muddy, shape: rollBar(st.rng, st.timing.bar) }); },
+    open: () => { if (!bar) bar = attackBar(scene, { rng: st.rng, sure: !!MOVES[id].sure, muddy, blind, shape: rollBar(st.rng, st.timing.bar) }); },
     result: () => bar,
     targetRig: (i) => victims[i % victims.length].rig,
     impact: (res) => {
@@ -121,7 +122,7 @@ function strikeOne(scene, id, v, qte, k, evaders, ctx) {
     scene.fx.pop(t.x, t.y, 'EVADE!', '#ff6040', 1, 800);
     sfx('dodge');
     dodgeHop(scene, v.rig, 1);
-    if (!evaders.includes(v)) evaders.push(v);
+    if (!evaders.includes(v) && !v.brain.noPounce) evaders.push(v); // Ichthyosaurs just slip away
     return;
   }
   hitFeedback(scene, st.player, v, r.dmg, qte, 'hit', k, { gold: st.activeEmpower });

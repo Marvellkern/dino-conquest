@@ -28,6 +28,7 @@ export const ZONE_TIMING = {
   jungle: { dodgeMs: 85, blockMs: 195, rings: 0, sweetW: 8, goodW: 30, curved: 0.2, drift: 0 },
   swamp: { dodgeMs: 72, blockMs: 210, rings: 0.35, sweetW: 7, goodW: 28, curved: 0.35, drift: 0 },
   volcano: { dodgeMs: 62, blockMs: 190, rings: 0.4, sweetW: 6, goodW: 26, curved: 0.45, drift: 0.3 },
+  coast: { dodgeMs: 57, blockMs: 185, rings: 0.42, sweetW: 6, goodW: 25, curved: 0.5, drift: 0.3 },
   crater: { dodgeMs: 52, blockMs: 180, rings: 0.45, sweetW: 5, goodW: 24, curved: 0.55, drift: 0.3 }
 };
 export const SWEEP_MS = [650, 950]; // each bar rolls its sweep time

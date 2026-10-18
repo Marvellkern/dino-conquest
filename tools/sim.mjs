@@ -50,10 +50,12 @@ function gauss(rng) {
 const stats = {};
 const zstat = (play, zone) => ((stats[play] ??= {})[zone] ??= { rings: 0, dodges: 0, bars: 0, crits: 0, dmg: 0, fights: 0 });
 
-function attackQte(st, play, m, muddy, S) {
+function attackQte(st, play, m, muddy, S, blind = false) {
   const sh = rollBar(st.rng, st.timing.bar);
   const speed = (98 / sh.sweepMs) * (sh.curve === 'linear' ? 1 : 0.45 + st.rng.next() * 1.1); // px per ms at the sweet spot
-  const err = Math.abs(gauss(st.rng) * PLAY[play].atk * (sh.drift ? 1.25 : 1)) * speed;
+  // Blinded: the marker shows up late, and a sweet spot under the cover is mostly guesswork.
+  const blindK = blind ? (sh.center < 0.35 ? 2.2 : 1.3) : 1;
+  const err = Math.abs(gauss(st.rng) * PLAY[play].atk * (sh.drift ? 1.25 : 1) * blindK) * speed;
   const sweet = sh.sweetW * (muddy ? MUDDY.sweet : 1), good = sh.goodW * (muddy ? MUDDY.good : 1);
   let q = err <= sweet / 2 ? 'crit' : err <= good / 2 ? 'good' : 'miss';
   if (m.sure && q === 'miss') q = 'good';
@@ -96,17 +98,18 @@ function playerTurn(st, play, S) {
     if (m.status) B.playerRoar(st);
     else if (m.brace) B.playerBrace(st);
     else {
-      const muddy = B.consumeMuddy(st);
+      const muddy = B.consumeMuddy(st), blind = B.consumeBlind(st);
       let strikes = m.spread ? 1 : (m.hits ?? 1), chains = 0;
       const main = tgts.find((t) => t.hp > 0);
       for (let h = 0; h < strikes && main && main.hp > 0; h++) {
-        const q = B.finalQte(st, attackQte(st, play, m, muddy && h === 0, S)).qte;
+        const q = B.finalQte(st, attackQte(st, play, m, muddy && h === 0, S, blind && h === 0)).qte;
         B.noteQte(st, q);
         const tl = B.targetable(st);
         const victims = BLD.hitsAll(st, id) ? tl : m.spread ? Array.from({ length: BLD.spreadCount(st, m) }, (_, k) => tl[k % Math.max(1, tl.length)]) : [main];
         for (const t of victims) {
           if (!t || t.hp <= 0) continue;
           const res = B.playerStrike(st, id, t, q);
+          if (res.evaded && t.brain.noPounce) continue;
           if (res.evaded) { // raptor / ptera pounce back
             const r = B.enemyStrike(st, t, defendQte(st, play, t, 'pounce', S), 'pounce');
             if (r.defend === 'dodge' && t.hp > 0 && B.counterReady(st)) B.counterStrike(st, t);

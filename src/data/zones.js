@@ -78,12 +78,40 @@ export const ZONES = {
       compy: { hp: 52, atk: 10, def: 4, spd: 9 }
     }
   },
+  coast: {
+    name: 'TIDAL COAST',
+    intro: 'THE SEA TAKES ITS SHARE', // zone intro tagline (scenes/ZoneIntro.js)
+    rows: 7,
+    unlock: 'zoneCoast',
+    scale: { hp: 2.95, atk: 2.25 },
+    fights: [
+      { w: 3, members: [['dilo']] },
+      { w: 3, members: [['plesio']] },
+      { w: 2, maxRow: 3, members: [['ichthy', SMALL], ['ichthy', SMALL]] },
+      { w: 2, minRow: 3, members: [['ichthy', SMALL], ['ichthy', SMALL], ['ichthy', SMALL]] },
+      { w: 2, minRow: 3, members: [['plesio'], ['ichthy', SMALL]] },
+      { w: 2, minRow: 3, members: [['dilo'], ['ichthy', SMALL]] }
+    ],
+    elites: [
+      { w: 2, members: [['bary', { elite: true }], ['ichthy', SMALL]] },
+      { w: 1, members: [['dilo', { elite: true }], ['ichthy', SMALL]] }
+    ],
+    boss: { species: 'mosa', skin: 'mosa', name: 'Abyss Mosasaur', brain: 'abyssMosa', level: 14, base: { hp: 115, atk: 17, def: 6, spd: 4 } },
+    levelAt: (row) => 13 + Math.floor(row / 2),
+    enemyBase: {
+      dilo: { hp: 56, atk: 13, def: 3, spd: 9 },
+      plesio: { hp: 72, atk: 12, def: 6, spd: 5 },
+      ichthy: { hp: 50, atk: 11, def: 2, spd: 11 },
+      bary: { hp: 76, atk: 13, def: 6, spd: 5 }
+    }
+  },
   crater: {
     name: 'METEOR CRATER',
     intro: 'WHERE THE SKY FELL', // zone intro tagline (scenes/ZoneIntro.js)
     rows: 7,
     unlock: 'zoneCrater',
-    scale: { hp: 3.0, atk: 2.3 },
+    // LV17-20 since the Tidal Coast came before it; the scale is cut to match (the sim retunes it later).
+    scale: { hp: 2.8, atk: 2.15 },
     fights: [
       { w: 3, members: [['carno']] },
       { w: 3, members: [['stego']] },
@@ -96,8 +124,8 @@ export const ZONES = {
       { w: 1, members: [['stego', { elite: true }], ['ptera', SMALL]] }
     ],
     // The final boss: a crystal-grown Tyrant.
-    boss: { species: 'rex', skin: 'titanrex', name: 'Meteor Titan', brain: 'meteorTitan', level: 14, base: { hp: 125, atk: 18, def: 8, spd: 5 } },
-    levelAt: (row) => 13 + Math.floor(row / 2),
+    boss: { species: 'rex', skin: 'titanrex', name: 'Meteor Titan', brain: 'meteorTitan', level: 18, base: { hp: 125, atk: 18, def: 8, spd: 5 } },
+    levelAt: (row) => 17 + Math.floor(row / 2),
     enemyBase: {
       carno: { hp: 72, atk: 14, def: 5, spd: 6 },
       stego: { hp: 76, atk: 12, def: 7, spd: 3 },
@@ -107,7 +135,7 @@ export const ZONES = {
   }
 };
 
-export const ZONE_ORDER = ['jungle', 'swamp', 'volcano', 'crater'];
+export const ZONE_ORDER = ['jungle', 'swamp', 'volcano', 'coast', 'crater'];
 // zones: the run's zone list (unlocked ones), see run/run.js.
 export const nextZone = (id, zones = ZONE_ORDER) => zones[zones.indexOf(id) + 1] ?? null;
 

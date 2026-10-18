@@ -12,6 +12,10 @@ export const ICONS = {
   int_ring_purple: ['..OOO..', '.OlllO.', 'OlO.OlO', 'OlO.OlO', 'OlO.OlO', '.OlllO.', '..OOO..'],
   int_heal:     ['...OO...', '..OSSO..', 'OOOSSOOO', 'OSSSSSSO', 'OSSSSSSO', 'OOOSSOOO', '..OSSO..', '...OO...'],
   int_spikes:   ['O..O..O.', 'xO.xO.xO', 'xOOxOOxO', 'OTTTTTTO', 'OTTTTTTO', '.OTTTTO.', '..OTTO..', '...OO...'],
+  // Tidal Coast gimmicks: Venom Spit (eye), Fish Hook (hook), Undertow (swirl).
+  int_blind:    ['........', '..OOOO..', '.OWWWWO.', 'OWWllWWO', 'OWWllWWO', '.OWWWWO.', '..OOOO..', '........'],
+  int_hook:     ['...OO...', '..OWWO..', '..OWWO..', '..OWWO..', 'O.OWWO..', 'OWOWWO..', 'OWWWWO..', '.OOOO...'],
+  int_undertow: ['..OOOO..', '.OQQQQO.', 'OQOOOOQO', 'OQOQQOQO', 'OQOQOOQO', 'OQOOQQO.', '.OQQQO..', '..OOO...'],
   int_flood:    ['...OO...', '..OQQO..', '..OQQO..', '.OQQQQO.', 'OQQQQWQO', 'OQQQQWQO', '.OQQQQO.', '..OOOO..'],
   target_arrow: ['OOOOOOO', 'OSSSSSO', '.OSSSO.', '..OSO..', '...O...'],
   // Amber: a gold drop with a shine and a trapped bug.

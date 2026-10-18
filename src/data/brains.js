@@ -8,6 +8,9 @@
 //   'flood'           muddy the player's next attack bar unless they braced
 //   'bask'            heal 20% of max HP (Dimetrodon soaking up heat)
 //   'spikes'          guard, and hitting it while guarded pricks the attacker (30%)
+//   ambush: the move a surfacing enemy uses (default 'ambush').
+//   lowWater: '<moveId>': takes less damage except when that move is its intent (Plesiosaur).
+//   noPounce: evades missed attacks (evadeMiss) without pouncing back (Ichthyosaur).
 // Options: armorCharging (half damage while charging), evadeMiss (a missed
 // attack QTE is evaded and answered with a free Pounce), phase2 (from 50% HP).
 // profiles: defend-ring timing per move (data/qteProfiles.js); a list picks one
@@ -26,6 +29,12 @@ export const BRAINS = {
   carno:  { cycle: ['bite', 'bite', 'charge:goreCharge'], phase2: { cycle: ['bite', 'charge:goreCharge'], tellMult: 0.8, line: 'THE CARNO RAGES!' },
     profiles: { bite: ['snap', 'delay', 'feint'], goreCharge: 'lunge' } },
 
+  // Tidal Coast.
+  dilo:   { cycle: ['bite', 'spitBlind', 'bite'], profiles: { bite: ['snap', 'steady'], spitBlind: ['steady', 'delay'] } },
+  plesio: { cycle: ['bite', 'bite', 'tideLunge'], lowWater: 'tideLunge', profiles: { bite: ['steady', 'delay'], tideLunge: 'lunge' } },
+  ichthy: { cycle: ['finFlurry', 'bite'], evadeMiss: true, noPounce: true, profiles: { finFlurry: 'combo', bite: ['snap', 'combo'] } },
+  bary:   { cycle: ['bite', 'fishHook', 'bite'], profiles: { bite: ['steady', 'snap'], fishHook: ['lunge', 'delay'] } },
+
   alphaRex: {
     profiles: { bite: ['steady', 'snap', 'delay'], primalChomp: ['lunge', 'feint'], tail: 'snap' },
     cycle: ['bite', 'roar', 'charge:primalChomp'],
@@ -40,6 +49,12 @@ export const BRAINS = {
     profiles: { bite: ['snap', 'delay', 'lunge'], magmaTail: ['lunge', 'feint'], tail: ['snap', 'delay'] },
     cycle: ['bite', 'spikes', 'charge:magmaTail'],
     phase2: { cycle: ['charge:magmaTail', 'spikes', 'bite'], summon: 'ptera', tellMult: 0.75, line: 'THE VOLCANO ERUPTS!' }
+  },
+  // Phase 2: dives every other turn (untargetable) and surfaces with an unblockable Breach.
+  abyssMosa: {
+    profiles: { deepBite: ['lunge', 'delay'], undertow: ['steady', 'snap'], breach: 'delay' },
+    cycle: ['deepBite', 'undertow'], ambush: 'breach',
+    phase2: { cycle: ['submerge', 'deepBite', 'undertow'], summon: 'ichthy', tellMult: 0.75, line: 'THE TIDE RISES!' }
   },
   meteorTitan: {
     profiles: { bite: ['snap', 'delay', 'feint'], starfall: ['lunge', 'delay', 'feint'] },
@@ -56,6 +71,9 @@ export const INTENT_ICONS = {
   debuff: 'int_debuff', stunned: 'int_stun', submerge: 'int_submerge', ambush: 'int_submerge',
   flood: 'int_flood', heal: 'int_heal', spikes: 'int_spikes'
 };
+
+// Gimmick moves get their own intent icon, so what's coming is readable.
+export const MOVE_INTENT_ICONS = { spitBlind: 'int_blind', fishHook: 'int_hook', undertow: 'int_undertow' };
 
 // Ring flags: red = can't dodge (a perfect press only blocks), purple = can't block.
 export const RING_ICONS = { red: 'int_ring_red', purple: 'int_ring_purple' };

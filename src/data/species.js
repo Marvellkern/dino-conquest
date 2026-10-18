@@ -13,7 +13,13 @@ export const SPECIES = {
   ptera:  { name: 'Pteranodon', rarity: 'rare',  hp: 58,  atk: 12, def: 4, spd: 10, special: 'diveBomb', unlock: 'eggPtera' },
   stego:  { name: 'Stego',  rarity: 'epic',      hp: 74,  atk: 12, def: 7, spd: 3, special: 'thagomizer', unlock: 'eggStego' },
   carno:  { name: 'Carno',  rarity: 'legendary', hp: 72,  atk: 13, def: 4, spd: 6, special: 'goreRush', unlock: 'eggCarno' },
-  dimetro: { name: 'Dimetrodon', rarity: 'rare', hp: 64,  atk: 12, def: 5, spd: 4, special: 'deathRoll', enemyOnly: true }
+  dimetro: { name: 'Dimetrodon', rarity: 'rare', hp: 64,  atk: 12, def: 5, spd: 4, special: 'deathRoll', enemyOnly: true },
+  // Tidal Coast wildlife. Dilophosaurus becomes hatchable with its sprite (v2.2 step 3).
+  dilo:   { name: 'Dilophosaurus', rarity: 'rare', hp: 54, atk: 12, def: 3, spd: 9, special: 'doubleSlash', enemyOnly: true },
+  plesio: { name: 'Plesiosaur', rarity: 'rare', hp: 70,  atk: 12, def: 6, spd: 5, special: 'deathRoll', enemyOnly: true },
+  ichthy: { name: 'Ichthyosaur', rarity: 'common', hp: 44, atk: 10, def: 2, spd: 11, special: 'swarm', enemyOnly: true },
+  bary:   { name: 'Baryonyx', rarity: 'epic', hp: 78,    atk: 13, def: 5, spd: 5, special: 'deathRoll', enemyOnly: true },
+  mosa:   { name: 'Mosasaur', rarity: 'legendary', hp: 80, atk: 13, def: 6, spd: 4, special: 'crushingBite', enemyOnly: true }
 };
 
 export const HATCHABLE = Object.keys(SPECIES).filter((id) => !SPECIES[id].enemyOnly);

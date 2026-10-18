@@ -19,8 +19,8 @@ export function makeFighter(species, {
     moves: ['bite', 'tail', 'roar', 'brace', sp.special],
     status: {
       atkDown: 0, defUp: 0, poison: 0, stun: 0,
-      braced: 0, muddy: 0, drain: 0,         // player
-      guard: 0, charging: 0, submerged: 0    // enemies
+      braced: 0, muddy: 0, drain: 0, blind: 0, hooked: 0,     // player
+      guard: 0, charging: 0, submerged: 0, lowWater: 0, hooking: 0 // enemies
     }
   };
 }

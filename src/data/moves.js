@@ -37,6 +37,15 @@ export const MOVES = {
   magmaTail:    { name: 'Magma Tail',    power: 2.2, anim: 'tail', defIgnore: 0.2, tight: 0.6 },
   goreCharge:   { name: 'Gore Charge',   power: 2.0, anim: 'charge', defIgnore: 0.3 },
   starfall:     { name: 'Starfall',      power: 2.4, anim: 'bigBite', defIgnore: 0.3, tight: 0.5 },
+  // Tidal Coast. blinds: a hit (not dodged) hides the start of the player's next attack bar.
+  // ring: every use gets this ring flag. hooks: a hit grabs the player for their next turn.
+  spitBlind:    { name: 'Venom Spit',    power: 0.8, anim: 'bite', blinds: true },
+  tideLunge:    { name: 'Tide Lunge',    power: 1.6, anim: 'charge', ring: 'purple' },
+  finFlurry:    { name: 'Fin Flurry',    power: 0.5, anim: 'bite', hits: 2 },
+  fishHook:     { name: 'Fish Hook',     power: 0.9, anim: 'bite', hooks: true },
+  deepBite:     { name: 'Deep Bite',     power: 1.4, anim: 'bigBite', defIgnore: 0.2 },
+  undertow:     { name: 'Undertow',      power: 0.7, anim: 'tail', drain: 1 },
+  breach:       { name: 'Breach',        power: 1.1, anim: 'bite', ring: 'purple', defIgnore: 0.2 },
   counter:      { name: 'Counter',       power: 0.4, anim: 'bite' } // perfect-dodge riposte, once per enemy phase
 };
 for (const [id, m] of Object.entries(MOVES)) m.id = id;
@@ -49,6 +58,11 @@ export const STREAK = { need: 3, bonus: 0.5 };
 
 // Flooded arena: the next attack bar's zones shrink unless the player braced.
 export const MUDDY = { sweet: 0.5, good: 0.6 };
+
+// Venom Spit: the first part of the next attack bar is hidden (the marker shows up late).
+export const BLIND = { hide: 0.3 };
+// Tidal Coast damage taken: a Plesiosaur sitting low in the water, a Baryonyx holding you.
+export const COAST = { lowMult: 0.7, hookMult: 2 };
 
 // Move upgrades (Fossil Dig / evolution): +power per level, Roar lasts longer.
 export const MOVE_UP = { power: 0.25, statusTurns: 1, max: 2 };

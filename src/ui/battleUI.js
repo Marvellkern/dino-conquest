@@ -16,11 +16,12 @@ const markTop = () => lp(78, 116); // highest sprite top the enemy markers stack
 const PLAYER_TAGS = [
   ['atkDown', 'ATK-', '#e06060', true], ['defUp', 'DEF+', '#7fb0ff', true], ['poison', 'PSN', '#80d060', true],
   ['stun', 'STUN', '#fff096', false], ['braced', 'BRACE', '#9ab8ff', false], ['muddy', 'MUD', '#b09a62', false],
-  ['drain', '-EN', '#e0a040', false]
+  ['drain', '-EN', '#e0a040', false], ['blind', 'BLIND', '#c070ff', false], ['hooked', 'HOOKED', '#ff6040', false]
 ];
 const ENEMY_TAGS = [
   ['atkDown', 'ATK-', '#e06060', true], ['poison', 'PSN', '#80d060', true], ['stun', 'STUN', '#fff096', false],
-  ['guard', 'GUARD', '#9ab8ff', false], ['charging', 'CHARGE', '#ff6040', false], ['submerged', 'UNDER', '#5aa0e0', false]
+  ['guard', 'GUARD', '#9ab8ff', false], ['charging', 'CHARGE', '#ff6040', false], ['submerged', 'UNDER', '#5aa0e0', false],
+  ['lowWater', 'LOW', '#5aa0e0', false], ['hooking', 'HOLDING', '#ff6040', false]
 ];
 const tint = (c) => parseInt(c.slice(1), 16);
 
@@ -45,11 +46,11 @@ export class Hud {
   bind(f) {
     if (this.f === f) return;
     this.f = f;
-    // A name too long for the panel ("ELITE DIMETRODON") drops "Elite " and
-    // turns gold instead; anything still too long is cut.
+    // A name too long for the panel drops leading words: "ELITE DIMETRODON" turns gold
+    // instead, "ABYSS MOSASAUR" becomes "MOSASAUR". Anything still too long is cut.
     const lv = f.levelLabel ?? `LV${f.level}`, room = Math.floor((this.pw - 18 - lv.length * 6) / 6);
     let name = String(f.name), elite = false;
-    if (name.length > room && name.startsWith('Elite ')) { name = name.slice(6); elite = true; }
+    while (name.length > room && name.includes(' ')) { elite ||= name.startsWith('Elite '); name = name.slice(name.indexOf(' ') + 1); }
     this.name.setText(name.slice(0, room));
     this.name.label.setTint(elite ? 0xffd040 : tint(COLORS.text));
     this.lv.setText(lv);

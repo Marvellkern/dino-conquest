@@ -124,6 +124,11 @@ export class ZoneIntro extends Phaser.Scene {
         const r = this.add.rectangle(Phaser.Math.Between(0, W), GROUND_Y, 1, 1, i % 2 ? 0xf77622 : 0xfeae34).setDepth(20);
         this.tweens.add({ targets: r, y: r.y - Phaser.Math.Between(40, 90), alpha: 0, duration: 900 + i * 30, ease: 'Quad.Out', onComplete: () => r.destroy() });
       }
+    } else if (zone === 'coast') { // a wave rolls in over the shore
+      sfx('whoosh');
+      const wave = this.add.rectangle(-W, GROUND_Y - 6, W, 10, 0x8bc8e8, 0.35).setOrigin(0).setDepth(20);
+      const foam = this.add.rectangle(-W, GROUND_Y - 7, W, 1, 0xffffff, 0.7).setOrigin(0).setDepth(20);
+      this.tweens.add({ targets: [wave, foam], x: W, duration: 1600, ease: 'Sine.InOut', onComplete: () => { wave.destroy(); foam.destroy(); } });
     } else if (zone === 'crater') { // a meteor streaks across the sky
       sfx('whoosh');
       const m = this.add.rectangle(W + 10, lp(28, 50), 4, 2, 0xfee761).setDepth(20);

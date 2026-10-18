@@ -1,5 +1,5 @@
 import { W, lp } from '../config.js';
-import { QTE, MUDDY } from '../data/moves.js';
+import { QTE, MUDDY, BLIND } from '../data/moves.js';
 import { panel, pixelCircle } from '../ui/pixel.js';
 import { text } from '../ui/font.js';
 import { sfx } from './sfx.js';
@@ -31,7 +31,8 @@ const devHook = (info) => { if (import.meta.env.DEV) window.__qteHook?.(info); }
 // Attack QTE: marker sweeps a bar once. Resolves 'crit' | 'good' | 'miss'.
 // shape (data/qteProfiles.js rollBar): sweep time, sweet spot, marker curve,
 // drift. Without one, the old fixed bar (title-screen demos, tests).
-export function attackBar(scene, { rng, sure = false, muddy = false, shape = null } = {}) {
+// blind (Venom Spit): the first part of the bar is covered, so the marker shows up late.
+export function attackBar(scene, { rng, sure = false, muddy = false, blind = false, shape = null } = {}) {
   const sh = shape ?? { sweepMs: QTE.sweepMs, center: rng.range(0.55, 0.85), curve: 'linear', drift: null, sweetW: QTE.sweetW, goodW: QTE.goodW };
   const sweepMs = sh.sweepMs;
   const sweetW = Math.max(2, Math.round(sh.sweetW * (muddy ? MUDDY.sweet : 1))), goodW = Math.round(sh.goodW * (muddy ? MUDDY.good : 1));
@@ -48,7 +49,7 @@ export function attackBar(scene, { rng, sure = false, muddy = false, shape = nul
     // Dev hook: the press time that lands dead center (scanned, so it works for curves and drift).
     let bestMs = 0, bestD = Infinity;
     for (let t = 61; t < sweepMs; t += 4) { const d = Math.abs(pos(t) + 1 - centerAt(t)); if (d < bestD) { bestD = d; bestMs = t; } }
-    devHook({ type: 'bar', sweepMs, center: centerAt(0), width: BW, muddy, curve: sh.curve, drift: !!sh.drift, bestMs });
+    devHook({ type: 'bar', sweepMs, center: centerAt(0), width: BW, muddy, blind, curve: sh.curve, drift: !!sh.drift, bestMs });
 
     const g = scene.add.graphics().setDepth(30);
     const zone = scene.add.graphics().setDepth(30);
@@ -61,8 +62,15 @@ export function attackBar(scene, { rng, sure = false, muddy = false, shape = nul
       if (sh.drift) zone.fillStyle(0xffffff).fillRect(x0 + c, y0 - 2, 1, 1).fillRect(x0 + c, y0 + BH + 1, 1, 1); // sway markers
     };
     const m = scene.add.graphics().setDepth(31);
-    const hint = text(scene, W / 2, hintY(), muddy ? 'MUDDY! TAP IN THE YELLOW!' : sh.drift ? lp('IT MOVES! TAP IN THE YELLOW!', 'IT MOVES! TAP YELLOW!') : 'TAP IN THE YELLOW!',
-      { origin: 0.5, color: muddy ? '#b09a62' : '#f0ecdc' }).setDepth(31);
+    const cover = scene.add.graphics().setDepth(32);
+    if (blind) { // venom smear over the start of the bar
+      const cw = Math.round(BW * BLIND.hide);
+      cover.fillStyle(0x3e2731).fillRect(x0 - 1, y0 - 3, cw + 1, BH + 6);
+      cover.fillStyle(0x68386c);
+      for (let i = 0; i < cw; i += 3) cover.fillRect(x0 + i, y0 - 3 + ((i * 7) % (BH + 4)), 2, 2);
+    }
+    const hint = text(scene, W / 2, hintY(), blind ? 'BLINDED! WATCH CLOSELY!' : muddy ? 'MUDDY! TAP IN THE YELLOW!' : sh.drift ? lp('IT MOVES! TAP IN THE YELLOW!', 'IT MOVES! TAP YELLOW!') : 'TAP IN THE YELLOW!',
+      { origin: 0.5, color: blind ? '#c070ff' : muddy ? '#b09a62' : '#f0ecdc' }).setDepth(31);
 
     let t = 0, done = false;
     const draw = () => {
@@ -87,7 +95,8 @@ export function attackBar(scene, { rng, sure = false, muddy = false, shape = nul
       hint.label.setTint(res === 'crit' ? 0xfff096 : res === 'good' ? 0xf0ecdc : 0x8a90a0);
       if (res === 'crit') g.fillStyle(0xffffff).fillRect(x0, y0, BW, BH);
       sfx(res === 'crit' ? 'ding' : res === 'good' ? 'tick' : 'early');
-      scene.time.delayedCall(260, () => { g.destroy(); zone.destroy(); m.destroy(); hint.destroy(); });
+      cover.clear();
+      scene.time.delayedCall(260, () => { g.destroy(); zone.destroy(); m.destroy(); cover.destroy(); hint.destroy(); });
       resolve(res);
     };
     const offPress = onPress(scene, () => { if (t > 60) finish(judge(pos(t))); });
