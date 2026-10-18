@@ -22,12 +22,17 @@ export const PAUSE_AT = 0.55; // where in the wind-up a `delay` freezes
 // Dodge / block windows (±ms) per zone, and how often an attack gets a red
 // (can't dodge: perfect only blocks) or purple (can't block: only a perfect
 // dodge avoids it) ring. Bosses use at least `bossRings`.
+// Attack bar per zone: sweet / good zone widths (px of 100), the chance a
+// bar's marker moves on an eased curve, and the chance its sweet spot drifts.
 export const ZONE_TIMING = {
-  jungle: { dodgeMs: 85, blockMs: 180, rings: 0 },
-  swamp: { dodgeMs: 75, blockMs: 165, rings: 0.15 },
-  volcano: { dodgeMs: 65, blockMs: 150, rings: 0.25 },
-  crater: { dodgeMs: 55, blockMs: 135, rings: 0.35 }
+  jungle: { dodgeMs: 85, blockMs: 180, rings: 0, sweetW: 8, goodW: 30, curved: 0.2, drift: 0 },
+  swamp: { dodgeMs: 75, blockMs: 165, rings: 0.15, sweetW: 7, goodW: 28, curved: 0.35, drift: 0 },
+  volcano: { dodgeMs: 65, blockMs: 150, rings: 0.25, sweetW: 6, goodW: 26, curved: 0.45, drift: 0.3 },
+  crater: { dodgeMs: 55, blockMs: 135, rings: 0.35, sweetW: 5, goodW: 24, curved: 0.55, drift: 0.3 }
 };
+export const SWEEP_MS = [650, 950]; // each bar rolls its sweep time
+export const SWEET_AT = [0.2, 0.85]; // sweet spot center range along the bar
+export const MIN_SWEET_W = 3;
 export const BOSS_RINGS = 0.35;
 
 // Dodge fatigue: each perfect dodge in a row shrinks the next dodge window.
@@ -38,7 +43,25 @@ export const MIN_DODGE_MS = 40; // never tighter than this (touch latency)
 
 export function zoneTiming(zone, ext = 0) {
   const z = ZONE_TIMING[zone] ?? ZONE_TIMING.jungle;
-  return { dodgeMs: Math.max(MIN_DODGE_MS, z.dodgeMs - EXT_DODGE_MS * ext), blockMs: z.blockMs, rings: z.rings };
+  return {
+    dodgeMs: Math.max(MIN_DODGE_MS, z.dodgeMs - EXT_DODGE_MS * ext), blockMs: z.blockMs, rings: z.rings,
+    // Extinction: the sweet spot loses 1px every 2 levels.
+    bar: { sweetW: Math.max(MIN_SWEET_W, z.sweetW - Math.floor(ext / 2)), goodW: z.goodW, curved: z.curved, drift: z.drift }
+  };
+}
+
+// One attack bar's shape, rolled with the battle's seeded RNG.
+//   sweepMs: marker travel time; center: sweet spot (0..1); curve: linear |
+//   wave (speeds up and slows down) | ease (slow-fast-slow); drift: sweet spot sways.
+export function rollBar(rng, bar) {
+  const pick = (r) => r[0] + rng.next() * (r[1] - r[0]);
+  const curved = rng.next() < bar.curved;
+  return {
+    sweepMs: Math.round(pick(SWEEP_MS)), center: pick(SWEET_AT),
+    curve: curved ? (rng.next() < 0.5 ? 'wave' : 'ease') : 'linear',
+    drift: rng.next() < bar.drift ? { amp: 0.08 + rng.next() * 0.06, period: 900 + rng.next() * 600, phase: rng.next() * Math.PI * 2 } : null,
+    sweetW: bar.sweetW, goodW: bar.goodW
+  };
 }
 
 const roll = (rng, [a, b]) => Math.round(a + rng.next() * (b - a));

@@ -29,30 +29,52 @@ const barY = () => lp(72, 88);
 const devHook = (info) => { if (import.meta.env.DEV) window.__qteHook?.(info); };
 
 // Attack QTE: marker sweeps a bar once. Resolves 'crit' | 'good' | 'miss'.
-export function attackBar(scene, { rng, sure = false, muddy = false, sweepMs = QTE.sweepMs } = {}) {
-  const sweetW = Math.round(QTE.sweetW * (muddy ? MUDDY.sweet : 1)), goodW = Math.round(QTE.goodW * (muddy ? MUDDY.good : 1));
+// shape (data/qteProfiles.js rollBar): sweep time, sweet spot, marker curve,
+// drift. Without one, the old fixed bar (title-screen demos, tests).
+export function attackBar(scene, { rng, sure = false, muddy = false, shape = null } = {}) {
+  const sh = shape ?? { sweepMs: QTE.sweepMs, center: rng.range(0.55, 0.85), curve: 'linear', drift: null, sweetW: QTE.sweetW, goodW: QTE.goodW };
+  const sweepMs = sh.sweepMs;
+  const sweetW = Math.max(2, Math.round(sh.sweetW * (muddy ? MUDDY.sweet : 1))), goodW = Math.round(sh.goodW * (muddy ? MUDDY.good : 1));
   return new Promise((resolve) => {
     const BW = 100, BH = 6, x0 = Math.round(W / 2 - BW / 2), y0 = barY();
-    const c = Math.round(rng.range(0.55, 0.85) * BW);
-    devHook({ type: 'bar', sweepMs, center: c, width: BW, muddy });
+    // Marker progress 0..1 at time t (wave: fast-slow-fast-slow; ease: slow-fast-slow).
+    const curve = (k) => (sh.curve === 'wave' ? k - (0.55 * Math.sin(4 * Math.PI * k)) / (4 * Math.PI)
+      : sh.curve === 'ease' ? k * k * (3 - 2 * k) : k);
+    const pos = (t) => Math.min(BW - 2, Math.round(curve(Math.min(1, t / sweepMs)) * (BW - 2)));
+    const centerAt = (t) => {
+      const k = sh.drift ? sh.center + sh.drift.amp * Math.sin((t / sh.drift.period) * Math.PI * 2 + sh.drift.phase) : sh.center;
+      return Math.round(Math.min(0.92, Math.max(0.12, k)) * BW);
+    };
+    // Dev hook: the press time that lands dead center (scanned, so it works for curves and drift).
+    let bestMs = 0, bestD = Infinity;
+    for (let t = 61; t < sweepMs; t += 4) { const d = Math.abs(pos(t) + 1 - centerAt(t)); if (d < bestD) { bestD = d; bestMs = t; } }
+    devHook({ type: 'bar', sweepMs, center: centerAt(0), width: BW, muddy, curve: sh.curve, drift: !!sh.drift, bestMs });
+
     const g = scene.add.graphics().setDepth(30);
+    const zone = scene.add.graphics().setDepth(30);
     panel(g, x0 - 4, y0 - 4, BW + 8, BH + 8);
     g.fillStyle(0x121418).fillRect(x0, y0, BW, BH);
-    g.fillStyle(muddy ? 0x5a5030 : 0x3e7a3a).fillRect(x0 + c - goodW / 2, y0, goodW, BH);
-    g.fillStyle(0xfff096).fillRect(x0 + c - sweetW / 2, y0, sweetW, BH);
+    const drawZone = (c) => {
+      zone.clear();
+      zone.fillStyle(muddy ? 0x5a5030 : 0x3e7a3a).fillRect(x0 + c - goodW / 2, y0, goodW, BH);
+      zone.fillStyle(0xfff096).fillRect(x0 + c - sweetW / 2, y0, sweetW, BH);
+      if (sh.drift) zone.fillStyle(0xffffff).fillRect(x0 + c, y0 - 2, 1, 1).fillRect(x0 + c, y0 + BH + 1, 1, 1); // sway markers
+    };
     const m = scene.add.graphics().setDepth(31);
-    const hint = text(scene, W / 2, hintY(), muddy ? 'MUDDY! TAP IN THE YELLOW!' : 'TAP IN THE YELLOW!', { origin: 0.5, color: muddy ? '#b09a62' : '#f0ecdc' }).setDepth(31);
+    const hint = text(scene, W / 2, hintY(), muddy ? 'MUDDY! TAP IN THE YELLOW!' : sh.drift ? lp('IT MOVES! TAP IN THE YELLOW!', 'IT MOVES! TAP YELLOW!') : 'TAP IN THE YELLOW!',
+      { origin: 0.5, color: muddy ? '#b09a62' : '#f0ecdc' }).setDepth(31);
 
     let t = 0, done = false;
-    const pos = () => Math.min(BW - 2, Math.round((t / sweepMs) * (BW - 2)));
-    const draw = (px) => {
+    const draw = () => {
+      drawZone(centerAt(t));
+      const px = pos(t);
       m.clear();
       m.fillStyle(0x0c0e12).fillRect(x0 + px - 1, y0 - 3, 4, BH + 6);
       m.fillStyle(0xffffff).fillRect(x0 + px, y0 - 2, 2, BH + 4);
     };
     const judge = (px) => {
       if (px == null) return sure ? 'good' : 'miss';
-      const d = Math.abs(px + 1 - c);
+      const d = Math.abs(px + 1 - centerAt(t));
       if (d <= sweetW / 2) return 'crit';
       if (d <= goodW / 2 || sure) return 'good';
       return 'miss';
@@ -65,16 +87,16 @@ export function attackBar(scene, { rng, sure = false, muddy = false, sweepMs = Q
       hint.label.setTint(res === 'crit' ? 0xfff096 : res === 'good' ? 0xf0ecdc : 0x8a90a0);
       if (res === 'crit') g.fillStyle(0xffffff).fillRect(x0, y0, BW, BH);
       sfx(res === 'crit' ? 'ding' : res === 'good' ? 'tick' : 'early');
-      scene.time.delayedCall(260, () => { g.destroy(); m.destroy(); hint.destroy(); });
+      scene.time.delayedCall(260, () => { g.destroy(); zone.destroy(); m.destroy(); hint.destroy(); });
       resolve(res);
     };
-    const offPress = onPress(scene, () => { if (t > 60) finish(judge(pos())); });
+    const offPress = onPress(scene, () => { if (t > 60) finish(judge(pos(t))); });
     const offTick = ticker(scene, (dt) => {
       t += dt;
       if (t >= sweepMs) finish(judge(null));
-      else draw(pos());
+      else draw();
     });
-    draw(0);
+    draw();
   });
 }
 

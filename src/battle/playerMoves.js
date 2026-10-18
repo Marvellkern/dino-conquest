@@ -4,6 +4,7 @@ import { applyStatus } from '../systems/combat.js';
 import * as B from '../systems/battleState.js';
 import { hitsAll, spreadCount } from '../systems/build.js';
 import { attackBar } from '../systems/qte.js';
+import { rollBar } from '../data/qteProfiles.js';
 import { sfx } from '../systems/sfx.js';
 import { animSet, roar } from './anims.js';
 import { braceAnim } from './gimmicks.js';
@@ -66,7 +67,7 @@ export async function playerMove(scene, id) {
   rig.x = rig.homeX;
   rig.c.setDepth(5);
   rig.startIdle();
-  B.endMove(st);
+  if (B.endMove(st).streakUp) scene.streakUp(); // a full-crit move completes the streak
   await scene.settle();
   return evaders;
 }
@@ -92,7 +93,7 @@ function strikeCtx(scene, id, victims, aoe, muddy, evaders) {
     hit: 0,
     chained: false,
     spread: victims.length,
-    open: () => { if (!bar) bar = attackBar(scene, { rng: st.rng, sure: !!MOVES[id].sure, muddy }); },
+    open: () => { if (!bar) bar = attackBar(scene, { rng: st.rng, sure: !!MOVES[id].sure, muddy, shape: rollBar(st.rng, st.timing.bar) }); },
     result: () => bar,
     targetRig: (i) => victims[i % victims.length].rig,
     impact: (res) => {
@@ -100,7 +101,7 @@ function strikeCtx(scene, id, victims, aoe, muddy, evaders) {
         const f = B.finalQte(st, res);
         qte = f.qte;
         if (f.auto) { const t = st.player.rig.top(); scene.fx.pop(t.x, t.y - 10, 'METEOR CHIP!', '#ffd040', 1, 900); }
-        if (B.noteQte(st, qte)) scene.streakUp();
+        B.noteQte(st, qte);
       }
       const k = n++;
       for (let v of aoe ? victims : [victims[k % victims.length]]) {

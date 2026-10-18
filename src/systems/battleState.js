@@ -21,7 +21,8 @@ export function createBattle({ player, enemies, rng, spawn = null, build = null,
   const st = {
     player, enemies: [], rng, spawn, build: build ?? BLD.emptyBuild(), timing,
     energy: 0, energyNext: 0, streak: 0, turn: 0,
-    fatigue: 0, dodgedPhase: false, counterUsed: false, // dodge fatigue, one counter per enemy phase empowered: false, pendingEmpower: false, activeEmpower: false, firstTurn: true,
+    empowered: false, activeEmpower: false, firstTurn: true,
+    fatigue: 0, dodgedPhase: false, counterUsed: false, // dodge fatigue, one counter per enemy phase
     fight: { braces: 0, dmg: 0, moveKills: 0 } // this fight's tallies (goals)
   };
   for (const e of enemies) addEnemy(st, e);
@@ -153,26 +154,34 @@ export const affordable = (st) => st.player.moves.some((id) => !blocked(st, id))
 export function beginMove(st, id) {
   st.energy -= moveCost(st, id);
   st.fight.moveKills = 0;
+  st.moveQtes = 0;
+  st.moveAllCrit = true;
   if (id === 'roar') tally(st, 'roars');
   st.activeEmpower = st.empowered && !MOVES[id].status && !MOVES[id].brace;
   if (st.activeEmpower) st.empowered = false;
 }
 
+// End of a move. The crit streak counts whole attacks: a move with QTEs adds
+// one if every bar in it was a crit, otherwise the streak breaks (so a
+// multi-hit special can't farm it). Returns { streakUp } when it completes.
 export function endMove(st) {
   tallyMax(st, 'multiKill', st.fight.moveKills);
-  if (st.pendingEmpower) { st.empowered = true; st.pendingEmpower = false; }
   st.activeEmpower = false;
+  if (!st.moveQtes) return { streakUp: false };
+  st.moveQtes = 0;
+  if (!st.moveAllCrit) { st.streak = 0; return { streakUp: false }; }
+  st.streak++;
+  if (st.streak < BLD.streakNeed(st)) return { streakUp: false };
+  st.streak = 0;
+  st.empowered = true;
+  tally(st, 'streaks');
+  return { streakUp: true };
 }
 
-// Track crits. Returns true when this crit completes a streak.
+// Record one QTE result of the current move (see endMove).
 export function noteQte(st, qte) {
-  if (qte !== 'crit') { st.streak = 0; return false; }
-  st.streak++;
-  if (st.streak < BLD.streakNeed(st)) return false;
-  st.streak = 0;
-  st.pendingEmpower = true;
-  tally(st, 'streaks');
-  return true;
+  st.moveQtes = (st.moveQtes ?? 0) + 1;
+  st.moveAllCrit = (st.moveAllCrit ?? true) && qte === 'crit';
 }
 
 // Meteor Chip: the first attack of the fight is a crit whatever the QTE said.
