@@ -107,6 +107,13 @@ function makeClass(scale) {
       gl.activeTexture(gl.TEXTURE1);
       gl.bindTexture(gl.TEXTURE_2D, null);
       gl.activeTexture(gl.TEXTURE0);
+      // The bloom was bound to unit 1 behind Phaser's back: every pipeline caches what it
+      // thinks each unit holds and skips rebinding, so clear those caches or the next draws
+      // (the UI camera) sample an empty unit and come out black.
+      for (const pipe of this.renderer.pipelines.pipelines.values()) {
+        if (pipe.activeTextures) pipe.activeTextures.length = 0;
+        if ('currentNormalMap' in pipe) pipe.currentNormalMap = null; // Light2D keeps its normal map on unit 1 too
+      }
     }
 
     destroy() {
