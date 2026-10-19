@@ -8,6 +8,7 @@ import { checkGoals, goalLines } from '../systems/goals.js';
 import { amberMult } from '../systems/build.js';
 import { zoneTiming } from '../data/qteProfiles.js';
 import { drawZone } from '../ui/backdrop.js';
+import { autoProbe } from '../render/quality.js';
 import { text } from '../ui/font.js';
 import { panel } from '../ui/pixel.js';
 import { Hud, EnemyMarkers, MoveBar } from '../ui/battleUI.js';
@@ -117,6 +118,7 @@ export class Battle extends Phaser.Scene {
     };
     this.input.keyboard.on('keydown', this.onKey);
     this.events.once('shutdown', () => this.input.keyboard?.off('keydown', this.onKey));
+    autoProbe(this); // Auto graphics: measure the first fight, drop a tier if it's slow
     this.loop();
   }
 

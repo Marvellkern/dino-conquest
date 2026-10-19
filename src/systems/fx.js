@@ -15,10 +15,10 @@ export class Fx {
     if (!sh) return;
     const cam = this.s.cameras.main;
     sh.t += dt * this.s.time.timeScale;
-    if (sh.t >= sh.ms) { cam.setScroll(0, 0); this.sh = null; return; }
+    if (sh.t >= sh.ms) { cam.setScroll(sh.x0, sh.y0); this.sh = null; return; }
     if (this.s.time.timeScale === 0) return; // freeze the offset during hitstop
     const a = Math.max(1, Math.round(sh.px * (1 - sh.t / sh.ms)));
-    cam.setScroll(Phaser.Math.Between(-a, a), Phaser.Math.Between(-a, a));
+    cam.setScroll(sh.x0 + Phaser.Math.Between(-a, a), sh.y0 + Phaser.Math.Between(-a, a));
   }
 
   // Integer-pixel screen shake. Respects the 'shake' setting in the registry.
@@ -26,7 +26,8 @@ export class Fx {
     if (this.s.registry.get('shake') === false) return;
     if (!Number.isFinite(px) || px <= 0) return; // a NaN offset would scroll the camera into the void
     if (this.sh && this.sh.px > px) return;
-    this.sh = { px, ms, t: 0 };
+    const cam = this.s.cameras.main; // shake around where the camera is (the portrait map scrolls)
+    this.sh = this.sh ? { ...this.sh, px, ms, t: 0 } : { px, ms, t: 0, x0: cam.scrollX, y0: cam.scrollY };
   }
 
   // Freeze the scene clock + tweens for a moment (real time).

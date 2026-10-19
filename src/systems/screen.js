@@ -1,4 +1,5 @@
 import { W, H, PORTRAIT, setPortrait } from '../config.js';
+import { render, applyRender } from '../render/quality.js';
 
 // Screen fitting and fullscreen.
 //
@@ -8,6 +9,8 @@ import { W, H, PORTRAIT, setPortrait } from '../config.js';
 // fractional scale: always at 2x+ density, and at 1.5x when the integer
 // one would waste more than 10%. The uneven rows can't be seen there.
 // The notch / home bar (safe-area insets) is kept clear via the #safe probe.
+// The canvas itself is W*rs x H*rs (render/quality.js): z below is device pixels per
+// world pixel, and the CSS zoom divides the render scale back out.
 
 export const isPhone = () => window.matchMedia?.('(pointer: coarse)').matches ?? false;
 
@@ -27,12 +30,13 @@ let pending = null;
 
 function switchLayout(game, portrait) {
   setPortrait(portrait);
-  game.scale.setGameSize(W, H);
+  game.scale.setGameSize(W * render.rs, H * render.rs);
 }
 
 export function syncLayout(scene) {
   if (pending !== null && pending !== PORTRAIT) { switchLayout(scene.game, pending); fit(scene.game, false); }
   pending = null;
+  applyRender(scene); // the graphics tier's render scale + camera zoom
 }
 
 export function fit(game, checkTurn = true) {
@@ -50,7 +54,7 @@ export function fit(game, checkTurn = true) {
   const exact = Math.min((w * dpr) / W, (h * dpr) / H);
   let z = Math.max(1, Math.floor(exact));
   if (dpr >= 2 || (dpr >= 1.5 && z < exact * 0.9)) z = exact; // phones: always fill
-  game.scale.setZoom(z / dpr);
+  game.scale.setZoom(z / dpr / render.rs);
   game.registry.set('zoom', z);
   game.events.emit('zoom', z);
 }

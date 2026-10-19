@@ -33,6 +33,23 @@ On phones, tap everything.
 
 Scaling is integer-only by design (crisp pixels), so some screens show black borders around the game.
 
+**Graphics quality (v2.3 lighting, step 1).** The game logic stays at 320x180 / 180x320. The graphics tier sets a render scale `rs`: the canvas is `W*rs x H*rs`, and every scene's camera zooms by `rs` from its top-left corner (`render/quality.js` `applyRender()`, called from `syncLayout()`). Sprites stay crisp (nearest), and later lighting steps get smooth gradients at the higher resolution.
+
+- **Tiers** live in `data/quality.js`:
+
+  | Tier | Render scale |
+  |---|---|
+  | Low | 1, the original look |
+  | Medium | 2 |
+  | High | 4 |
+
+  The same file sets the lights, bloom and baked-art flags the lighting steps will use. `rs` is capped by the screen's device-pixel zoom, so a 3x desktop renders High at x3, never more pixels than shown.
+- **Settings → Graphics** cycles Auto / Low / Medium / High, saved as `meta.settings.gfx`. A new tier applies when the next scene starts (Home rebuilds right away), never mid-fight.
+- **Auto** starts at Medium on phones (coarse pointer or a small screen) and High on desktops. It measures the first 3s of the session's first battle, and below 50 fps it drops one tier, remembered as `meta.settings.gfxAuto`. It never raises the tier by itself.
+- **No WebGL:** without WebGL (the Canvas renderer) the game is always Low.
+- **Camera scroll:** with the camera's origin at the top-left, scroll stays "top-left of the view in world units". The portrait map clamps its own scroll (camera bounds assume a centered zoom), and screen shake works around the current scroll.
+- **`?fps` in the URL:** a small overlay with fps, tier, render scale and active lights. In dev builds, a QTE frame over 33ms is logged (`[qte] slow frame`).
+
 ## Where things live
 
 ```

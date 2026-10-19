@@ -15,7 +15,7 @@ export const defaultSave = () => ({
   goals: {},        // goal id -> true
   heir: null,       // { kind: 'relic' | 'mutation', id, move?, from } carried into the next hatchling
   ext: { sel: 0, best: 0 }, // chosen Extinction level, highest cleared
-  settings: { sfx: true, shake: true },
+  settings: { sfx: true, shake: true, gfx: 'auto' }, // gfx: auto | low | medium | high (gfxAuto: Auto's remembered tier)
   stats: { runs: 0, wins: 0, gens: 0 },
   notice: null      // one-time message for the Nest (the v2 upgrade)
 });

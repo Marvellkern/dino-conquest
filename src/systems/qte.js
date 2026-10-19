@@ -16,7 +16,10 @@ export function onPress(scene, cb) {
 // Both QTEs count time from scene 'update' deltas scaled by the clock,
 // so they stay in sync with animation waits (and freeze during hitstop).
 function ticker(scene, fn) {
-  const upd = (_, dt) => fn(dt * scene.time.timeScale);
+  const upd = (_, dt) => {
+    if (import.meta.env.DEV && dt > 33) console.debug(`[qte] slow frame: ${Math.round(dt)}ms`); // QTE timing is sacred
+    fn(dt * scene.time.timeScale);
+  };
   scene.events.on('update', upd);
   return () => scene.events.off('update', upd);
 }

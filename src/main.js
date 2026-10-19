@@ -13,6 +13,7 @@ import { Nest } from './scenes/Nest.js';
 import { ZoneIntro } from './scenes/ZoneIntro.js';
 import { fit, wantPortrait } from './systems/screen.js';
 import { quickSave } from './systems/runStore.js';
+import { fpsOverlay } from './render/fpsOverlay.js';
 
 window.Phaser = Phaser;
 setPortrait(wantPortrait()); // pick the layout before the game is sized
@@ -42,6 +43,8 @@ const refit = () => fit(game);
 if (import.meta.env.DEV || new URLSearchParams(location.search).has('debug')) window.__game = game;
 
 game.events.once('ready', refit);
+fpsOverlay(game); // ?fps
+game.events.on('rescale', () => fit(game, false)); // the render scale changed (render/quality.js)
 window.addEventListener('resize', refit);
 window.visualViewport?.addEventListener('resize', refit); // phone browser bars sliding in and out
 document.addEventListener('fullscreenchange', () => setTimeout(refit, 50));

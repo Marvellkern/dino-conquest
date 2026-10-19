@@ -244,25 +244,32 @@ export class MapScene extends Phaser.Scene {
     for (const o of this.children.list) if (!before.has(o)) fixed(o);
     this.bg.setScrollFactor(0);
     this.relicBar.fixed = true;
+    // Scroll is clamped by hand: camera bounds assume a centered zoom, and the camera
+    // zooms from its top-left corner (render/quality.js). Pointer deltas are canvas
+    // pixels, so they're divided by the zoom.
     const cam = this.cameras.main;
-    cam.setBounds(0, 0, W, WORLD_H + (H - MAP_BOTTOM()));
+    this.maxScroll = WORLD_H + (H - MAP_BOTTOM()) - H;
     this.dragged = false;
     let start = null;
     this.input.on('pointerdown', (p) => { start = { y: p.y, scroll: cam.scrollY }; this.dragged = false; });
     this.input.on('pointermove', (p) => {
       if (!start || !p.isDown) return;
-      if (Math.abs(p.y - start.y) > 4) this.dragged = true;
-      if (this.dragged) cam.setScroll(0, start.scroll - (p.y - start.y));
+      const dy = (p.y - start.y) / cam.zoom;
+      if (Math.abs(dy) > 4) this.dragged = true;
+      if (this.dragged) this.scrollTo(start.scroll - dy);
     });
     this.input.on('pointerup', () => { start = null; this.time.delayedCall(0, () => { this.dragged = false; }); });
-    this.input.on('wheel', (p, objs, dx, dy) => cam.setScroll(0, cam.scrollY + dy * 0.3));
+    this.input.on('wheel', (p, objs, dx, dy) => this.scrollTo(cam.scrollY + dy * 0.3));
     this.follow(false);
   }
+
+  clampScroll(y) { return Math.round(Math.max(0, Math.min(this.maxScroll ?? 0, y))); }
+  scrollTo(y) { this.cameras.main.setScroll(0, this.clampScroll(y)); }
 
   // Scroll so the dino sits low in the visible band (its next choices are above it).
   follow(animate = true) {
     if (!PORTRAIT) return;
-    const cam = this.cameras.main, y = Math.round(this.marker.y - (MAP_BOTTOM() - 40));
+    const cam = this.cameras.main, y = this.clampScroll(this.marker.y - (MAP_BOTTOM() - 40));
     if (animate) this.tweens.add({ targets: cam, scrollY: y, duration: 220, ease: 'Sine.InOut' });
     else cam.setScroll(0, y);
   }

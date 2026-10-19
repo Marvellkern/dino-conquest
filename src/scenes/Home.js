@@ -16,6 +16,8 @@ import { goalsDone } from '../systems/goals.js';
 import { canFullscreen, isFullscreen, enterFullscreen, exitFullscreen } from '../systems/screen.js';
 import { choose } from '../ui/popup.js';
 import { FocusNav } from '../ui/focus.js';
+import { gfxLabel } from '../render/quality.js';
+import { GFX_SETTINGS } from '../data/quality.js';
 import { sfx } from '../systems/sfx.js';
 
 const DEX_ORDER = ['compy', 'raptor', 'trike', 'rex', 'pachy', 'sarco', 'spino', 'ankylo', 'ptera', 'stego', 'carno', 'dilo', 'theri'];
@@ -266,11 +268,13 @@ export class Home extends Phaser.Scene {
     if (this.inMenu) return;
     this.inMenu = true;
     const s = meta.settings;
+    let gfxChanged = false; // a new tier applies when Home is rebuilt after the menu
     for (;;) {
       // Each entry: [id, option]. Fullscreen only where the browser supports it.
       const items = [
         ['sfx', { label: `SOUND: ${s.sfx ? 'ON' : 'OFF'}` }],
         ['shake', { label: `SCREEN SHAKE: ${s.shake ? 'ON' : 'OFF'}` }],
+        ['gfx', { label: `GRAPHICS: ${gfxLabel(this.game)}` }],
         ...(canFullscreen() ? [['full', { label: `FULLSCREEN: ${isFullscreen() ? 'ON' : 'OFF'}` }]] : []),
         ['reset', { label: 'RESET SAVE', sub: 'ERASES ALL PROGRESS' }],
         ['back', { label: 'BACK' }]
@@ -278,6 +282,7 @@ export class Home extends Phaser.Scene {
       const pick = items[await choose(this, { title: 'SETTINGS', options: items.map(([, o]) => o), bh: 26 })][0];
       if (pick === 'sfx') s.sfx = !s.sfx;
       else if (pick === 'shake') s.shake = !s.shake;
+      else if (pick === 'gfx') { s.gfx = GFX_SETTINGS[(GFX_SETTINGS.indexOf(s.gfx ?? 'auto') + 1) % GFX_SETTINGS.length]; gfxChanged = true; }
       else if (pick === 'full') { if (isFullscreen()) exitFullscreen(); else enterFullscreen(); await new Promise((r) => setTimeout(r, 250)); }
       else if (pick === 'reset') {
         const yes = await choose(this, {
@@ -298,6 +303,7 @@ export class Home extends Phaser.Scene {
       sfx('blip');
     }
     this.inMenu = false;
+    if (gfxChanged) this.scene.restart(); // rebuild at the new render scale
   }
 
   go() {
