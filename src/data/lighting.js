@@ -39,7 +39,7 @@ export const LIGHTING = {
   //   keyPulse  { amount, ms }: the key light breathes; keyByProgress: brighter near the boss
   swamp: {
     ambient: 0x56634c, // murky olive
-    key: { side: 'left', dx: 10, dy: 22, radius: 460, color: 0x8cc870, intensity: 1.0 }, // sickly glow off the water, low-left
+    key: { side: 'left', dx: 10, dy: 44, radius: 560, color: 0x8cc870, intensity: 1.4 }, // sickly glow off the water, low-left: high enough to skim their sides
     bake: {
       sky: { grade: [0.52, 0.6, 0.52], fog: [0x3e4a38, 0.25] },
       far: { grade: [0.46, 0.54, 0.48], fog: [0x4a5a44, 0.45], blur: 2.4 },
