@@ -16,6 +16,7 @@ import { goalsDone } from '../systems/goals.js';
 import { canFullscreen, isFullscreen, enterFullscreen, exitFullscreen } from '../systems/screen.js';
 import { choose } from '../ui/popup.js';
 import { FocusNav } from '../ui/focus.js';
+import { menuLight } from '../render/menuLight.js';
 import { gfxLabel } from '../render/quality.js';
 import { GFX_SETTINGS } from '../data/quality.js';
 import { sfx } from '../systems/sfx.js';
@@ -48,6 +49,7 @@ export class Home extends Phaser.Scene {
     this.cameras.main.fadeIn(150);
     const g = this.add.graphics();
     g.fillStyle(0x16181d).fillRect(0, 0, W, H);
+    menuLight(this, { bloom: false, key: { x: W / 2, y: -20, radius: lp(220, 200), color: 0xfff0c8, alpha: 0.16 } }); // no bloom: the text is in the world layer here
     text(this, 6, 6, 'DINO-CONQUEST', { color: COLORS.accent });
     amberCount(this, W - 6, 6, meta.amber);
 

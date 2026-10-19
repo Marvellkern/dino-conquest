@@ -5,6 +5,7 @@ import { text } from '../ui/font.js';
 import { createRig } from '../sprites/rig.js';
 import { Fx } from '../systems/fx.js';
 import { onPress } from '../systems/qte.js';
+import { menuLight } from '../render/menuLight.js';
 import { isPhone, enterFullscreen } from '../systems/screen.js';
 import { sfx } from '../systems/sfx.js';
 import { animSet, wait } from '../battle/anims.js';
@@ -19,6 +20,7 @@ export class Title extends Phaser.Scene {
     this.fx = new Fx(this);
     this.cameras.main.fadeIn(150);
     drawJungle(this);
+    menuLight(this, { zone: 'jungle', key: { x: 40, y: 16, radius: 150, color: 0xffe8a0, alpha: 0.35, depth: 1.5 } }); // the jungle sun, top-left (Medium / High)
     this.alive = true;
     this.events.once('shutdown', () => { this.alive = false; });
 

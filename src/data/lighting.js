@@ -144,6 +144,7 @@ export const BLOOM = { threshold: 0.8, strength: 0.65 };
 // multipliers, blended by brightness).
 export const GRADES = {
   none: { sat: 1, contrast: 1, shadow: [1, 1, 1], high: [1, 1, 1] },
+  menu: { sat: 1.04, contrast: 1.04, shadow: [0.95, 0.98, 1.06], high: [1.05, 1.02, 0.96] }, // Home, Hatch, Evolution
   jungle: { sat: 1.08, contrast: 1.08, shadow: [0.88, 1.0, 1.14], high: [1.08, 1.03, 0.92] }, // cool shadows, warm highlights
   swamp: { sat: 0.85, contrast: 1.04, shadow: [0.92, 1.02, 1.0], high: [1.0, 1.02, 0.96] },
   volcano: { sat: 1.1, contrast: 1.12, shadow: [1.0, 0.92, 0.9], high: [1.08, 1.0, 0.9] },

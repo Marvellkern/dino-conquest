@@ -2,6 +2,7 @@ import { syncLayout } from '../systems/screen.js';
 import { W, H, GROUND_Y, COLORS, lp } from '../config.js';
 import { ZONES } from '../data/zones.js';
 import { zoneBackdrop } from '../ui/zoneArt.js';
+import { menuLight } from '../render/menuLight.js';
 import { text } from '../ui/font.js';
 import { createRig } from '../sprites/rig.js';
 import { session, dinoSkin } from '../run/run.js';
@@ -35,7 +36,8 @@ export class ZoneIntro extends Phaser.Scene {
   async play(run) {
     const zone = ZONES[run.zone], n = run.zones.indexOf(run.zone) + 1;
     this.skipP = new Promise((r) => { this.offSkip = onPress(this, () => { this.skipped = true; r(); }); });
-    zoneBackdrop(this, run.zone, { progress: 0 });
+    zoneBackdrop(this, run.zone, { progress: 0, baked: true }); // the zone as its fights look (baked on Medium / High)
+    menuLight(this, { zone: run.zone });
 
     // Cinematic bars slide in.
     const bar = lp(22, 40);

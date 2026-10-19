@@ -5,6 +5,8 @@ import { NODE_INFO } from '../data/zones.js';
 import { RelicBar } from '../ui/relicBar.js';
 import { visitNest, visitFossil, visitMeteor, visitShop, nestHeal, fightRewards, afterFight } from './mapNodes.js';
 import { checkpoint, takeResume } from '../systems/runStore.js';
+import { menuLight } from '../render/menuLight.js';
+import { LIGHTING } from '../data/lighting.js';
 import { TRAITS } from '../data/traits.js';
 import { xpToNext } from '../data/progression.js';
 import { text } from '../ui/font.js';
@@ -46,6 +48,8 @@ export class MapScene extends Phaser.Scene {
     this.cameras.main.fadeIn(150);
 
     this.bg = drawMapBackground(this, this.run.zone);
+    const k = LIGHTING[this.run.zone]?.key; // the zone's key light, from its side of the sky
+    if (k) menuLight(this, { zone: this.run.zone, key: { x: k.side === 'right' ? W : k.side === 'left' ? 0 : W / 2, y: k.dy > 0 ? -20 : H + 20, radius: lp(200, 180), color: k.color, alpha: 0.22, depth: 1 } });
     this.edges = this.add.graphics().setDepth(2);
     this.rings = this.add.graphics().setDepth(4);
     this.time.addEvent({ delay: 380, loop: true, callback: () => this.rings.setVisible(!this.rings.visible) });

@@ -88,6 +88,12 @@ Scaling is integer-only by design (crisp pixels), so some screens show black bor
   - `VIGNETTE`: stronger in boss fights.
 
   The UI is drawn by a second camera without the pass, so HUD text and buttons never glow or shift color. Every frame, objects at depth 10 and up are routed to it, except the spark particles at 19–29, and fades and flashes are mirrored on both cameras. Low has no post pass at all, so it looks exactly like before. (The brief's table said "grade only" for Low; its guardrail that Low stays identical won.)
+- **Other screens (step 6):** Title, Home, the map, Hatch, Evolution and the zone intro get a lighter version (`render/menuLight.js`), with no Light2D:
+  - the post pass: the zone's grade on Title, map and intro, a soft `menu` grade elsewhere, plus the vignette and gentler bloom. Home has no bloom, since its text sits in the world layer;
+  - a soft additive key-light glow from where the zone's light comes from (the Jungle sun on Title, the zone's key on the map, warm light from above on Home, Hatch and Evolution);
+  - `burst()` flares that bloom: the hatch reveal glows in the rarity's color, and the evolution flash blazes.
+
+  The zone intro uses the baked backdrop, so it previews the zone as its fights look. When a scene splits off its UI camera mid fade-in, the UI joins that fade. Low adds nothing anywhere.
 - **`?fps` in the URL:** a small overlay with fps, tier, render scale and active lights. In dev builds, a QTE frame over 33ms is logged (`[qte] slow frame`).
 
 ## Where things live

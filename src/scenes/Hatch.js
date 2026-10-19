@@ -22,6 +22,7 @@ import { checkpoint } from '../systems/runStore.js';
 import { Fx } from '../systems/fx.js';
 import { sfx } from '../systems/sfx.js';
 import { onPress } from '../systems/qte.js';
+import { menuLight } from '../render/menuLight.js';
 import { FocusNav } from '../ui/focus.js';
 import { roar, wait } from '../battle/anims.js';
 
@@ -49,6 +50,7 @@ export class Hatch extends Phaser.Scene {
 
     const L = this.L = LAYOUT(), PX = L.px + 6, PY = L.py;
     drawNestRoom(this, L.x, L.ground);
+    this.light = menuLight(this, { key: { x: L.x, y: L.ground - 70, radius: 90, color: 0xffe0a0, alpha: 0.22, depth: 1 } }); // a warm glow over the nest
     text(this, 6, 6, 'HATCHERY', { color: COLORS.accent });
     this.amber = amberCount(this, W - 6, 6, meta.amber);
 
@@ -225,6 +227,7 @@ export class Hatch extends Phaser.Scene {
     this.stats.setText(`HP ${sp.hp} ATK ${sp.atk} DEF ${sp.def} SPD ${sp.spd}`);
     this.special.setText(`SPECIAL: ${MOVES[sp.special].name}`);
     const big = sp.rarity === 'epic' || sp.rarity === 'legendary';
+    this.light.burst(this.L.x, this.L.ground - 18, parseInt(rar.color.slice(1), 16), big ? 240 : 160, big ? 900 : 600); // the reveal flares in the rarity's color
     this.fx.pop(this.L.x, lp(34, 44), `${rar.name}!`, rar.color, big ? 2 : 1, 1600);
     if (sp.rarity === 'legendary') { sfx('win'); this.fx.shake(4, 400); }
     if (!this.skipping) await roar(this, this.rig, () => {});

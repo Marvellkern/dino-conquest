@@ -9,6 +9,7 @@ import { session, evolve, dinoName, dinoSkin } from '../run/run.js';
 import { Fx } from '../systems/fx.js';
 import { sfx } from '../systems/sfx.js';
 import { onPress } from '../systems/qte.js';
+import { menuLight } from '../render/menuLight.js';
 import { roar, wait } from '../battle/anims.js';
 
 // Stage center and floor, read per layout in create().
@@ -28,6 +29,7 @@ export class Evolution extends Phaser.Scene {
     this.skipped = false;
     this.cameras.main.fadeIn(150);
     this.drawStage();
+    this.light = menuLight(this, { key: { x: X, y: -10, radius: lp(160, 140), color: 0xfff0c8, alpha: 0.2 } });
     this.play();
   }
 
@@ -87,6 +89,7 @@ export class Evolution extends Phaser.Scene {
     before.c.destroy();
     after.c.setVisible(true);
     after.setFlash(false);
+    this.light.burst(after.center().x, after.center().y, 0xfff0b0, 260, 900); // the new form flares (and blooms)
     const flash = this.add.rectangle(0, 0, W, H, 0xffffff).setOrigin(0).setDepth(50);
     this.tweens.add({ targets: flash, alpha: 0, duration: 450, onComplete: () => flash.destroy() });
     sfx('boom');

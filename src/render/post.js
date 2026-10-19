@@ -152,7 +152,7 @@ export function registerPost(game) {
 
 // Put the post pass on a scene's main camera (lit tiers only). zone: whose grade; boss: a
 // stronger vignette. Returns the pipeline (or null on Low).
-export function applyPost(scene, zone, { boss = false } = {}) {
+export function applyPost(scene, zone, { boss = false, bloom = BLOOM.strength } = {}) {
   const tier = TIERS[render.tier], name = POST[tier.bloom];
   if (!name || scene.renderer.type !== Phaser.WEBGL) return null;
   const cam = scene.cameras.main;
@@ -160,7 +160,7 @@ export function applyPost(scene, zone, { boss = false } = {}) {
   const pipe = cam.getPostPipeline(name);
   const one = Array.isArray(pipe) ? pipe[0] : pipe;
   if (!one) return null;
-  one.params = { grade: GRADES[zone] ?? GRADES.none, bloom: BLOOM.strength, vignette: boss ? VIGNETTE.boss : VIGNETTE.normal };
+  one.params = { grade: GRADES[zone] ?? GRADES.none, bloom, vignette: boss ? VIGNETTE.boss : VIGNETTE.normal };
   splitUi(scene, cam);
   return one;
 }
@@ -173,6 +173,8 @@ const isUi = (go) => go.depth >= 10 && !(go.depth >= 19 && go.depth < 30 && go.t
 
 function splitUi(scene, cam) {
   const ui = scene.cameras.add(0, 0, cam.width, cam.height).setOrigin(0, 0).setZoom(cam.zoom);
+  const fade = cam.fadeEffect; // a fade the scene already started (fadeIn at the top of create) joins the UI too
+  if (fade.isRunning) ui.fadeEffect.start(fade.direction, Math.max(1, fade.duration - fade.elapsed), fade.red, fade.green, fade.blue);
   for (const fx of ['fadeIn', 'fadeOut', 'fade', 'flash']) {
     const own = cam[fx].bind(cam);
     cam[fx] = (...args) => { ui[fx](...args); return own(...args); };
