@@ -39,3 +39,21 @@ export const SPARK = {
   crit: { color: 0xffd8a0, radius: 100, intensity: 2.0, ms: 250 },
   block: { color: 0x9ab8ff, radius: 50, intensity: 0.9, ms: 120 }
 };
+
+// Post-processing (render/post.js), Medium / High.
+// Bloom: only pixels brighter than `threshold` (0-1 luminance) glow, added at `strength`.
+export const BLOOM = { threshold: 0.8, strength: 0.65 };
+
+// Color grade per zone: saturation, contrast, then shadows and highlights tinted (rgb
+// multipliers, blended by brightness). Step 5 tunes the zones after the Jungle.
+export const GRADES = {
+  none: { sat: 1, contrast: 1, shadow: [1, 1, 1], high: [1, 1, 1] },
+  jungle: { sat: 1.08, contrast: 1.08, shadow: [0.88, 1.0, 1.14], high: [1.08, 1.03, 0.92] }, // cool shadows, warm highlights
+  swamp: { sat: 0.85, contrast: 1.04, shadow: [0.92, 1.02, 1.0], high: [1.0, 1.02, 0.96] },
+  volcano: { sat: 1.1, contrast: 1.12, shadow: [1.0, 0.92, 0.9], high: [1.08, 1.0, 0.9] },
+  coast: { sat: 0.9, contrast: 1.05, shadow: [0.9, 0.98, 1.1], high: [0.98, 1.0, 1.04] },
+  crater: { sat: 1.05, contrast: 1.08, shadow: [0.98, 0.9, 1.1], high: [0.96, 1.02, 1.06] }
+};
+
+// Vignette: from `inner` (0 = center, ~0.7 = corners) outward, darkening by `strength`.
+export const VIGNETTE = { normal: { inner: 0.42, strength: 0.38 }, boss: { inner: 0.32, strength: 0.55 } };

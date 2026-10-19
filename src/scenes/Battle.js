@@ -10,6 +10,7 @@ import { zoneTiming } from '../data/qteProfiles.js';
 import { drawZone } from '../ui/backdrop.js';
 import { autoProbe } from '../render/quality.js';
 import { SceneLights } from '../render/lighting.js';
+import { applyPost } from '../render/post.js';
 import { text } from '../ui/font.js';
 import { panel } from '../ui/pixel.js';
 import { Hud, EnemyMarkers, MoveBar } from '../ui/battleUI.js';
@@ -80,6 +81,7 @@ export class Battle extends Phaser.Scene {
     const boss = this.node ? this.node.type === 'boss' : this.cfg.enemies.includes('boss');
     this.lighting = new SceneLights(this, this.zone); // Light2D on Medium / High; a no-op on Low
     this.backdrop = drawZone(this, this.zone, { progress, boss, baked: true, lights: this.lighting });
+    this.post = applyPost(this, this.zone, { boss }); // bloom, grade, vignette (Medium / High)
 
     let player, enemies, pSkin, build;
     if (this.node) {

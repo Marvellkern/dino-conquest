@@ -65,6 +65,17 @@ Scaling is integer-only by design (crisp pixels), so some screens show black bor
   - a shared glow texture (fireflies; two of them are real lights on High) and a blurred ground shadow, cast away from the key light (`shadow.dx`).
 
   A fresh bake costs about 260ms at x3 on desktop, once per zone. Menus and the zone intro still use the plain art.
+- **Post-processing (step 4):** on Medium / High, battles run one camera post pipeline (`render/post.js`). It does three passes:
+  1. a bright pass (only pixels over `BLOOM.threshold`) into a small buffer, half size on High and quarter on Medium (sized by hand, since Phaser's RenderTarget ignores its scale);
+  2. a separable gaussian blur of that buffer;
+  3. one full-size composite that adds the bloom, applies the zone's color grade, then the vignette.
+
+  The numbers live in `data/lighting.js`:
+  - `BLOOM`;
+  - `GRADES`: saturation, contrast, and shadow / highlight tints per zone. The Jungle has cool shadows and warm highlights;
+  - `VIGNETTE`: stronger in boss fights.
+
+  The UI is drawn by a second camera without the pass, so HUD text and buttons never glow or shift color. Every frame, objects at depth 10 and up are routed to it, except the spark particles at 19–29, and fades and flashes are mirrored on both cameras. Low has no post pass at all, so it looks exactly like before. (The brief's table said "grade only" for Low; its guardrail that Low stays identical won.)
 - **`?fps` in the URL:** a small overlay with fps, tier, render scale and active lights. In dev builds, a QTE frame over 33ms is logged (`[qte] slow frame`).
 
 ## Where things live
