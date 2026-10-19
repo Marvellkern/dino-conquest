@@ -54,6 +54,7 @@ export async function enemyAction(scene, e) {
     await wait(scene, 650);
   }
   else {
+    if (i.kind === 'ambush' && i.move === 'breach') { const c = rig.center(); scene.lighting?.breach(c.x, c.y); } // dark, then a splash of light
     if (i.kind === 'ambush') { scene.say(i.move === 'ambush' ? `${e.name} AMBUSHES!` : `${e.name}: ${MOVES[i.move].name.toUpperCase()}!`); await surfaceAnim(scene, rig); }
     else scene.say(`${e.name}: ${MOVES[i.move].name.toUpperCase()}`);
     dodged = await enemyAttack(scene, e, i.move, { feint: !!i.feint });
@@ -78,6 +79,7 @@ function resetRig(rig) {
 export async function enemyAttack(scene, e, moveId, { feint = false } = {}) {
   const st = scene.st, m = MOVES[moveId], p = st.player, set = animSet(e.species, m.anim);
   let dodged = false;
+  scene.lighting?.moveStart(moveId, e.rig.x); // Starfall: light from the sky
   if (set.approach) await set.approach(scene, e.rig, p.rig);
   for (let h = 0; h < (m.hits ?? 1) && p.hp > 0 && e.hp > 0; h++) {
     await set.strike(scene, e.rig, p.rig, defendCtx(scene, e, moveId, h, feint, (r) => { if (r.defend === 'dodge') dodged = true; }));
@@ -113,7 +115,7 @@ function defendCtx(scene, e, moveId, h, feint, onHit) {
     impact: (res) => {
       const r = B.enemyStrike(st, e, res, moveId);
       scene.lastHitBy = e.name;
-      hitFeedback(scene, e, p, r.dmg, 'good', r.defend, 0);
+      hitFeedback(scene, e, p, r.dmg, 'good', r.defend, 0, { move: moveId });
       if (r.drained) { const t = p.rig.top(); scene.fx.pop(t.x, t.y - 12, '-1 ENERGY', '#e0a040', 1, 900); }
       if (r.reflect) { const t = e.rig.hitPoint(); scene.fx.number(t.x, t.y - 8, r.reflect, { color: '#9ab8ff' }); e.rig.flash(40); scene.afterDamage(e, { killed: e.hp <= 0 }); }
       if (r.revived) scene.revivePop();

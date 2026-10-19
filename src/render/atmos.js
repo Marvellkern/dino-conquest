@@ -40,11 +40,11 @@ export function paintNightSky({ top, horizon, moon, stars = 50 }) {
 
 // God rays: soft shafts slanting away from the light, brightest a third of the way down,
 // gone at the ground. shafts: x positions along the top edge; slant: x travelled per px down
-// (negative = toward the left, for a light on the right).
+// (negative = toward the left, for a light on the right). A shaft can be [x, slant] instead.
 export function godRays(scene, zone, { shafts, slant = -0.5, color, width = 16 }) {
   return bakedCanvas(scene, zone, 'rays', LW, H, (ctx, w, h, rs) => {
-    for (const x0 of shafts) {
-      const run = slant * GROUND_Y;
+    for (const shaft of shafts) {
+      const [x0, sl] = Array.isArray(shaft) ? shaft : [shaft, slant], run = sl * GROUND_Y;
       for (let f = 3; f >= 1; f--) { // feathered: wide and faint, then narrower and stronger
         const half = (width * f) / 3 / 2;
         const g = ctx.createLinearGradient(0, 0, 0, GROUND_Y * rs);
@@ -65,8 +65,8 @@ export function godRays(scene, zone, { shafts, slant = -0.5, color, width = 16 }
 }
 
 // A soft band of mist along the ground, twice the screen wide so it can drift and wrap.
-export function fogBand(scene, zone, { color, height = 34 }) {
-  return bakedCanvas(scene, zone, 'fog', W * 2, height, (ctx, w, h, rs) => {
+export function fogBand(scene, zone, { color, height = 34 }, name = 'fog') {
+  return bakedCanvas(scene, zone, name, W * 2, height, (ctx, w, h, rs) => {
     for (let i = 0; i < 46; i++) {
       const x = (((i * 7919) % 1000) / 1000) * w, y = h * (0.45 + (((i * 131) % 100) / 100 - 0.5) * 0.4), r = (10 + (i % 7) * 4) * rs;
       for (const off of [0, w]) { // the copy one width over makes the wrap seamless

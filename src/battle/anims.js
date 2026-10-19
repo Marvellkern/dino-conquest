@@ -314,6 +314,7 @@ export async function chargeUp(s, rig) {
 
 // Roar (status move): shockwave rings from the mouth.
 export async function roar(s, rig, onRoar) {
+  s.lighting?.roar(); // the scene dims for a beat (lit tiers)
   rig.setPose(rig.roarPose);
   sfx('roar');
   for (let i = 0; i < 3; i++) {

@@ -8,6 +8,7 @@ import { LIGHTING } from '../data/lighting.js';
 import { render } from '../render/quality.js';
 import { bakedLayer } from '../render/bake.js';
 import { paintNightSky, godRays, fogBand, glowTexture } from '../render/atmos.js';
+import { zoneExtras } from '../render/zoneLights.js';
 
 // Backdrops are always drawn in landscape units; zoneBackdrop() places them for portrait.
 const { W, H, GROUND_Y } = LAND;
@@ -320,7 +321,7 @@ export function zoneBackdrop(scene, zoneId, opts = {}) {
   const ox = Math.round((SW() - W) / 2), oy = SG() - GROUND_Y;
   const back = scene.add.container(ox, oy).setDepth(1), front = scene.add.container(ox, oy).setDepth(8);
   if (oy > 0) {
-    const [top, ground] = bake ? [bake.sky.night?.top ?? EDGES[id][0], scaleColor(EDGES[id][1], bake.mid.grade ?? [1, 1, 1])] : EDGES[id];
+    const [top, ground] = bake ? [bake.sky.night?.top ?? scaleColor(EDGES[id][0], bake.sky.grade ?? [1, 1, 1]), scaleColor(EDGES[id][1], bake.mid.grade ?? [1, 1, 1])] : EDGES[id];
     scene.add.rectangle(0, 0, SW(), oy + 1, top).setOrigin(0).setDepth(0);
     scene.add.rectangle(0, oy + H - 1, SW(), SH() - oy - H + 1, ground).setOrigin(0).setDepth(0);
   }
@@ -337,6 +338,7 @@ export function zoneBackdrop(scene, zoneId, opts = {}) {
   const ambient = [], bd = { shift: 0 };
   // Ambient pieces go behind the dinos; `front` takes the ones that go over them.
   z.ambient(scene, (fn) => ambient.push(fn), { ...opts, front, bd, bake, offset: { x: ox, y: oy } });
+  if (bake && id !== 'jungle') zoneExtras(scene, id, (fn) => ambient.push(fn), { bake, front, offset: { x: ox, y: oy }, lights: opts.lights }); // the Jungle has its own night pass
   back.add(scene.children.list.filter((o) => !before.has(o) && o !== back && o !== front && !o.parentContainer));
   let t = 0;
   const tick = (_, dt) => {

@@ -53,7 +53,7 @@ Scaling is integer-only by design (crisp pixels), so some screens show black bor
   - **Mirrored enemies:** `render/litPipeline.js` is the stock Light2D pipeline taught that a mirrored container is a reflection, not a 180° turn, so enemies' rims land on the right side.
   - **Hit flash:** it switches back to the plain pipeline, so it stays pure white.
   - **Tuning:** each zone's ambient color and key light (sun / moon) live in `data/lighting.js` (the key light is placed from the stage, `side` / `dx` / `dy` above the ground, so portrait and landscape light the fighters the same), along with the hit `SPARK` lights (hit, crit, block): a warm burst at the impact point that lights both fighters. The key light reads mostly as a rim, because Light2D keeps lights close to the sprite's plane, so `ambient` sets how bright the dinos are overall. Bursts over the tier's light cap replace the oldest one.
-- **Baked atmosphere (step 3, the Jungle so far):** on Medium / High, battles use the zone's `bake` settings in `data/lighting.js`, and the Jungle becomes a moonlit night. `render/bake.js` builds each backdrop layer once per zone at the render scale:
+- **Baked atmosphere (steps 3 and 5, every zone):** on Medium / High, battles use the zone's `bake` settings in `data/lighting.js`, and the Jungle becomes a moonlit night. `render/bake.js` builds each backdrop layer once per zone at the render scale:
   - the zone art is drawn as usual, scaled up nearest-neighbour so pixels stay square;
   - it's color graded (and fogged on the far layer);
   - it's blurred for depth of field: far heavy, mid light with the ground kept sharp (`sharpBelow`), foreground heavy and darker;
@@ -65,6 +65,18 @@ Scaling is integer-only by design (crisp pixels), so some screens show black bor
   - a shared glow texture (fireflies; two of them are real lights on High) and a blurred ground shadow, cast away from the key light (`shadow.dx`).
 
   A fresh bake costs about 260ms at x3 on desktop, once per zone. Menus and the zone intro still use the plain art.
+- **Zone moods (step 5):** each zone's `LIGHTING` entry sets its ambient, key light and `bake`. `render/zoneLights.js` adds the extras for every zone but the Jungle:
+  - `emitters`: real lights at fixed spots, flickering or pulsing, each with a glow pool on the ground. They stay only while 2 light slots are free for hits, so Medium keeps one and High keeps four;
+  - `glows`: rising embers, drifting spores, twinkling motes, all glow sprites, not lights;
+  - layered `fog`, `rays`, and the Coast's `lightning` (never during a QTE: `scene.qteActive`).
+
+  The zones:
+  - **Swamp:** murky olive, lit green off the water, glowing fungi, heavy fog.
+  - **Volcano:** red-brown, lit orange from below with a pulse, flickering lava falls, embers.
+  - **Coast:** stormy blue-grey with a pale sun top-left, rays, and lightning every 10–15s.
+  - **Crater:** purple-black with pulsing crystals, and the meteor light growing toward the boss (`keyByProgress`).
+
+  `MOVE_LIGHTS` colors each special's hit light (poison green, fire orange, crystal cyan…), and Starfall lights the fight from the sky. `MOMENTS` holds Roar's 30% dim, Alpha Rex's red pulses in phase 2, the Mosasaur's Breach (dark for 150ms, then a splash of light) and the lightning flash.
 - **Post-processing (step 4):** on Medium / High, battles run one camera post pipeline (`render/post.js`). It does three passes:
   1. a bright pass (only pixels over `BLOOM.threshold`) into a small buffer, half size on High and quarter on Medium (sized by hand, since Phaser's RenderTarget ignores its scale);
   2. a separable gaussian blur of that buffer;

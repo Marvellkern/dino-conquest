@@ -126,7 +126,7 @@ function strikeOne(scene, id, v, qte, k, evaders, ctx) {
     if (!evaders.includes(v) && !v.brain.noPounce) evaders.push(v); // Ichthyosaurs just slip away
     return;
   }
-  hitFeedback(scene, st.player, v, r.dmg, qte, 'hit', k, { gold: st.activeEmpower });
+  hitFeedback(scene, st.player, v, r.dmg, qte, 'hit', k, { gold: st.activeEmpower, move: id });
   traitFeedback(scene, st.player, v, r.trait);
   const t = v.rig.top();
   if (r.fx.healed) healPop(scene, r.fx.healed);

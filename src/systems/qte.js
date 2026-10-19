@@ -39,6 +39,7 @@ export function attackBar(scene, { rng, sure = false, muddy = false, blind = fal
   const sh = shape ?? { sweepMs: QTE.sweepMs, center: rng.range(0.55, 0.85), curve: 'linear', drift: null, sweetW: QTE.sweetW, goodW: QTE.goodW };
   const sweepMs = sh.sweepMs;
   const sweetW = Math.max(2, Math.round(sh.sweetW * (muddy ? MUDDY.sweet : 1))), goodW = Math.round(sh.goodW * (muddy ? MUDDY.good : 1));
+  scene.qteActive = (scene.qteActive ?? 0) + 1; // extras (lightning) wait while a QTE is open
   return new Promise((resolve) => {
     const BW = 100, BH = 6, x0 = Math.round(W / 2 - BW / 2), y0 = barY();
     // Marker progress 0..1 at time t (wave: fast-slow-fast-slow; ease: slow-fast-slow).
@@ -93,6 +94,7 @@ export function attackBar(scene, { rng, sure = false, muddy = false, blind = fal
     const finish = (res) => {
       if (done) return;
       done = true;
+      scene.qteActive = Math.max(0, scene.qteActive - 1);
       offPress(); offTick();
       hint.setText(res === 'crit' ? 'CRIT!' : res === 'good' ? 'GOOD' : 'MISS');
       hint.label.setTint(res === 'crit' ? 0xfff096 : res === 'good' ? 0xf0ecdc : 0x8a90a0);
@@ -122,6 +124,7 @@ export function defendRing(scene, {
   ease = 'linear', pause = 0, pauseAt = 0, resetAt = null, ring = null, fatigue = 0
 }) {
   devHook({ type: 'ring', leadMs, dodgeMs, ease, pause, resetAt, ring });
+  scene.qteActive = (scene.qteActive ?? 0) + 1;
   return new Promise((resolve) => {
     const R0 = 38, RT = 10;
     const color = ring === 'red' ? 0xff4040 : ring === 'purple' ? 0xc070ff : 0xfff096;
@@ -173,6 +176,7 @@ export function defendRing(scene, {
     const finish = (res, early = false) => {
       if (done) return;
       done = true;
+      scene.qteActive = Math.max(0, scene.qteActive - 1);
       offPress(); offTick();
       hint.setText(early ? 'TOO EARLY!' : res === 'hit' ? 'TOO LATE!' : res === 'dodge' ? 'PERFECT!' : 'NICE!');
       if (early) sfx('early');

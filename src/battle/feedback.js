@@ -4,7 +4,7 @@ import { SPARK } from '../data/lighting.js';
 // Hit feedback for one impact. n = index within one QTE (Swarm lands 3):
 // labels show once and damage numbers fan out so they don't stack.
 // gold: empowered (crit-streak) hit — gold sparks.
-export function hitFeedback(scene, att, dfd, dmg, qte, defend, n = 0, { gold = false } = {}) {
+export function hitFeedback(scene, att, dfd, dmg, qte, defend, n = 0, { gold = false, move = null } = {}) {
   const fx = scene.fx, rig = dfd.rig, p = rig.hitPoint(), dir = att.rig.homeFacing;
   const nx = p.x + [0, -10, 10][n % 3];
   const pop = (...args) => n === 0 && fx.pop(...args);
@@ -18,7 +18,7 @@ export function hitFeedback(scene, att, dfd, dmg, qte, defend, n = 0, { gold = f
 
   rig.flash(50);
   knock(scene, rig, dir, qte === 'crit' ? 5 : 2);
-  if (n === 0) scene.lighting?.burst(p.x, p.y, qte === 'crit' ? SPARK.crit : defend === 'block' ? SPARK.block : SPARK.hit); // lights both fighters
+  if (n === 0 && scene.lighting) scene.lighting.burst(p.x, p.y, scene.lighting.hitColor(move, qte === 'crit' ? SPARK.crit : defend === 'block' ? SPARK.block : SPARK.hit)); // lights both fighters
   // Shake scales with the share of max HP the hit took (setting toggle still applies).
   const heavy = Math.min(4, Math.round((dmg / Math.max(1, dfd.maxHp || 60)) * 10) || 0); // title props have no maxHp
   if (defend !== 'block' && qte !== 'miss') fx.debris(p.x, p.y, scene.zone, qte === 'crit' ? 7 : 4);
