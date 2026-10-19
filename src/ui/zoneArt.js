@@ -2,6 +2,7 @@ import { LAND, W as SW_, H as SH_, GROUND_Y as SG_ } from '../config.js';
 import { E32 as C } from '../data/palette.js';
 import { PAD, LW, rnd, dither, bands, disc, layer } from './artKit.js';
 import { VOLCANO, CRATER } from './zoneArt2.js';
+import { COAST } from './zoneArt3.js';
 
 // Backdrops are always drawn in landscape units; zoneBackdrop() places them for portrait.
 const { W, H, GROUND_Y } = LAND;
@@ -261,17 +262,18 @@ function dragonfly(scene, i) {
 
 /* ---------- assembly ---------- */
 
-// coast: the Swamp's art stands in until the Tidal Coast's own (v2.2 step 4).
-const ZONES = { jungle: JUNGLE, swamp: SWAMP, volcano: VOLCANO, coast: SWAMP, crater: CRATER };
+const ZONES = { jungle: JUNGLE, swamp: SWAMP, volcano: VOLCANO, coast: COAST, crater: CRATER };
 // Colors that extend the art past its edges in portrait (sky above, ground below).
 const EDGES = {
-  jungle: [C.forest, C.brown], swamp: [C.steel, C.darkBrown], volcano: [C.ink, C.darkBrown], coast: [C.steel, C.darkBrown], crater: [C.plum, C.ink]
+  jungle: [C.forest, C.brown], swamp: [C.steel, C.darkBrown], volcano: [C.ink, C.darkBrown], coast: [C.night, C.clay], crater: [C.plum, C.ink]
 };
 // Sway amplitude (px) and period (ms), parallax factor per layer.
 const MOTION = { far: [1, 5200, 0.03], mid: [1, 4100, 0.08], near: [2, 2600, 0.2] };
 
 // Returns { shift } — set shift (px, signed) each frame for the lunge parallax.
 // opts.progress (0-1): how far into the zone (the Crater's meteor grows).
+// opts.boss: a boss fight (the Coast adds rain). The returned object can grow an
+// onPhase() hook the battle calls when a boss hits phase 2 (the Coast's tide rises).
 // The art is drawn for landscape; in portrait it sits in two containers moved
 // so its ground line meets the scene's GROUND_Y, cropped to the middle.
 export function zoneBackdrop(scene, zoneId, opts = {}) {
@@ -292,10 +294,10 @@ export function zoneBackdrop(scene, zoneId, opts = {}) {
   };
   back.add([layers.far, layers.mid]);
   front.add(layers.near);
-  const ambient = [];
-  z.ambient(scene, (fn) => ambient.push(fn), opts);
+  const ambient = [], bd = { shift: 0 };
+  // Ambient pieces go behind the dinos; `front` takes the ones that go over them.
+  z.ambient(scene, (fn) => ambient.push(fn), { ...opts, front, bd });
   back.add(scene.children.list.filter((o) => !before.has(o) && o !== back && o !== front && !o.parentContainer));
-  const bd = { shift: 0 };
   let t = 0;
   const tick = (_, dt) => {
     dt *= scene.time.timeScale; // freezes with hitstop

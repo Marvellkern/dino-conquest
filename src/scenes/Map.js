@@ -27,6 +27,7 @@ const LANE_X = [46, 90, 134];
 const ROW_GAP = 44, WORLD_H = 470;
 const rowY = (row) => WORLD_H - 72 - row * ROW_GAP;
 const MAP_TOP = 62, MAP_BOTTOM = () => H - 24; // visible band between the HUD and the tooltip
+const BOSS_ICON_W = 44; // landscape: wider boss sprites show only their front (head) on the map
 const ICON = { fight: 'icon_fight', elite: 'icon_elite', nest: 'icon_nest', fossil: 'icon_fossil', meteor: 'icon_meteor', shop: 'icon_shop' };
 
 // Zone map: pick the next node, travel, resolve it.
@@ -104,7 +105,7 @@ export class MapScene extends Phaser.Scene {
     if (!id) return { x: 10, y: LANE_Y[1] };
     const n = this.run.map.nodes[id];
     if (id === 'boss') { // wide boss sprites stay on screen
-      const w = this.textures.get(n.enemies[0].skin ?? n.enemies[0].species).getSourceImage().width;
+      const w = Math.min(BOSS_ICON_W, this.textures.get(n.enemies[0].skin ?? n.enemies[0].species).getSourceImage().width);
       return { x: Math.min(colX(n.row), W - 3 - Math.ceil(w / 2)), y: LANE_Y[n.lane] };
     }
     return { x: colX(n.row), y: LANE_Y[n.lane] };
@@ -120,7 +121,14 @@ export class MapScene extends Phaser.Scene {
   addNode(n) {
     const { x, y } = this.pos(n.id);
     const img = this.add.image(x, y, n.type === 'boss' ? n.enemies[0].skin ?? n.enemies[0].species : ICON[n.type]).setDepth(5);
-    if (n.type === 'boss') img.setFlipX(true);
+    if (n.type === 'boss') {
+      img.setFlipX(true);
+      const w = img.width;
+      if (!PORTRAIT && w > BOSS_ICON_W) { // keep the head end (it faces left once flipped), centered on the node
+        img.setCrop(0, 0, BOSS_ICON_W, img.height); // the crop rect is in flipped (shown) coordinates
+        img.x -= Math.round(w / 2 - BOSS_ICON_W / 2); // ...but drawn where the uncropped half sat
+      }
+    }
     this.icons[n.id] = img;
     const zone = this.add.zone(x, y, lp(36, 40), lp(32, 25)).setInteractive({ useHandCursor: true });
     zone.on('pointerover', () => { const i = this.options().indexOf(n.id); if (i >= 0) { this.sel = i; this.refresh(); } });

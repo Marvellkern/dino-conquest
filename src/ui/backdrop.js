@@ -23,6 +23,21 @@ export function drawMapBackground(scene, zone) {
     const x = (i * 53) % W, y = 44 + ((i * 97) % (H - 68));
     g.fillRect(x, y, 3, 1).fillRect(x + 1, y - 1, 1, 1);
   }
+  if (zone === 'coast') { // the sea along one edge: a cliff edge, waves, a sandy path
+    const sea = Math.round(H * 0.84);
+    g.fillStyle(0x124e89).fillRect(0, sea, W, H - sea);
+    g.fillStyle(0x0c2a4a);
+    for (let y = sea + 2; y < H; y += 3) for (let x = (y * 7) % 9; x < W; x += 9) g.fillRect(x, y, 4, 1);
+    g.fillStyle(0xc0cbdc);
+    for (let i = 0; i < Math.round(W / 14); i++) g.fillRect((i * 37) % W, sea + 4 + ((i * 13) % Math.max(1, H - sea - 6)), 3, 1);
+    for (let x = 0; x < W; x++) { // ragged cliff edge
+      const d = Math.round(Math.sin(x / 9) * 1.5 + Math.sin(x / 3.1));
+      g.fillStyle(0x262b44).fillRect(x, sea - 3 + d, 1, 3 - d);
+      g.fillStyle(0xc0cbdc).fillRect(x, sea + (x % 5 === 0 ? 1 : 0), 1, 1);
+    }
+    g.fillStyle(0x3a3a46);
+    for (let i = 0; i < 10; i++) g.fillRect((i * 71 + 9) % W, 50 + ((i * 43) % (sea - 60)), 4, 2); // rocks
+  }
   if (zone === 'swamp') { // a few dark pools
     g.fillStyle(0x0e1a1a);
     for (let i = 0; i < 8; i++) g.fillRect((i * 89 + 20) % W, 50 + ((i * 41) % (H - 80)), 14, 3);
