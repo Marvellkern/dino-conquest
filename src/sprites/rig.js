@@ -96,6 +96,7 @@ class Rig {
   // follows the rig every frame, shrinks while it is in the air, and fades
   // with it. Opt-in (battle and title scenes).
   addShadow() {
+    this.shadowOff?.();
     const g = this.scene.add.graphics().setDepth(4);
     let lastW = -1;
     const sync = () => {
@@ -112,8 +113,31 @@ class Rig {
     };
     this.scene.events.on('update', sync);
     this.scene.events.once('shutdown', () => this.scene.events.off('update', sync));
+    this.shadowOff = () => { this.scene.events.off('update', sync); g.destroy(); };
     sync();
     this.shadow = g;
+    return this;
+  }
+
+  // Baked lighting: a blurred shadow texture (render/atmos.js) instead of the stepped one,
+  // pushed away from the key light (dx: a fraction of the rig's width, signed) and
+  // stretched. Same rules: follows the rig, shrinks and fades while it's in the air.
+  softShadow(key, { dx = 0, stretch = 1.3 } = {}) {
+    this.shadowOff?.();
+    const img = this.scene.add.image(0, 0, key).setDepth(4);
+    const base = this.w * this.scale * 0.85 * stretch, h = Math.max(4, Math.round(this.scale * 3));
+    const sync = () => {
+      if (!this.c.active) { img.destroy(); this.scene.events.off('update', sync); return; }
+      const lift = Math.max(0, this.homeY - this.c.y), k = 1 - Math.min(0.5, lift / 40);
+      img.setDisplaySize(base * k, h * k);
+      img.setPosition(this.c.x + dx * this.w * this.scale - lift * 0.3, this.homeY + 1);
+      img.setVisible(this.c.visible).setAlpha(this.c.alpha * k);
+    };
+    this.scene.events.on('update', sync);
+    this.scene.events.once('shutdown', () => this.scene.events.off('update', sync));
+    this.shadowOff = () => { this.scene.events.off('update', sync); img.destroy(); };
+    sync();
+    this.shadow = img;
     return this;
   }
 

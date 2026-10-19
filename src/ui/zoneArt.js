@@ -3,6 +3,11 @@ import { E32 as C } from '../data/palette.js';
 import { PAD, LW, rnd, dither, bands, disc, layer } from './artKit.js';
 import { VOLCANO, CRATER } from './zoneArt2.js';
 import { COAST } from './zoneArt3.js';
+import { TIERS } from '../data/quality.js';
+import { LIGHTING } from '../data/lighting.js';
+import { render } from '../render/quality.js';
+import { bakedLayer } from '../render/bake.js';
+import { paintNightSky, godRays, fogBand, glowTexture } from '../render/atmos.js';
 
 // Backdrops are always drawn in landscape units; zoneBackdrop() places them for portrait.
 const { W, H, GROUND_Y } = LAND;
@@ -102,7 +107,8 @@ const JUNGLE = {
       g.fillStyle(C.green).fillRect(x + 1, GROUND_Y - h, 1, h + 1);
     }
   },
-  ambient(scene, add) {
+  ambient(scene, add, opts = {}) {
+    if (opts.bake) return jungleNight(scene, add, opts);
     // Light shafts from the sun, fireflies, falling leaves.
     const shaft = scene.add.graphics().setDepth(2.5);
     shaft.fillStyle(C.yellow, 1);
@@ -116,6 +122,33 @@ const JUNGLE = {
   }
 };
 
+// Baked night (Medium / High): god rays from the moon, drifting ground mist, glowing
+// fireflies (two of them real lights on High), darker leaves.
+function jungleNight(scene, add, { bake, lights, offset }) {
+  const rays = scene.add.image(-PAD, 0, godRays(scene, 'jungle', bake.rays)).setOrigin(0).setScale(1 / render.rs)
+    .setDepth(2.5).setBlendMode(Phaser.BlendModes.ADD);
+  scene.tweens.add({ targets: rays, alpha: { from: bake.rays.alpha * 0.6, to: bake.rays.alpha }, duration: 3200, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+  const fogKey = fogBand(scene, 'jungle', bake.fog);
+  const fog = [0, W * 2].map((x) => scene.add.image(x, bake.fog.y, fogKey).setOrigin(0).setScale(1 / render.rs).setDepth(2.6).setAlpha(bake.fog.alpha));
+  add((t) => { const x = -((t / 90) % (W * 2)); fog[0].x = Math.round(x); fog[1].x = Math.round(x + W * 2); });
+  const glow = glowTexture(scene), f = bake.fireflies;
+  for (let i = 0; i < 8; i++) add(fireflyGlow(scene, i, glow, f, i < f.lights ? lights?.steady(26, f.color, 0.7) : null, offset));
+  for (let i = 0; i < 6; i++) add(leaf(scene, i, 0x265c42));
+}
+
+function fireflyGlow(scene, i, key, f, light, offset) {
+  const halo = scene.add.image(0, 0, key).setDisplaySize(f.size, f.size).setTint(f.color).setBlendMode(Phaser.BlendModes.ADD).setDepth(3);
+  const core = scene.add.rectangle(0, 0, 1, 1, C.yellow).setOrigin(0).setDepth(3);
+  const p = { x: 20 + rnd(i, 280), y: 70 + rnd(i + 5, 55), ph: rnd(i + 9, 6) };
+  return (t) => {
+    const x = Math.round(p.x + Math.sin(t / 1300 + p.ph) * 10), y = Math.round(p.y + Math.sin(t / 900 + p.ph * 2) * 5);
+    const k = 0.5 + 0.5 * Math.sin(t / 400 + p.ph * 3); // a slow pulse instead of blinking
+    core.setPosition(x, y).setAlpha(0.4 + 0.6 * k);
+    halo.setPosition(x + 0.5, y + 0.5).setAlpha(0.25 + 0.6 * k);
+    if (light) light.setPosition(x + offset.x, y + offset.y).setIntensity(0.3 + 0.5 * k); // lights live in world space
+  };
+}
+
 function firefly(scene, i) {
   const r = scene.add.rectangle(0, 0, 1, 1, C.yellow).setOrigin(0).setDepth(3);
   const p = { x: 20 + rnd(i, 280), y: 70 + rnd(i + 5, 55), ph: rnd(i + 9, 6) };
@@ -125,8 +158,8 @@ function firefly(scene, i) {
   };
 }
 
-function leaf(scene, i) {
-  const r = scene.add.rectangle(0, 0, 2, 1, i % 2 ? C.green : C.forest).setOrigin(0).setDepth(3);
+function leaf(scene, i, color = null) {
+  const r = scene.add.rectangle(0, 0, 2, 1, color ?? (i % 2 ? C.green : C.forest)).setOrigin(0).setDepth(3);
   const p = { x: rnd(i + 2, W), y: rnd(i + 7, GROUND_Y), v: 6 + rnd(i, 6) };
   return (t, dt) => {
     p.y += (p.v * dt) / 1000;
@@ -274,29 +307,36 @@ const MOTION = { far: [1, 5200, 0.03], mid: [1, 4100, 0.08], near: [2, 2600, 0.2
 // opts.progress (0-1): how far into the zone (the Crater's meteor grows).
 // opts.boss: a boss fight (the Coast adds rain). The returned object can grow an
 // onPhase() hook the battle calls when a boss hits phase 2 (the Coast's tide rises).
+// opts.baked: use the zone's baked atmosphere (data/lighting.js bake) on tiers that bake:
+// graded, depth-blurred layers and the ambient extras (god rays, fog, glows). The ambient
+// code gets it as opts.bake. opts.lights: the battle's SceneLights.
 // The art is drawn for landscape; in portrait it sits in two containers moved
 // so its ground line meets the scene's GROUND_Y, cropped to the middle.
+const scaleColor = (c, m) => (Math.round(((c >> 16) & 255) * m[0]) << 16) | (Math.round(((c >> 8) & 255) * m[1]) << 8) | Math.round((c & 255) * m[2]);
+
 export function zoneBackdrop(scene, zoneId, opts = {}) {
   const z = ZONES[zoneId] ?? JUNGLE, id = ZONES[zoneId] ? zoneId : 'jungle';
+  const bake = opts.baked && TIERS[render.tier]?.baked ? LIGHTING[id]?.bake ?? null : null;
   const ox = Math.round((SW() - W) / 2), oy = SG() - GROUND_Y;
   const back = scene.add.container(ox, oy).setDepth(1), front = scene.add.container(ox, oy).setDepth(8);
   if (oy > 0) {
-    const [top, ground] = EDGES[id];
+    const [top, ground] = bake ? [bake.sky.night?.top ?? EDGES[id][0], scaleColor(EDGES[id][1], bake.mid.grade ?? [1, 1, 1])] : EDGES[id];
     scene.add.rectangle(0, 0, SW(), oy + 1, top).setOrigin(0).setDepth(0);
     scene.add.rectangle(0, oy + H - 1, SW(), SH() - oy - H + 1, ground).setOrigin(0).setDepth(0);
   }
   const before = new Set(scene.children.list);
-  back.add(layer(scene, `bg_${id}_sky`, 0, z.sky));
-  const layers = {
-    far: layer(scene, `bg_${id}_far`, 1, z.far),
-    mid: layer(scene, `bg_${id}_mid`, 2, z.mid),
-    near: layer(scene, `bg_${id}_near`, 8, z.near)
+  const mk = (name, depth) => {
+    if (!bake) return layer(scene, `bg_${id}_${name}`, depth, z[name]);
+    const cfg = bake[name] ?? {}, night = name === 'sky' && cfg.night;
+    return bakedLayer(scene, id, name, night ? () => {} : z[name], night ? { paint: paintNightSky(cfg.night) } : cfg).setDepth(depth);
   };
+  back.add(mk('sky', 0));
+  const layers = { far: mk('far', 1), mid: mk('mid', 2), near: mk('near', 8) };
   back.add([layers.far, layers.mid]);
   front.add(layers.near);
   const ambient = [], bd = { shift: 0 };
   // Ambient pieces go behind the dinos; `front` takes the ones that go over them.
-  z.ambient(scene, (fn) => ambient.push(fn), { ...opts, front, bd });
+  z.ambient(scene, (fn) => ambient.push(fn), { ...opts, front, bd, bake, offset: { x: ox, y: oy } });
   back.add(scene.children.list.filter((o) => !before.has(o) && o !== back && o !== front && !o.parentContainer));
   let t = 0;
   const tick = (_, dt) => {

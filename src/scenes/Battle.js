@@ -78,8 +78,8 @@ export class Battle extends Phaser.Scene {
     // progress: how far into the zone (the Meteor Crater's meteor grows with it).
     const progress = this.node ? this.node.row / ZONES[this.zone].rows : 0;
     const boss = this.node ? this.node.type === 'boss' : this.cfg.enemies.includes('boss');
-    this.backdrop = drawZone(this, this.zone, { progress, boss });
     this.lighting = new SceneLights(this, this.zone); // Light2D on Medium / High; a no-op on Low
+    this.backdrop = drawZone(this, this.zone, { progress, boss, baked: true, lights: this.lighting });
 
     let player, enemies, pSkin, build;
     if (this.node) {

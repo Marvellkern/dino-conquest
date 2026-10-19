@@ -9,8 +9,20 @@ export const LIGHTING = {
   // Night jungle under a cool moon (the brief's mockup). The ambient stays fairly bright
   // until the baked night backdrop (step 3) darkens the rest of the scene to match.
   jungle: {
-    ambient: 0xb4c0ca,
-    key: { x: 1.05, y: -0.35, radius: 560, color: 0x8fb4ff, intensity: 2.2 }
+    ambient: 0x62768a,
+    key: { x: 1.05, y: -0.35, radius: 560, color: 0x8fb4ff, intensity: 2.6 },
+    // Baked night backdrop (render/bake.js): per layer a color grade (rgb multipliers),
+    // optional fog (color, amount) and a depth-of-field blur radius in world px.
+    bake: {
+      sky: { night: { top: 0x070d18, horizon: 0x16323a, moon: { x: 276, y: 24, r: 8, color: 0xe8f0ff, glow: 0x8fb4ff } } },
+      far: { grade: [0.34, 0.48, 0.62], fog: [0x1d3b44, 0.4], blur: 2.2 },
+      mid: { grade: [0.5, 0.6, 0.74], blur: 0.7, sharpBelow: 129 }, // the ground stays sharp
+      near: { grade: [0.36, 0.48, 0.56], blur: 2.2 },
+      rays: { shafts: [190, 236, 282], slant: -0.55, width: 18, color: 0xaecbff, alpha: 0.8 },
+      fog: { color: 0x9fbccc, alpha: 0.5, y: 104 },
+      fireflies: { color: 0xd6ff80, size: 9, lights: 2 }, // lights: real lights (High only)
+      shadow: { dx: -0.22, stretch: 1.35 } // cast away from the moon: dx in rig widths
+    }
   },
   // Provisional for the other zones until their own pass (step 5): neutral, soft.
   swamp: { ambient: 0x8e9884, key: { x: -0.1, y: 0.4, radius: 480, color: 0xa8e080, intensity: 0.9 } },

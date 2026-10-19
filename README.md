@@ -53,6 +53,18 @@ Scaling is integer-only by design (crisp pixels), so some screens show black bor
   - **Mirrored enemies:** `render/litPipeline.js` is the stock Light2D pipeline taught that a mirrored container is a reflection, not a 180° turn, so enemies' rims land on the right side.
   - **Hit flash:** it switches back to the plain pipeline, so it stays pure white.
   - **Tuning:** each zone's ambient color and key light (sun / moon) live in `data/lighting.js`, along with the hit `SPARK` lights (hit, crit, block): a warm burst at the impact point that lights both fighters. The key light reads mostly as a rim, because Light2D keeps lights close to the sprite's plane, so `ambient` sets how bright the dinos are overall. Bursts over the tier's light cap replace the oldest one.
+- **Baked atmosphere (step 3, the Jungle so far):** on Medium / High, battles use the zone's `bake` settings in `data/lighting.js`, and the Jungle becomes a moonlit night. `render/bake.js` builds each backdrop layer once per zone at the render scale:
+  - the zone art is drawn as usual, scaled up nearest-neighbour so pixels stay square;
+  - it's color graded (and fogged on the far layer);
+  - it's blurred for depth of field: far heavy, mid light with the ground kept sharp (`sharpBelow`), foreground heavy and darker;
+  - it's kept as a smooth texture.
+
+  Changing zone frees the last zone's textures. `render/atmos.js` paints the smooth extras:
+  - the night sky and moon;
+  - god rays (`shafts`, `slant`) and drifting ground mist;
+  - a shared glow texture (fireflies; two of them are real lights on High) and a blurred ground shadow, cast away from the key light (`shadow.dx`).
+
+  A fresh bake costs about 260ms at x3 on desktop, once per zone. Menus and the zone intro still use the plain art.
 - **`?fps` in the URL:** a small overlay with fps, tier, render scale and active lights. In dev builds, a QTE frame over 33ms is logged (`[qte] slow frame`).
 
 ## Where things live
