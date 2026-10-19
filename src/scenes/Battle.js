@@ -108,9 +108,12 @@ export class Battle extends Phaser.Scene {
     this.bar = new MoveBar(this, this.st, { onDeny: (why) => why && this.say(why) });
     this.msg = text(this, W / 2, lp(47, 66), '', { origin: 0.5 }).setDepth(12); // under the status tags, above the enemy markers
 
+    // Tab / Shift+Tab cycle the target (the arrows walk the move bar). Tab is captured so the
+    // browser doesn't move focus off the game.
+    this.input.keyboard.addCapture('TAB');
     this.onKey = (ev) => {
       if (!this.planning || ev.repeat) return;
-      if (ev.code === 'ArrowLeft' || ev.code === 'ArrowRight') this.cycleTarget(ev.code === 'ArrowRight' ? 1 : -1);
+      if (ev.code === 'Tab') this.cycleTarget(ev.shiftKey ? -1 : 1);
     };
     this.input.keyboard.on('keydown', this.onKey);
     this.events.once('shutdown', () => this.input.keyboard?.off('keydown', this.onKey));

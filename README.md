@@ -25,7 +25,7 @@ Title → Home (Dino-dex, Nest unlocks, goals, family tree, Extinction, Settings
 | Popups | ↑↓ + Enter, **1–6** pick directly, **Esc** cancels |
 | Hatch | arrows + Enter (starts on START RUN), **1–3** |
 | Map | ↑↓ / ← → / **W S** pick a path, **1–3** pick directly, **Enter / Space** go |
-| Battle | **1–5** moves, **E** ends the turn, ↑↓ + Enter walk the move bar, **← →** (or tap an enemy) picks the target, **Space / Enter / click / tap** for the timing QTEs |
+| Battle | **1–5** moves, **E** ends the turn, arrows + Enter walk the move bar, **Tab / Shift+Tab** (or tap an enemy) picks the target, **Space / Enter / click / tap** for the timing QTEs |
 
 On phones, tap everything.
 

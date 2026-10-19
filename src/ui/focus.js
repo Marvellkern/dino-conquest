@@ -1,9 +1,7 @@
 import { sfx } from '../systems/sfx.js';
 
 // Keyboard focus over a set of Buttons (ui/button.js).
-//   Arrow keys     move to the nearest button in that direction ('grid'), or to the
-//                  previous / next one with Up / Down ('cycle': the battle move bar,
-//                  where Left / Right pick the target)
+//   Arrow keys     move to the nearest button in that direction
 //   Enter / Space  press the focused button
 //   Esc / Backspace  onBack()
 // The focus ring shows once a key is used (or right away with show: true, as in
@@ -15,9 +13,8 @@ const DIRS = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRig
 
 export class FocusNav {
   // items: () => Button[] (read each time, so redrawn lists keep working).
-  // keys: which direction keys this nav uses (default all of DIRS).
-  constructor(scene, { items, onBack = null, start = 0, show = false, mode = 'grid', modal = false, keys = null }) {
-    Object.assign(this, { scene, items, onBack, mode, modal, keys });
+  constructor(scene, { items, onBack = null, start = 0, show = false, modal = false }) {
+    Object.assign(this, { scene, items, onBack, modal });
     this.i = start;
     this.shown = false;
     this.ring = scene.add.graphics();
@@ -66,19 +63,14 @@ export class FocusNav {
     if ((code === 'Escape' || code === 'Backspace') && this.onBack) { this.onBack(); return true; }
     if ((code === 'Enter' || code === 'Space') && this.shown && this.current) { this.current.click(); return true; }
     const dir = DIRS[code];
-    if (!dir || (this.keys && !this.keys.includes(code)) || !this.list.length) return false;
+    if (!dir || !this.list.length) return false;
     if (!this.shown) { this.show(); return true; } // the first press just shows where you are
-    const next = this.mode === 'cycle' ? this.cycle(dir) : this.nearest(dir);
+    const next = this.nearest(dir);
     if (next < 0) return false; // nothing that way: the scene may use the key
     this.i = next;
     this.paint();
     sfx('tick');
     return true;
-  }
-
-  cycle([dx, dy]) {
-    const n = this.list.length, step = dy || dx;
-    return (this.i + step + n) % n;
   }
 
   // The closest button in direction (dx, dy): along-axis distance plus twice the sideways

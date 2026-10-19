@@ -201,7 +201,8 @@ export class MoveBar {
     this.end = new Button(scene, ex, ey, ew, bh, { key: 'E', label: 'END', sub: 'TURN', textTop: 4, onClick: () => this.pick('end') });
     this.end.icon = scene.add.image(ex + Math.floor(ew / 2) - 4, ey + 2, 'mi_end').setOrigin(0).setDepth(13);
 
-    this.nav = new FocusNav(scene, { items: () => [...this.btns, this.end], mode: 'cycle', keys: ['ArrowUp', 'ArrowDown'] });
+    // Arrows walk the bar spatially (a row in landscape, a 3x2 grid in portrait); Tab picks the target.
+    this.nav = new FocusNav(scene, { items: () => [...this.btns, this.end] });
     this.onKey = (e) => {
       if (e.repeat || (this.on && this.nav.handle(e))) return;
       const i = '12345'.indexOf(e.key);
