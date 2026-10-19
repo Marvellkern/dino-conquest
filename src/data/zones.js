@@ -96,7 +96,7 @@ export const ZONES = {
       { w: 2, members: [['bary', { elite: true }], ['ichthy', SMALL]] },
       { w: 1, members: [['dilo', { elite: true }], ['ichthy', SMALL]] }
     ],
-    boss: { species: 'mosa', skin: 'mosa', name: 'Abyss Mosasaur', brain: 'abyssMosa', level: 14, base: { hp: 115, atk: 17, def: 6, spd: 4 } },
+    boss: { species: 'mosa', skin: 'mosa', name: 'Abyss Mosasaur', brain: 'abyssMosa', drop: 'packTide', level: 14, base: { hp: 115, atk: 17, def: 6, spd: 4 } },
     levelAt: (row) => 13 + Math.floor(row / 2),
     enemyBase: {
       dilo: { hp: 56, atk: 13, def: 3, spd: 9 },

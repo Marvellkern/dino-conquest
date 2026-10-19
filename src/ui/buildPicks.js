@@ -7,8 +7,9 @@ import { choose } from './popup.js';
 // Shared popups for picking build pieces (used by Battle, Map nodes and events).
 
 // Pick 1 of 3 fossils. Returns the id, or null if none are left.
-export async function pickRelic(scene, run, title = 'FOSSIL', lines = ['TAKE ONE:']) {
-  const ids = relicOffers(run, 3);
+// from: offer these fossils instead of the run's pool (a boss's pack drop).
+export async function pickRelic(scene, run, title = 'FOSSIL', lines = ['TAKE ONE:'], from = null) {
+  const ids = relicOffers(run, 3, from);
   if (!ids.length) return null;
   const i = await choose(scene, { title, lines, options: ids.map((id) => ({ label: RELICS[id].name.toUpperCase(), sub: RELICS[id].desc })) });
   addRelic(run, ids[i]);

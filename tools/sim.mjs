@@ -172,7 +172,8 @@ const VALUE = {
   amberFang: 4, bloodAmber: 4, oldEgg: 4, emberCore: 3, obsidianScale: 3, crystalHeart: 3, sharpStone: 3, huntersEye: 3,
   packTotem: 3, mossyShell: 3, starShard: 3, swiftFeather: 3, tarPitStone: 3, meteorChip: 2, glowShard: 2, thickSkull: 2,
   fernCushion: 2, stormEgg: 2, raptorClaw: 2, echoRock: 2, ashCloak: 2, lavaFang: 2, pteraBone: 2, venomGland: 1,
-  tailSpike: 1, boneDrum: 1, meteorIron: 1, twinHorn: 1, amberGeode: 0, volcanicHeart: 0
+  tailSpike: 1, boneDrum: 1, meteorIron: 1, twinHorn: 1, amberGeode: 0, volcanicHeart: 0,
+  pearlHeart: 3, sharkTooth: 2, tideCharm: 2, kelpWrap: 2
 };
 const pickRelic = (rng, offers) => {
   const best = Math.max(...offers.map((id) => VALUE[id] ?? 1));

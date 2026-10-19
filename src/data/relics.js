@@ -35,7 +35,12 @@ export const RELICS = {
   meteorIron:   { name: 'Meteor Iron',     desc: 'BRACE COSTS 0' },
   amberGeode:   { name: 'Amber Geode',     desc: '+50% AMBER FROM FIGHTS' },
   twinHorn:     { name: 'Twin Horn',       desc: 'TAIL WHIP DEALS +60%' },
-  pteraBone:    { name: 'Ptera Bone',      desc: 'PERFECT DODGES HEAL 4' }
+  pteraBone:    { name: 'Ptera Bone',      desc: 'PERFECT DODGES HEAL 4' },
+  // v2.2 Tidal Coast pack (also the Abyss Mosasaur's drop).
+  pearlHeart:   { name: 'Pearl Heart',     desc: 'HEAL 3 AT THE START OF YOUR TURN' },
+  tideCharm:    { name: 'Tide Charm',      desc: 'BRACE ALSO GIVES +1 ENERGY NEXT TURN' },
+  kelpWrap:     { name: 'Kelp Wrap',       desc: 'FIRST UNBLOCKABLE HIT EACH FIGHT DEALS 0' },
+  sharkTooth:   { name: 'Shark Tooth',     desc: 'CRITS BLEED: 3 DAMAGE A TURN FOR 2 TURNS' }
 };
 
 // Evolution perks use the same hook system (see data/forms.js), but never drop.
@@ -75,5 +80,5 @@ export const RELIC_TUNING = {
   echoDmg: 4, feathersMult: 1.2, shadowMult: 1.5, frillBlock: 0.3, ghostBite: 3,
   emberDmg: 2, obsidianArmor: 2, lavaPoison: 2, starEvery: 3, crystalHp: 15, geodeMult: 1.5,
   twinHornMult: 1.6, pteraHeal: 4, bastionTurns: 2, spikesReflect: 0.3, skyMult: 1.2, thornsFrac: 0.3,
-  baskHeal: 0.2, toxicMult: 1.25, harvestHeal: 0.15
+  baskHeal: 0.2, toxicMult: 1.25, harvestHeal: 0.15, pearlHeal: 3, bleedDmg: 3, bleedTurns: 2
 };

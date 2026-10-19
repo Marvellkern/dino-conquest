@@ -18,7 +18,7 @@ export function makeFighter(species, {
     atk: st.atk, def: st.def, spd: st.spd,
     moves: ['bite', 'tail', 'roar', 'brace', sp.special],
     status: {
-      atkDown: 0, defUp: 0, poison: 0, stun: 0,
+      atkDown: 0, defUp: 0, poison: 0, stun: 0, bleed: 0,
       braced: 0, muddy: 0, drain: 0, blind: 0, hooked: 0,     // player
       guard: 0, charging: 0, submerged: 0, lowWater: 0, hooking: 0 // enemies
     }
@@ -30,9 +30,15 @@ export const hasTrait = (f, id) => f.traits.includes(id);
 // Start of the owner's turn: poison bites, stun is consumed.
 export function startTurn(f) {
   const out = { poison: 0, stunned: false };
+  if (f.status.bleed > 0) { // Shark Tooth: bleeding stacks with poison (shown as one number)
+    out.poison += Math.min(f.hp, f.bleedDmg ?? 3);
+    f.hp -= Math.min(f.hp, f.bleedDmg ?? 3);
+    f.status.bleed--;
+  }
   if (f.status.poison > 0) {
-    out.poison = Math.min(f.hp, T.venomDmg + (f.poisonBonus ?? 0));
-    f.hp -= out.poison;
+    const p = Math.min(f.hp, T.venomDmg + (f.poisonBonus ?? 0));
+    out.poison += p;
+    f.hp -= p;
     f.status.poison--;
   }
   if (f.status.stun > 0) {

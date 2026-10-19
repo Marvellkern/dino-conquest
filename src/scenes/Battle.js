@@ -240,6 +240,7 @@ export class Battle extends Phaser.Scene {
         this.fx.number(p.x, p.y - 16, t.volcanic, { color: '#ff6040' });
       }
       if (t.revived) this.revivePop();
+      if (t.pearl) { const p = this.st.player.rig.top(); this.fx.number(p.x + 10, p.y - 4, `+${t.pearl}`, { color: '#80d060' }); }
       if (t.poison) {
         const p = st.player.rig.hitPoint();
         this.fx.number(p.x, p.y - 16, t.poison, { color: '#80d060' });
@@ -339,6 +340,7 @@ export class Battle extends Phaser.Scene {
     const lines = [`+${rw.xp} XP   +${amber}${AMB}`];
     if (gainXp(d, rw.xp)) { lines.push(`LEVEL UP! LV${d.level}`); sfx('levelup'); }
     const goals = checkGoals(run, this.fightEvents(run));
+    const drop = type === 'boss' ? ZONES[run.zone].boss.drop ?? null : null; // a boss's guaranteed fossil pack
     const next = type === 'boss' ? advanceZone(run) : null;
     const done = type === 'boss' && !next;
     if (d.pendingEvo && !done) lines.push('SOMETHING IS STIRRING...');
@@ -346,7 +348,7 @@ export class Battle extends Phaser.Scene {
     lines.push(...goalLines(goals));
     const levels = d.level - (this.levelBefore ?? d.level);
     // Saved as won before the banner: a reload now goes straight to the reward picks.
-    const rewards = { kind: 'rewards', elite: type === 'elite', levels, done };
+    const rewards = { kind: 'rewards', elite: type === 'elite', levels, done, drop };
     checkpoint(run, rewards);
     await this.banner(type === 'boss' ? 'ZONE CLEAR!' : 'VICTORY!', true, lines, 'TAP TO CONTINUE');
     await fightRewards(this, run, rewards);

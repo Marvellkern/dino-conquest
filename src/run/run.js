@@ -163,9 +163,9 @@ export function addStat(d, stat, n) {
 
 export const relicInfo = (id) => RELICS[id] ?? PERKS[id];
 
-// Up to n fossils from the run's pool that it doesn't own yet.
-export function relicOffers(run, n = 3) {
-  const pool = (run.pool ?? Object.keys(RELICS)).filter((id) => !run.relics.includes(id));
+// Up to n fossils from the run's pool (or `from`) that it doesn't own yet.
+export function relicOffers(run, n = 3, from = null) {
+  const pool = (from ?? run.pool ?? Object.keys(RELICS)).filter((id) => !run.relics.includes(id));
   const out = [];
   while (out.length < n && pool.length) out.push(pool.splice(Math.floor(run.rng.next() * pool.length), 1)[0]);
   return out;

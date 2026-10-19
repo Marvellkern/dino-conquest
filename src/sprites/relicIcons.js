@@ -1,5 +1,9 @@
 // 8x8 fossil (relic) icons, keyed `relic_<id>`. Evolution perks share `relic_perk`.
 export const RELIC_ICONS = {
+  pearlHeart:    ['.OO..OO.', 'OVVOOVVO', 'OVWVVVVO', 'OVVVVVVO', '.OVVVVO.', '..OVVO..', '...OO...', '........'],
+  tideCharm:     ['...OO...', '..OQQO..', '.OQWWQO.', 'OQWQQWQO', 'OQQQQQQO', '.OQQQQO.', '..OFFO..', '...OO...'],
+  kelpWrap:      ['..O..O..', '.OYOOYO.', '.OYHHYO.', 'OYHYYHYO', 'OHYHHYHO', '.OYHHYO.', '.OHYYHO.', '..OOOO..'],
+  sharkTooth:    ['.OOOOOO.', '.OWWWWO.', '..OWWO..', '..OWWO..', '...OEO..', '...OEO..', '....O...', '........'],
   emberCore:     ['...OO...', '..OxxO..', '.OxSSxO.', 'OxSWWSxO', 'OxSWWSxO', '.OxSSxO.', '..OxxO..', '...OO...'],
   obsidianScale: ['..OOOO..', '.OttttO.', 'OtwwwwtO', 'OtwiiwtO', 'OtwwwwtO', '.OtwwtO.', '..OttO..', '...OO...'],
   lavaFang:      ['..OOOO..', '.OxxxxO.', '.OWWWWO.', '.OWWWWO.', '..OWxO..', '..OxxO..', '...OO...', '........'],

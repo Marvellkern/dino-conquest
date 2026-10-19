@@ -1,7 +1,9 @@
 // Meteor Shard events: 2–3 options with clear tradeoffs. run(ctx) applies the
 // effects through ctx helpers and returns the result lines. Helpers:
 //   ctx.rng, ctx.stat(key, n), ctx.maxHp(n), ctx.hurt(frac), ctx.heal(frac),
-//   ctx.xp(n), ctx.amber(n), ctx.relic(), ctx.mutation(), ctx.loseRelic()
+//   ctx.xp(n), ctx.amber(n), ctx.relic(), ctx.mutation(), ctx.loseRelic(),
+//   ctx.ambush(species) (this node becomes a fight), ctx.poisonNext(turns)
+// zones: only shows up in these zones (default: anywhere).
 // relic() / mutation() return a promise (they open a pick); run may be async.
 // need(ctx) on an option disables it (with a reason) when it can't be afforded.
 export const EVENTS = [
@@ -91,6 +93,27 @@ export const EVENTS = [
       { label: 'SWALLOW IT', sub: '+1 MUTATION, -1 DEF', run: async (c) => ['IT BURNS ON THE WAY DOWN.', c.stat('def', -1), await c.mutation()] },
       { label: 'SELL THE SHINE', sub: '+25 AMBER', run: (c) => ['SOMEONE WILL WANT THIS.', c.amber(25)] },
       { label: 'LEAVE IT', sub: 'NOTHING HAPPENS', run: () => ['IT FADES OUT.'] }
+    ]
+  },
+  {
+    title: 'SHIPWRECK OF BONES',
+    zones: ['coast'],
+    lines: ['A GIANT RIBCAGE LIES', 'HALF SUNK IN THE SURF.'],
+    options: [
+      { label: 'DIG THROUGH IT', sub: '60%: A FOSSIL  40%: A PLESIOSAUR',
+        run: async (c) => (c.rng.chance(0.6) ? ['SOMETHING SHINES!', await c.relic()] : ['THE WATER STIRS...', 'A PLESIOSAUR SURGES OUT!', c.ambush('plesio')]) },
+      { label: 'LEAVE', sub: 'NOTHING HAPPENS', run: () => ['THE TIDE TAKES IT.'] }
+    ]
+  },
+  {
+    title: 'GLOWING TIDE POOL',
+    zones: ['coast'],
+    lines: ['THE WATER GLOWS', 'A SICKLY GREEN.'],
+    options: [
+      { label: 'DRINK', sub: '50%: A MUTATION  50%: POISONED NEXT FIGHT',
+        run: async (c) => (c.rng.chance(0.5) ? ['IT CHANGES YOU.', await c.mutation()] : ['YOUR GUT CHURNS...', c.poisonNext(3)]) },
+      { label: 'SOAK YOUR WOUNDS', sub: 'HEAL 20%', run: (c) => ['THE SALT STINGS. GOOD.', c.heal(0.2)] },
+      { label: 'LEAVE', sub: 'NOTHING HAPPENS', run: () => ['YOU MOVE ON.'] }
     ]
   },
   {

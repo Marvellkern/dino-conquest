@@ -136,10 +136,11 @@ export function beginPlayerTurn(st) {
   p.status.braced = 0;
   st.firstTurn = false;
   const volcanic = BLD.onTurnStart(st, first);
+  const pearl = BLD.pearlHeal(st);
   const tick = startTurn(p);
   const revived = BLD.tryRevive(st);
   rollIntents(st);
-  return { ...tick, gain, fast, volcanic, revived };
+  return { ...tick, gain, fast, volcanic, pearl, revived };
 }
 
 export const moveCost = (st, id) => BLD.moveCost(st, id);
@@ -343,7 +344,9 @@ export function enemyStrike(st, e, defend, moveId = e.intent.move) {
   if (ring === 'red' && d === 'dodge') d = 'block';
   if (ring === 'purple' && d === 'block') d = 'hit';
   if (d === 'hit' && p.status.braced && ring !== 'purple') d = 'block';
-  const dmg = BLD.reduceHit(st, computeDamage(e, p, m, null, { qte: 'good', defend: d, blockMult: BLD.blockMult(st, m) }));
+  const kelp = ring === 'purple' && d === 'hit' && BLD.kelpBlock(st);
+  const dmg = kelp ? 0 : BLD.reduceHit(st, computeDamage(e, p, m, null, { qte: 'good', defend: d, blockMult: BLD.blockMult(st, m) }));
+  if (ring === 'purple' && d === 'hit' && dmg > 0) tally(st, `purpleHits_${st.build.run?.zone}`); // Dry Feet
   p.hp = Math.max(0, p.hp - dmg);
   const stunned = !!m.stunOnHit && d === 'hit' && dmg > 0 && p.hp > 0; // Club Swing
   if (stunned) p.status.stun = 1;
@@ -362,7 +365,7 @@ export function enemyStrike(st, e, defend, moveId = e.intent.move) {
   if (grabbed) { p.status.hooked = 1; e.status.hooking = 1; }
   const reflect = BLD.onEnemyHit(st, e, d, dmg);
   const revived = BLD.tryRevive(st);
-  return { dmg, defend: d, drained, reflect, revived, stunned, healed, blinded, grabbed };
+  return { dmg, defend: d, drained, reflect, revived, stunned, healed, blinded, grabbed, kelp };
 }
 
 // After the action: advance the cycle, clear one-shot states.

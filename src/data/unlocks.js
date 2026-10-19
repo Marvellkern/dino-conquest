@@ -6,6 +6,7 @@ export const UNLOCKS = {
   packDeep:    { name: 'Deep Time Fossils', desc: 'OLD EGG, VOLCANIC HEART, TAR PIT, SWIFT FEATHER', short: '+4 FOSSILS', cost: 80 },
   packVolcano: { name: 'Volcanic Fossils', desc: 'EMBER CORE, OBSIDIAN SCALE, LAVA FANG, ASH CLOAK', short: '+4 FOSSILS', cost: 100 },
   packStar:    { name: 'Star Fossils',     desc: 'STAR SHARD, CRYSTAL HEART, METEOR IRON, AMBER GEODE', short: '+4 FOSSILS', cost: 100 },
+  packTide:    { name: 'Tide Fossils',     desc: 'PEARL HEART, TIDE CHARM, KELP WRAP, SHARK TOOTH', short: '+4 FOSSILS', cost: 120 },
   twinClutch:  { name: 'Twin Clutch',     desc: 'PICK 1 OF 2 EGGS WHEN YOU HATCH', short: 'PICK 1 OF 2 EGGS', cost: 120 },
   traderTrail: { name: 'Trader Trails',   desc: 'SHOPS APPEAR TWICE AS OFTEN', short: 'MORE SHOPS', cost: 100 },
   sturdy:      { name: 'Sturdy Blood',    desc: '+5 BASE HP PER LEVEL', short: '+5 HP', cost: [40, 70, 100] },
@@ -35,7 +36,8 @@ export const PACK_RELICS = {
   packPrimal: ['meteorChip', 'boneDrum', 'echoRock', 'venomGland'],
   packDeep: ['oldEgg', 'volcanicHeart', 'tarPitStone', 'swiftFeather'],
   packVolcano: ['emberCore', 'obsidianScale', 'lavaFang', 'ashCloak'],
-  packStar: ['starShard', 'crystalHeart', 'meteorIron', 'amberGeode']
+  packStar: ['starShard', 'crystalHeart', 'meteorIron', 'amberGeode'],
+  packTide: ['pearlHeart', 'tideCharm', 'kelpWrap', 'sharkTooth']
 };
 export const GOAL_RELICS = ['raptorClaw', 'packTotem', 'thickSkull', 'glowShard', 'twinHorn', 'pteraBone'];
 

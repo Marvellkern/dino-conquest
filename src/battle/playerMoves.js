@@ -131,6 +131,7 @@ function strikeOne(scene, id, v, qte, k, evaders, ctx) {
   const t = v.rig.top();
   if (r.fx.healed) healPop(scene, r.fx.healed);
   if (r.fx.poisoned) scene.fx.pop(t.x, t.y - 4, 'POISON', '#80d060', 1, 700);
+  if (r.fx.bled) scene.fx.pop(t.x, t.y - 22, 'BLEED', '#e43b44', 1, 700);
   if (r.fx.stunned) scene.fx.pop(t.x, t.y - 14, 'STUNNED!', '#fff096', 1, 900);
   if (r.fx.chain) ctx.chained = true;
   if (r.calmed) scene.fx.pop(t.x, t.y - 14, 'CALMED', '#9ab8ff', 1, 900);

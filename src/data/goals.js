@@ -57,6 +57,10 @@ export const GOALS = {
     test: (ev, run) => zoneClear(ev, 'swamp') && run.ext >= 1 },
   firewalker:   { name: 'Firewalker',    desc: 'CLEAR THE VOLCANO', reward: { relic: 'twinHorn' },
     test: (ev) => zoneClear(ev, 'volcano') },
+  tidebreaker:  { name: 'Tidebreaker',   desc: 'BEAT THE ABYSS MOSASAUR', reward: { unlock: 'packTide', label: 'TIDE FOSSILS' },
+    test: (ev) => zoneClear(ev, 'coast') },
+  dryFeet:      { name: 'Dry Feet',      desc: 'CLEAR THE COAST WITHOUT AN UNBLOCKABLE HIT', reward: { amber: 200 },
+    test: (ev, run) => zoneClear(ev, 'coast') && n(run, 'purpleHits_coast') === 0 },
   titanSlayer:  { name: 'Titan Slayer',  desc: 'BEAT THE METEOR TITAN', reward: { amber: 300 },
     test: (ev) => zoneClear(ev, 'crater') }
 };

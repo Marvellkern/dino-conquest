@@ -2,6 +2,8 @@ import { NEST_HEAL, SHOP } from '../data/zones.js';
 import { AMB } from '../ui/amber.js';
 import { EVENTS } from '../data/events.js';
 import { RELICS } from '../data/relics.js';
+import { PACK_RELICS } from '../data/unlocks.js';
+import { ZONES } from '../data/zones.js';
 import { choose } from '../ui/popup.js';
 import { pickRelic, pickMutation } from '../ui/buildPicks.js';
 import { heal, hurt, addStat, gainXp, relicOffers, addRelic, mutationOffer, removeRandomRelic, relicInfo } from '../run/run.js';
@@ -11,9 +13,11 @@ import { checkpoint } from '../systems/runStore.js';
 // What happens at the non-battle map nodes. Each takes the Map scene and the run.
 
 // After a won fight (Battle, or Map when a reload lands here): the elite's fossil
-// and one mutation pick per level gained. phase: { elite, levels, done }.
-export async function fightRewards(scene, run, { elite, levels }) {
+// and one mutation pick per level gained. phase: { elite, levels, done, drop }.
+// drop: a boss's fossil pack, one of which it always leaves behind.
+export async function fightRewards(scene, run, { elite, levels, drop }) {
   if (elite) await pickRelic(scene, run, 'ELITE DROP', ['IT GUARDED A FOSSIL.']);
+  if (drop) await pickRelic(scene, run, 'TROPHY', ['IT LEAVES SOMETHING BEHIND.'], PACK_RELICS[drop]);
   for (let i = 0; i < levels; i++) await pickMutation(scene, run, { title: 'LEVEL UP: MUTATION' });
 }
 
@@ -41,7 +45,7 @@ export async function visitFossil(scene, run) {
 
 export async function visitMeteor(scene, run) {
   sfx('tell');
-  const ev = run.rng.pick(EVENTS), ctx = eventCtx(scene, run);
+  const ev = run.rng.pick(EVENTS.filter((x) => !x.zones || x.zones.includes(run.zone))), ctx = eventCtx(scene, run);
   const options = ev.options.map((o) => ({ label: o.label, sub: o.sub, disabled: o.need?.(ctx) ?? null }));
   const i = await choose(scene, { title: ev.title, lines: ev.lines, options });
   const result = (await ev.options[i].run(ctx)).filter(Boolean);
@@ -97,7 +101,14 @@ function eventCtx(scene, run) {
     relicCount: () => run.relics.length,
     relic: async () => { const id = await pickRelic(scene, run, 'FOSSIL', ['TAKE ONE:']); return id ? `GOT ${RELICS[id].name.toUpperCase()}` : 'NO NEW FOSSILS LEFT'; },
     mutation: async () => (await pickMutation(scene, run, { keep: false })) ?? 'NOTHING LEFT TO MUTATE',
-    loseRelic: () => { const id = removeRandomRelic(run); return id ? `LOST ${relicInfo(id).name.toUpperCase()}` : null; }
+    loseRelic: () => { const id = removeRandomRelic(run); return id ? `LOST ${relicInfo(id).name.toUpperCase()}` : null; },
+    // Turns this node into a fight against one zone creature; Map starts it after the event.
+    ambush: (species) => {
+      const node = run.map.nodes[run.at], z = ZONES[run.zone];
+      Object.assign(node, { type: 'fight', ambush: true, enemies: [{ species, level: z.levelAt(node.row), base: z.enemyBase?.[species] }] });
+      return 'IT ATTACKS!';
+    },
+    poisonNext: (turns) => { run.poisonNext = turns; return `POISONED NEXT FIGHT (${turns})`; }
   };
 }
 

@@ -119,6 +119,7 @@ function defendCtx(scene, e, moveId, h, feint, onHit) {
       if (r.revived) scene.revivePop();
       if (r.stunned) { const t = p.rig.top(); scene.fx.pop(t.x, t.y - 12, 'STUNNED!', '#fff096', 1, 900); }
       if (r.healed) { const t = p.rig.top(); scene.fx.number(t.x, t.y, `+${r.healed}`, { color: '#80d060' }); }
+      if (r.kelp) { const t = p.rig.top(); scene.fx.pop(t.x, t.y - 12, 'KELP WRAP!', '#63c74d', 1, 900); }
       if (r.blinded) { const t = p.rig.top(); scene.fx.pop(t.x, t.y - 12, 'BLINDED!', '#c070ff', 1, 900); }
       if (r.grabbed) { const t = p.rig.top(); scene.fx.pop(t.x, t.y - 12, 'HOOKED!', '#ff6040', 1, 900); }
       onHit(r);

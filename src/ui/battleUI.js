@@ -19,7 +19,7 @@ const PLAYER_TAGS = [
   ['drain', '-EN', '#e0a040', false], ['blind', 'BLIND', '#c070ff', false], ['hooked', 'HOOKED', '#ff6040', false]
 ];
 const ENEMY_TAGS = [
-  ['atkDown', 'ATK-', '#e06060', true], ['poison', 'PSN', '#80d060', true], ['stun', 'STUN', '#fff096', false],
+  ['atkDown', 'ATK-', '#e06060', true], ['poison', 'PSN', '#80d060', true], ['bleed', 'BLEED', '#e43b44', true], ['stun', 'STUN', '#fff096', false],
   ['guard', 'GUARD', '#9ab8ff', false], ['charging', 'CHARGE', '#ff6040', false], ['submerged', 'UNDER', '#5aa0e0', false],
   ['lowWater', 'LOW', '#5aa0e0', false], ['hooking', 'HOLDING', '#ff6040', false]
 ];

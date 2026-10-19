@@ -164,6 +164,18 @@ A run goes through the zones it has (`run.zones`: `ZONE_ORDER` in `data/zones.js
     - Phase 1: Deep Bite (`lunge`) and Undertow (−1 energy next turn on a hit).
     - Phase 2: it dives every third action (untargetable) and surfaces with a purple, `delay`-profile Breach. It summons one Ichthyosaur.
   - **Art:** the sprites live in `sprites/grids3.js` (shape builder, with a 1px `margin` so edge pixels get an outline). The backdrop is in `ui/zoneArt3.js`: a stormy dusk with a pale sun, sea stacks and a cliff line, 3-frame wave crests, wet rocks, tide pools, kelp and driftwood. Gulls, sea spray, and a wave that washes over the foreground every 8s. The boss fight adds rain (`opts.boss`), and its phase 2 raises the tide over the dinos' feet (`backdrop.onPhase`). On the map the coast runs along the bottom edge, and a boss wider than 44px shows only its head end on the landscape map.
+  - **Tide Fossils pack** (120 Amber, or free from the Tidebreaker goal):
+    - **Pearl Heart:** heal 3 each turn.
+    - **Tide Charm:** Brace also banks +1 energy for next turn.
+    - **Kelp Wrap:** the first unblockable hit each fight deals 0.
+    - **Shark Tooth:** crits bleed the target for 3 a turn, for 2 turns (`status.bleed`).
+  - **Mosasaur trophy:** the boss always drops a pick of the pack (`boss.drop`, `fightRewards`).
+  - **Coast-only events** (`zones` on an event):
+    - **Shipwreck of Bones:** 60% a fossil, 40% the node turns into a Plesiosaur fight (`ctx.ambush`).
+    - **Glowing Tide Pool:** drinking gives a mutation, or poison 3 at the start of the next fight (`run.poisonNext`).
+  - **Goals:**
+    - **Tidebreaker:** beat the Mosasaur. Unlocks the Tide pack.
+    - **Dry Feet:** clear the Coast without taking an unblockable hit (`run.stats.purpleHits_coast`). +200 Amber.
 - **Meteor Crater** (LV17–20, 400 Amber, needs the Tidal Coast; old saves that owned the Crater get the Coast free in `migrate()`): Carno (enrages at half HP), Stego (raises spikes: hitting it while guarded pricks you), Raptor packs, Elite Carno / Stego, final boss **Meteor Titan** (Starfall; phase 2 summons a Raptor and speeds up).
 
 Beating a zone boss gives XP and Amber, heals `ZONE_HEAL` (35%), and `advanceZone()` in `run/run.js` builds the next zone's map. Level, XP, traits, lives and Amber carry over. `RunEnd` only comes after the run's last zone. Battle and Map pick their backdrop per zone (`ui/zoneArt.js` for Jungle / Swamp, `ui/zoneArt2.js` for Volcano / Crater, `ui/zoneArt3.js` for the Tidal Coast, `drawMapBackground` in `ui/backdrop.js`). The Crater's meteor grows in the sky as you get closer to the boss. To add a zone, add an entry to `ZONES` and `ZONE_ORDER`, plus its layers in the zone art registry.

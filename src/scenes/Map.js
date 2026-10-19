@@ -289,19 +289,20 @@ export class MapScene extends Phaser.Scene {
     node.done = true;
     this.refresh();
 
-    if (node.enemies) {
-      // The fight's seed comes from the run, and the checkpoint is taken before it starts:
-      // reloading mid-fight restarts this exact fight (same enemies, intents, timings).
-      const seed = run.rng.int(1, 2 ** 31 - 1);
-      checkpoint(run, { kind: 'battle', node: node.id, seed });
-      sfx('tell');
-      this.fx.pop(this.marker.x, this.marker.y - 30, '!', '#fff096', 2, 400);
-      this.time.delayedCall(220, () => this.cameras.main.fadeOut(150));
-      this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Battle', { node: node.id, seed }));
-      return;
-    }
+    if (node.enemies) { this.startFight(node); return; }
     checkpoint(run, { kind: 'node', id: node.id });
     await this.visit(node);
+  }
+
+  // The fight's seed comes from the run, and the checkpoint is taken before it starts:
+  // reloading mid-fight restarts this exact fight (same enemies, intents, timings).
+  startFight(node) {
+    const seed = this.run.rng.int(1, 2 ** 31 - 1);
+    checkpoint(this.run, { kind: 'battle', node: node.id, seed });
+    sfx('tell');
+    this.fx.pop(this.marker.x, this.marker.y - 30, '!', '#fff096', 2, 400);
+    this.time.delayedCall(220, () => this.cameras.main.fadeOut(150));
+    this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Battle', { node: node.id, seed }));
   }
 
   // A non-battle node's content (popups), then back to picking a path.
@@ -309,6 +310,7 @@ export class MapScene extends Phaser.Scene {
     const run = this.run, d = this.d;
     const visit = { nest: visitNest, fossil: visitFossil, meteor: visitMeteor, shop: visitShop }[node.type];
     if (visit) await visit(this, run);
+    if (node.enemies) { this.startFight(node); return; } // an event turned into an ambush
     if (d.pendingEvo) { this.scene.start('Evolution'); return; }
     this.busy = false;
     this.sel = 0;

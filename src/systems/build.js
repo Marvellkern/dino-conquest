@@ -70,6 +70,9 @@ export function onBattleStart(st) {
   if (has(st, 'tarPitStone')) for (const e of st.enemies) applyPoison(st, e, RT.tarPitPoison);
   st.autoCrit = has(st, 'meteorChip');
   st.ashCloak = has(st, 'ashCloak');
+  st.kelpWrap = has(st, 'kelpWrap');
+  const run = st.build.run; // Glowing Tide Pool: a bad drink poisons the next fight
+  if (run?.poisonNext) { st.player.status.poison = Math.max(st.player.status.poison, run.poisonNext); run.poisonNext = 0; }
 }
 
 // Extra energy at the start of turn n (1-based): Star Shard every 3rd turn.
@@ -81,6 +84,16 @@ export function reduceHit(st, dmg) {
   if (st.ashCloak) { st.ashCloak = false; return 0; }
   return has(st, 'obsidianScale') ? Math.max(1, dmg - RT.obsidianArmor) : dmg;
 }
+
+// Kelp Wrap: the first unblockable (purple-ring) hit of the fight deals 0. Returns true if it fired.
+export function kelpBlock(st) {
+  if (!st.kelpWrap) return false;
+  st.kelpWrap = false;
+  return true;
+}
+
+// Pearl Heart: heals at the start of each player turn. Returns HP healed.
+export const pearlHeal = (st) => (has(st, 'pearlHeart') ? heal(st.player, RT.pearlHeal) : 0);
 
 // A perfect dodge: Ptera Bone heals.
 export const onDodge = (st) => (has(st, 'pteraBone') ? heal(st.player, RT.pteraHeal) : 0);
@@ -116,6 +129,7 @@ export function onPlayerHit(st, id, target, qte, dmg) {
       || (id === 'deathRoll' && has(st, 'perkDeathjaw') ? 2 : 0) || (MOVES[id].poison ?? 0)
       || (crit && has(st, 'lavaFang') ? RT.lavaPoison : 0);
     if (poison) { applyPoison(st, target, poison); out.poisoned = true; }
+    if (crit && has(st, 'sharkTooth')) { target.status.bleed = RT.bleedTurns; target.bleedDmg = RT.bleedDmg; out.bled = true; }
     if (crit && ((id === 'tail' && m === 'stun') || (id === 'skullBash' && has(st, 'perkBonehead')) || MOVES[id].critStun)) {
       target.status.stun = 1;
       target.intent = { kind: 'stunned' };
@@ -138,6 +152,7 @@ export function onKill(st) {
 }
 
 export function onBrace(st) {
+  if (has(st, 'tideCharm')) st.energyNext = (st.energyNext ?? 0) + 1;
   if (has(st, 'perkBastion')) st.player.status.defUp = Math.max(st.player.status.defUp ?? 0, RT.bastionTurns);
   return has(st, 'fernCushion') ? heal(st.player, RT.fernHeal) : 0;
 }
