@@ -85,14 +85,32 @@ function makeClass(scale) {
       return this.small;
     }
 
+    // One full-target pass with shader into an offscreen target. Phaser's bindAndDraw can't
+    // be used for these: when it finishes it rebinds renderer.currentFramebuffer, which is
+    // null at this point of some frames, and the exception blacks the screen out. The final
+    // composite still goes through bindAndDraw(source, null), which restores Phaser's state.
+    pass(source, target, shader) {
+      const gl = this.gl;
+      this.bind(shader);
+      this.set1i('uMainSampler', 0, shader);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, target.framebuffer.webGLFramebuffer);
+      gl.viewport(0, 0, target.width, target.height);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, source.texture.webGLTexture);
+      gl.bufferData(gl.ARRAY_BUFFER, this.vertexData, gl.STATIC_DRAW);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+    }
+
     onDraw(source) {
       const [a, b] = this.buffers(source), [bright, blur, comp] = this.shaders, p = this.params, g = p.grade;
       this.set1f('uThreshold', BLOOM.threshold, bright);
-      this.bindAndDraw(source, a, true, true, bright);
+      this.pass(source, a, bright);
       this.set2f('uStep', 1 / a.width, 0, blur);
-      this.bindAndDraw(a, b, true, true, blur);
+      this.pass(a, b, blur);
       this.set2f('uStep', 0, 1 / a.height, blur);
-      this.bindAndDraw(b, a, true, true, blur);
+      this.pass(b, a, blur);
       const gl = this.gl;
       gl.activeTexture(gl.TEXTURE1);
       gl.bindTexture(gl.TEXTURE_2D, a.texture.webGLTexture);
