@@ -16,7 +16,18 @@ npm run build    # static site in dist/
 ## Playing
 
 Title → Home (Dino-dex, Nest unlocks, goals, family tree, Extinction, Settings) → Hatch an egg → Jungle map → fights → Alpha Rex → Swamp map → fights → Bog Spino.
-Keys: **1–5** pick moves (and popup options), **E** ends your turn, **← →** (or tapping an enemy) picks the target, **Space / Enter / click / tap** for the timing QTEs, **↑↓ + Enter** on the map, **S** opens Settings on Home (**U** unlocks, **G** goals, **F** family tree, **X** Extinction; **Q / E** flip their pages, **Esc** goes back), **D** (or tapping the Dino-dex) flips its pages. On phones, tap everything.
+**Keyboard** (`ui/focus.js`). Arrow keys move a yellow focus ring over the buttons, and **Enter / Space** presses the focused one. The ring only appears once you press an arrow, so mouse and touch players never see it, and moving the mouse hides it again. **Esc** backs out of the Nest menus, and in popups it picks CANCEL / BACK / LEAVE / DONE.
+
+| Screen | Keys |
+|---|---|
+| Home | arrows + Enter; **Space / Enter** = Continue Run / Hatch; **N** new egg, **S** Settings, **U** unlocks, **G** goals, **F** family tree, **X** Extinction, **D** flips the Dino-dex |
+| Nest menus | ↑↓ through the list and footer, **← →** or **Q / E** flip pages, **Esc** back |
+| Popups | ↑↓ + Enter, **1–6** pick directly, **Esc** cancels |
+| Hatch | arrows + Enter (starts on START RUN), **1–3** |
+| Map | ↑↓ / ← → / **W S** pick a path, **1–3** pick directly, **Enter / Space** go |
+| Battle | **1–5** moves, **E** ends the turn, ↑↓ + Enter walk the move bar, **← →** (or tap an enemy) picks the target, **Space / Enter / click / tap** for the timing QTEs |
+
+On phones, tap everything.
 
 **Portrait and landscape.** The game has two base resolutions: 320x180 (landscape) and 180x320 (portrait), the same pixel size on a phone. `W` / `H` / `GROUND_Y` in `src/config.js` are live bindings switched by `setPortrait()`, and each scene picks its layout with `lp(landscape, portrait)` (portrait: stacked Home panels, a vertical map climbing to the boss, a battle stage with dinos at 2x, HUDs above and below, and a 3x2 move grid). Rotating rebuilds calm screens (Title, Home, Nest, Map) right away; fights, hatches and end screens switch at the next scene (`syncLayout()` in `systems/screen.js`). Zone backdrops are always drawn at landscape size and placed / cropped for portrait. On phones the canvas scales to fill (fractional at 2x+ density), keeps clear of notches, and the first tap goes fullscreen where the browser allows it.
 

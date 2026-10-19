@@ -15,6 +15,7 @@ import { meta, persist, applySettings, resetMeta, runSetup, extUnlocked, maxExtC
 import { goalsDone } from '../systems/goals.js';
 import { canFullscreen, isFullscreen, enterFullscreen, exitFullscreen } from '../systems/screen.js';
 import { choose } from '../ui/popup.js';
+import { FocusNav } from '../ui/focus.js';
 import { sfx } from '../systems/sfx.js';
 
 const DEX_ORDER = ['compy', 'raptor', 'trike', 'rex', 'pachy', 'sarco', 'spino', 'ankylo', 'ptera', 'stego', 'carno', 'dilo', 'theri'];
@@ -63,8 +64,11 @@ export class Home extends Phaser.Scene {
       this.refreshHatch();
       this.settingsBtn = new Button(this, ...BOX().settings, { key: 'S', label: 'SETTINGS', sub: 'SOUND, SHAKE', onClick: () => this.settings() });
     }
+    const navItems = [...Object.values(this.nestKeys), main, this.saved ? this.hatchBtn : null, this.settingsBtn].filter(Boolean);
+    this.nav = new FocusNav(this, { items: () => navItems, start: navItems.indexOf(main) });
     this.onKey = (e) => {
       if (e.repeat || this.inMenu) return;
+      if (this.nav.handle(e)) return;
       if (e.code === 'Space' || e.code === 'Enter') main.click();
       else if (e.code === 'KeyN' && this.saved) this.hatchBtn.click();
       else if (e.code === 'KeyS') this.settingsBtn.click();

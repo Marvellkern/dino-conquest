@@ -4,6 +4,7 @@ import { MUTATIONS } from '../data/mutations.js';
 import { blocked, affordable, intentView, maxEnergy, moveCost } from '../systems/battleState.js';
 import { mutation } from '../systems/build.js';
 import { Button } from './button.js';
+import { FocusNav } from './focus.js';
 import { panel } from './pixel.js';
 import { text } from './font.js';
 
@@ -200,8 +201,9 @@ export class MoveBar {
     this.end = new Button(scene, ex, ey, ew, bh, { key: 'E', label: 'END', sub: 'TURN', textTop: 4, onClick: () => this.pick('end') });
     this.end.icon = scene.add.image(ex + Math.floor(ew / 2) - 4, ey + 2, 'mi_end').setOrigin(0).setDepth(13);
 
+    this.nav = new FocusNav(scene, { items: () => [...this.btns, this.end], mode: 'cycle', keys: ['ArrowUp', 'ArrowDown'] });
     this.onKey = (e) => {
-      if (e.repeat) return;
+      if (e.repeat || (this.on && this.nav.handle(e))) return;
       const i = '12345'.indexOf(e.key);
       if (i >= 0) this.btns[i].click();
       else if (e.code === 'KeyE') this.end.click();

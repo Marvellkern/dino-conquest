@@ -22,6 +22,7 @@ import { checkpoint } from '../systems/runStore.js';
 import { Fx } from '../systems/fx.js';
 import { sfx } from '../systems/sfx.js';
 import { onPress } from '../systems/qte.js';
+import { FocusNav } from '../ui/focus.js';
 import { roar, wait } from '../battle/anims.js';
 
 // Layout: the nest (x, ground), the info panel (px, py: its top-left) and the
@@ -68,9 +69,11 @@ export class Hatch extends Phaser.Scene {
         key: '3', label: 'START RUN', sub: this.setup.ext ? `EXTINCTION ${this.setup.ext}` : 'THE JUNGLE', onClick: () => this.go()
       })
     ];
+    this.nav = new FocusNav(this, { items: () => this.buttons, start: 2 });
     this.onKey = (e) => {
+      if (e.repeat || this.nav.handle(e)) return;
       const i = '123'.indexOf(e.key);
-      if (!e.repeat && i >= 0) this.buttons[i].click();
+      if (i >= 0) this.buttons[i].click();
     };
     this.input.keyboard.on('keydown', this.onKey);
     this.events.once('shutdown', () => this.input.keyboard?.off('keydown', this.onKey));

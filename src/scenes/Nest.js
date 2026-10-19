@@ -7,6 +7,7 @@ import { ZONES } from '../data/zones.js';
 import { text } from '../ui/font.js';
 import { panel } from '../ui/pixel.js';
 import { Button } from '../ui/button.js';
+import { FocusNav } from '../ui/focus.js';
 import { meta, owned, buyUnlock } from '../systems/meta.js';
 import { rewardText, goalsDone } from '../systems/goals.js';
 import { dinoName, skinOf } from '../run/run.js';
@@ -45,8 +46,11 @@ export class Nest extends Phaser.Scene {
     const right = 8 + 2 * pw, backX = W - 4 - bw;
     this.pageText = text(this, Math.round((right + backX) / 2), foot + 8, '', { color: COLORS.textDim, origin: [0.5, 0], shadow: false });
     this.back = new Button(this, backX, foot, bw, 24, { key: 'ESC', label: 'BACK', onClick: () => this.leave() });
+    this.nav = new FocusNav(this, { items: () => [...this.rows, this.prev, this.next, this.back], onBack: () => this.back.click() });
     this.onKey = (e) => {
       if (e.repeat) return;
+      const sideways = e.code === 'ArrowLeft' || e.code === 'ArrowRight';
+      if (!(sideways && !this.nav.shown) && this.nav.handle(e)) return;
       if (e.code === 'KeyQ' || e.code === 'ArrowLeft') this.prev.click();
       else if (e.code === 'KeyE' || e.code === 'ArrowRight') this.next.click();
       else if (e.code === 'Escape' || e.code === 'Backspace') this.back.click();
@@ -55,6 +59,8 @@ export class Nest extends Phaser.Scene {
     this.events.once('shutdown', () => this.input.keyboard?.off('keydown', this.onKey));
     this.draw();
   }
+
+  redraw() { this.draw(); this.nav.refresh(); }
 
   items() {
     if (this.mode === 'unlocks') return UNLOCK_ORDER;
@@ -69,7 +75,7 @@ export class Nest extends Phaser.Scene {
     if (n < 2) return;
     this.page = (this.page + dir + n) % n;
     sfx('tick');
-    this.draw();
+    this.redraw();
   }
 
   draw() {
@@ -110,7 +116,7 @@ export class Nest extends Phaser.Scene {
     if (!buyUnlock(id)) return;
     sfx('levelup');
     this.cameras.main.flash(120, 255, 240, 150);
-    this.draw();
+    this.redraw();
   }
 
   // Landscape: name + reward on one line, description below.

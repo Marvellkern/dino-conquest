@@ -2,14 +2,18 @@ import { W, H, COLORS } from '../config.js';
 import { panel } from './pixel.js';
 import { text } from './font.js';
 import { Button } from './button.js';
+import { FocusNav } from './focus.js';
 import { replaying, takeReplay, dropReplay, logPick } from '../systems/runStore.js';
+
+const BACK_LABELS = /^(CANCEL|BACK|LEAVE|DONE|KEEP IT|LEAVE IT|NOT NOW)$/;
 
 // Scenes whose popups are part of the saved run (recorded, replayed after a reload).
 const RUN_SCENES = new Set(['Map', 'Battle', 'Evolution']);
 
 // Modal choice box over a dimmed screen. options: [{ label, sub?, disabled? }]
 // (disabled: a reason string; the option is greyed out and shows it).
-// Resolves with the chosen index. Click/tap or keys 1–N. bh: button height.
+// Resolves with the chosen index. Click/tap, keys 1–N, or arrows + Enter (Esc picks a
+// CANCEL / BACK / LEAVE / DONE option if there is one). bh: button height.
 export function choose(scene, { title, lines = [], options, bh = 32 }) {
   const inRun = RUN_SCENES.has(scene.scene.key);
   if (inRun && replaying()) { // a resumed run: answer as the player did before the reload
@@ -36,6 +40,7 @@ export function choose(scene, { title, lines = [], options, bh = 32 }) {
       picked = true;
       if (inRun) logPick(i);
       scene.input.keyboard.off('keydown', onKey);
+      nav.destroy();
       scene.time.delayedCall(100, () => {
         objs.forEach((o) => o.destroy());
         btns.forEach((b) => b.destroy());
@@ -45,9 +50,15 @@ export function choose(scene, { title, lines = [], options, bh = 32 }) {
     const btns = options.map((o, i) => new Button(scene, x + 8, by + i * (bh + gap), PW - 16, bh, {
       key: options.length > 1 ? String(i + 1) : '', label: o.label, sub: o.disabled ?? o.sub ?? '', depth: 62, onClick: () => done(i)
     }).setEnabled(!o.disabled).pin());
+    let back = -1; // the last usable CANCEL / BACK / LEAVE ... option
+    options.forEach((o, i) => { if (!o.disabled && BACK_LABELS.test(o.label)) back = i; });
+    const nav = new FocusNav(scene, {
+      items: () => btns, show: true, modal: true, start: Math.max(0, options.findIndex((o) => !o.disabled)),
+      onBack: back >= 0 ? () => btns[back].click() : null
+    });
     const onKey = (e) => {
-      if (e.repeat) return;
-      const i = options.length === 1 && (e.code === 'Space' || e.code === 'Enter') ? 0 : '123456'.indexOf(e.key);
+      if (e.repeat || nav.handle(e)) return;
+      const i = '123456'.indexOf(e.key);
       if (i >= 0 && i < btns.length) btns[i].click();
     };
     scene.input.keyboard.on('keydown', onKey);
