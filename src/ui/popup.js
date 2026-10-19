@@ -22,6 +22,10 @@ export function choose(scene, { title, lines = [], options, bh = 32 }) {
     dropReplay(); // out of step: ask from here on
   }
   return new Promise((resolve) => {
+    // Too many options for the screen (landscape is only 180 tall): shrink the buttons so the
+    // popup fits, down to 18px (a label and a small sub-line still fit).
+    const room = H - 4 - (20 + lines.length * 10 + 4 + 4);
+    if (options.length * (bh + (bh < 32 ? 3 : 4)) > room) bh = Math.max(18, Math.floor(room / options.length) - 3);
     const PW = Math.min(236, W - 8), x = Math.round((W - PW) / 2), gap = bh < 32 ? 3 : 4;
     const ph = 20 + lines.length * 10 + 4 + options.length * (bh + gap) + 4;
     const y = Math.max(2, Math.round((H - ph) / 2));
