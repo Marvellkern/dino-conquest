@@ -101,27 +101,33 @@ src/
 - **Picks:** fossils and mutations are chosen by a simple value ranking, like a player would.
 
 ```
-node tools/sim.mjs 200                       # fresh save, Expert / Skilled / Decent, all 4 zones
+node tools/sim.mjs 200                       # fresh save, Expert / Skilled / Decent, all 5 zones (ZONES=4 stops before the Crater)
 VET=1 node tools/sim.mjs 200                 # veteran: every pack, Sturdy Blood 3, Nine Lives, a Bloodline heir
 PLAYS=expert ONLY=compy,rex EXT=3 node tools/sim.mjs 100
 ```
 
 It prints the share of runs that clear each zone per species, a row weighted by hatch odds, and per-zone QTE stats: perfect dodges per enemy hit, crits per bar, damage taken per fight.
 
-Results (fresh save, 200 runs per species, weighted by hatch odds):
+Results (v2.2, fresh save, 200 runs per species, weighted by hatch odds). The brief's v2.2 targets are in brackets:
 
-| Profile | Jungle | Swamp | Volcano | Crater | Brief target |
+| Profile | Jungle | Swamp | Volcano | Tidal Coast | Crater |
 |---|---|---|---|---|---|
-| Expert | 99% | 74% | 51% | 34% | 90 / 65 / 45 / 25–35 |
-| Skilled | 95% | 47% | 24% | 9% | 80 / 45 / 25 / 10 |
-| Decent | 53% | 11% | 2% | 1% | 55 / 20 / 8 / 2 |
+| Expert | 99% | 74% | 46% (45) | 37% (35) | 24% (25) |
+| Skilled | 95% | 47% | 22% (25) | 11% (15) | 4% (8) |
+| Decent | 53% | 11% | 2% | 1% | 0% |
 
-With a veteran save, Experts clear the Crater 54% of the time (target ~50%).
+With a veteran save, Experts clear the Crater 54% of the time (target 45–50%).
 
-| Expert QTE stats | Jungle | Swamp | Volcano | Crater |
-|---|---|---|---|---|
-| Perfect dodges per enemy hit | 62% | 41% | 38% | 26% |
-| Crits per bar | 71% | 63% | 56% | 48% |
+| Expert QTE stats | Jungle | Swamp | Volcano | Coast | Crater |
+|---|---|---|---|---|---|
+| Perfect dodges per enemy hit | 62% | 41% | 38% | 36% | 26% |
+| Crits per bar | 71% | 63% | 55% | 55% | 48% |
+
+How the v2.2 tuning got there:
+- **Volcano:** a little harder (`scale` 3.25 / 2.4).
+- **Crater:** LV17–20 now, at `scale` 2.95 / 2.2.
+- **Abyss Mosasaur:** `base` 100 HP / 15 ATK, Deep Bite 1.4, Breach 1.1, and a dive every third action in phase 2. Low-HP dinos (Compy, Raptor) were the ones hitting a wall at it.
+- **Pearl Heart:** heals 2.
 
 Perfect dodges per hit look low late on because red rings turn perfect presses into blocks (45% of Crater attacks are flagged, mostly red). That's on purpose: red rings cost perfect-dodgers more than blockers, which keeps the skill levels closer together.
 
@@ -157,6 +163,7 @@ The run in progress has its own localStorage slot, `dino-conquest:run`, apart fr
 - **Ending:** the run save is deleted after the end screen's Bloodline pick, once everything is banked. A reload on an end screen resumes it without banking Amber twice (`run.banked`).
 - **Abandoning:** **NEW EGG** asks first, then sends the saved run through the normal death flow (Fossil screen, Amber banked, Bloodline pick, family tree).
 - **Safety:** the run save has its own version (`RUN_VERSION`, `migrateRun()`). An unreadable save is dropped, and Home says "RUN LOST". Zone order is stored in the run, so a run from before a new zone existed resumes as it was.
+- **Run stats:** both end screens show a RUN STATS panel before the goals and Bloodline pick (`ui/runStats.js`). It lists fights won, attack bars by result, defend presses by timing, QTEs missed (count and share), damage dealt and taken, biggest hit, and crit streaks. The counters live in `run.stats` (`bar_*`, `ring_*`, `dmgDealt`, `dmgTaken`, `bestHit`, `fights`), so they survive a reload.
 - **Clearing it:** to drop a stuck run, run `localStorage.removeItem('dino-conquest:run')` in the browser console.
 
 ### Zones

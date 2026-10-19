@@ -57,7 +57,7 @@ export const ZONES = {
     intro: 'THE GROUND IS ON FIRE', // zone intro tagline (scenes/ZoneIntro.js)
     rows: 7,
     unlock: 'zoneVolcano',
-    scale: { hp: 3.1, atk: 2.35 },
+    scale: { hp: 3.25, atk: 2.4 },
     fights: [
       { w: 3, members: [['dimetro']] },
       { w: 3, members: [['ankylo']] },
@@ -96,7 +96,7 @@ export const ZONES = {
       { w: 2, members: [['bary', { elite: true }], ['ichthy', SMALL]] },
       { w: 1, members: [['dilo', { elite: true }], ['ichthy', SMALL]] }
     ],
-    boss: { species: 'mosa', skin: 'mosa', name: 'Abyss Mosasaur', brain: 'abyssMosa', drop: 'packTide', level: 14, base: { hp: 115, atk: 17, def: 6, spd: 4 } },
+    boss: { species: 'mosa', skin: 'mosa', name: 'Abyss Mosasaur', brain: 'abyssMosa', drop: 'packTide', level: 14, base: { hp: 100, atk: 15, def: 6, spd: 4 } },
     levelAt: (row) => 13 + Math.floor(row / 2),
     enemyBase: {
       dilo: { hp: 56, atk: 13, def: 3, spd: 9 },
@@ -111,7 +111,7 @@ export const ZONES = {
     rows: 7,
     unlock: 'zoneCrater',
     // LV17-20 since the Tidal Coast came before it; the scale is cut to match (the sim retunes it later).
-    scale: { hp: 2.8, atk: 2.15 },
+    scale: { hp: 2.95, atk: 2.2 },
     fights: [
       { w: 3, members: [['carno']] },
       { w: 3, members: [['stego']] },

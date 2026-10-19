@@ -8,6 +8,7 @@ import { session, dinoName, dinoSkin, zoneOf } from '../run/run.js';
 import { bankRun, addAncestor } from '../systems/meta.js';
 import { checkpoint, clearRun } from '../systems/runStore.js';
 import { pickHeir, endGoals } from '../ui/bloodline.js';
+import { showRunStats } from '../ui/runStats.js';
 import { sfx } from '../systems/sfx.js';
 import { onPress } from '../systems/qte.js';
 import { wait } from '../battle/anims.js';
@@ -50,6 +51,7 @@ export class RunEnd extends Phaser.Scene {
     sfx(won ? 'win' : 'lose');
 
     await wait(this, 1200);
+    await showRunStats(this, run);
     await endGoals(this, run, won);
     addAncestor(run, won, await pickHeir(this, run));
     clearRun(); // everything is banked: the run save goes

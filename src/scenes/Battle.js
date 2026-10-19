@@ -362,6 +362,7 @@ export class Battle extends Phaser.Scene {
   // Goal events for a won fight (systems/goals.js), after updating run stats.
   fightEvents(run) {
     const s = run.stats, f = this.st.fight, type = this.node.type;
+    s.fights = (s.fights ?? 0) + 1;
     if (type === 'elite') s.elites = (s.elites ?? 0) + 1;
     if (f.dmg === 0) s.cleanFights = (s.cleanFights ?? 0) + 1;
     const evs = [{ type: 'fight', node: this.node, zone: run.zone, fight: f }];

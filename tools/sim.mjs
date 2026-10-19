@@ -2,7 +2,7 @@
 // with a timing-based QTE model instead of the scenes.
 //
 // usage: node tools/sim.mjs [runs]
-// env:   PLAYS=expert,skilled,decent,average   ONLY=compy,rex   ZONES=4 (default 4)
+// env:   PLAYS=expert,skilled,decent,average   ONLY=compy,rex   ZONES=5 (default 5, all zones)
 //        VET=1 (veteran save: every fossil pack, Sturdy Blood 3, Nine Lives)   EXT=n
 //
 // QTE model. Every press lands with a normal timing error (ms). Skill sets
@@ -27,7 +27,7 @@ import { makeRng } from '../src/systems/rng.js';
 import * as R from '../src/run/run.js';
 
 const N = +(process.argv[2] ?? 200);
-const ZONES = +(process.env.ZONES ?? 4);
+const ZONES = +(process.env.ZONES ?? 5);
 
 // Timing spread (ms, 1 sigma) for defend presses and attack presses.
 //   expert ~90% perfect on a steady Jungle ring, ~70% Jungle crits

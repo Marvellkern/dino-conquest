@@ -9,6 +9,7 @@ import { session, dinoName, dinoSkin, zoneOf } from '../run/run.js';
 import { meta, bankRun, addAncestor } from '../systems/meta.js';
 import { checkpoint, clearRun } from '../systems/runStore.js';
 import { pickHeir, endGoals } from '../ui/bloodline.js';
+import { showRunStats } from '../ui/runStats.js';
 import { Fx } from '../systems/fx.js';
 import { sfx } from '../systems/sfx.js';
 import { onPress } from '../systems/qte.js';
@@ -89,6 +90,7 @@ export class Fossil extends Phaser.Scene {
     lines.forEach(([s, color], i) => text(this, px + 6, py + 6 + i * 15, s, { color, shadow: i === 0 }));
     await wait(this, 900);
 
+    await showRunStats(this, run);
     await endGoals(this, run, false);
     addAncestor(run, false, await pickHeir(this, run));
     clearRun(); // everything is banked: the run save goes

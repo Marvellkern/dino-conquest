@@ -193,6 +193,7 @@ export function endMove(st) {
 
 // Record one QTE result of the current move (see endMove).
 export function noteQte(st, qte) {
+  tally(st, `bar_${qte}`); // run stats: attack bars by result
   st.moveQtes = (st.moveQtes ?? 0) + 1;
   st.moveAllCrit = (st.moveAllCrit ?? true) && qte === 'crit';
 }
@@ -215,6 +216,8 @@ export function playerStrike(st, id, target, qte) {
   const mult = (st.activeEmpower ? 1 + STREAK.bonus : 1) * mods.mult * takenMult(target);
   const dmg = Math.min(target.hp, computeDamage(p, target, m, st.rng, { qte, mult }) + mods.flat);
   target.hp -= dmg;
+  tally(st, 'dmgDealt', dmg);
+  tallyMax(st, 'bestHit', dmg);
   const trait = afterHit(p, target, dmg);
   const fx = BLD.onPlayerHit(st, id, target, qte, dmg);
   const killed = target.hp <= 0;
@@ -249,6 +252,7 @@ export function counterStrike(st, target) {
   const mult = BLD.counterMult(st) * takenMult(target);
   const dmg = Math.min(target.hp, computeDamage(st.player, target, MOVES.counter, st.rng, { qte: 'good', mult }));
   target.hp -= dmg;
+  tally(st, 'dmgDealt', dmg);
   const killed = target.hp <= 0;
   return { dmg, killed, trait: afterHit(st.player, target, dmg), kill: killed ? BLD.onKill(st) : null, phase: checkPhase(st, target) };
 }
@@ -353,6 +357,8 @@ export function enemyStrike(st, e, defend, moveId = e.intent.move) {
   const healed = d === 'dodge' ? BLD.onDodge(st) : 0;
   afterHit(e, p, dmg);
   st.fight.dmg += dmg;
+  tally(st, 'dmgTaken', dmg);
+  tally(st, `ring_${defend}`); // run stats: what the press itself was (before rings / Brace convert it)
   if (d === 'dodge') { tally(st, 'dodges'); st.fatigue++; st.dodgedPhase = true; }
   else if (d === 'hit' && dmg > 0) st.fatigue = 0; // getting hit resets fatigue
   if (d === 'block' && p.status.braced) tally(st, 'blocks');
