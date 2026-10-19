@@ -9,6 +9,7 @@ import { amberMult } from '../systems/build.js';
 import { zoneTiming } from '../data/qteProfiles.js';
 import { drawZone } from '../ui/backdrop.js';
 import { autoProbe } from '../render/quality.js';
+import { SceneLights } from '../render/lighting.js';
 import { text } from '../ui/font.js';
 import { panel } from '../ui/pixel.js';
 import { Hud, EnemyMarkers, MoveBar } from '../ui/battleUI.js';
@@ -78,6 +79,7 @@ export class Battle extends Phaser.Scene {
     const progress = this.node ? this.node.row / ZONES[this.zone].rows : 0;
     const boss = this.node ? this.node.type === 'boss' : this.cfg.enemies.includes('boss');
     this.backdrop = drawZone(this, this.zone, { progress, boss });
+    this.lighting = new SceneLights(this, this.zone); // Light2D on Medium / High; a no-op on Low
 
     let player, enemies, pSkin, build;
     if (this.node) {
@@ -91,7 +93,7 @@ export class Battle extends Phaser.Scene {
       enemies = this.cfg.enemies.map((tok) => this.testEnemy(tok));
       build = { relics: new Set(this.cfg.relics), mut: { ...this.cfg.mutations } };
     }
-    player.rig = createRig(this, player.species, playerX(), GROUND_Y, 1, pSkin, BIG()).addShadow();
+    player.rig = this.lighting.lit(createRig(this, player.species, playerX(), GROUND_Y, 1, pSkin, BIG()).addShadow());
     player.rig.homeX = player.rig.x = Math.max(playerX(), player.rig.halfW + 2); // wide dinos stay on screen
     const timing = zoneTiming(this.zone, this.node ? session.run.ext ?? 0 : 0);
     this.st = B.createBattle({ player, enemies: [], rng: this.rng, spawn: (sp) => this.spawn(sp), build, timing });
@@ -149,7 +151,7 @@ export class Battle extends Phaser.Scene {
 
   addEnemy(e) {
     if (!this.textures.exists(e.skin)) e.skin = e.species; // never draw Phaser's missing-texture box
-    e.rig = createRig(this, e.species, W + 80, GROUND_Y, -1, e.skin, scaleOf(e)).addShadow();
+    e.rig = this.lighting.lit(createRig(this, e.species, W + 80, GROUND_Y, -1, e.skin, scaleOf(e)).addShadow());
     B.addEnemy(this.st, e);
     this.markers.add(e);
     return e;

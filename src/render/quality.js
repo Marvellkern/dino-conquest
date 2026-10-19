@@ -45,6 +45,11 @@ export function autoProbe(scene) {
   let ms = 0, frames = 0, skip = 3; // the first frames after a scene start are uneven
   const tick = (_, dt) => {
     if (skip-- > 0) return;
+    if (document.hidden || dt > 250) { // a background tab or a stall says nothing about the device: try next fight
+      scene.events.off('update', tick);
+      probed = false;
+      return;
+    }
     ms += dt;
     frames++;
     if (ms < AUTO_PROBE_MS) return;

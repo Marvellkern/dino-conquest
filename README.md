@@ -48,6 +48,11 @@ Scaling is integer-only by design (crisp pixels), so some screens show black bor
 - **Auto** starts at Medium on phones (coarse pointer or a small screen) and High on desktops. It measures the first 3s of the session's first battle, and below 50 fps it drops one tier, remembered as `meta.settings.gfxAuto`. It never raises the tier by itself.
 - **No WebGL:** without WebGL (the Canvas renderer) the game is always Low.
 - **Camera scroll:** with the camera's origin at the top-left, scroll stays "top-left of the view in world units". The portrait map clamps its own scroll (camera bounds assume a centered zoom), and screen shake works around the current scroll.
+- **Lighting (step 2):** on Medium / High, battle dinos are normal-mapped and lit by Light2D (`render/lighting.js` `SceneLights`, one per battle).
+  - **Normal maps:** `render/normals.js` builds them from each sprite's alpha, as a distance-from-the-edge dome, and only for textures a fight uses. The T-rex parts share the whole rex's map, so their seams don't show.
+  - **Mirrored enemies:** `render/litPipeline.js` is the stock Light2D pipeline taught that a mirrored container is a reflection, not a 180° turn, so enemies' rims land on the right side.
+  - **Hit flash:** it switches back to the plain pipeline, so it stays pure white.
+  - **Tuning:** each zone's ambient color and key light (sun / moon) live in `data/lighting.js`, along with the hit `SPARK` lights (hit, crit, block): a warm burst at the impact point that lights both fighters. The key light reads mostly as a rim, because Light2D keeps lights close to the sprite's plane, so `ambient` sets how bright the dinos are overall. Bursts over the tier's light cap replace the oldest one.
 - **`?fps` in the URL:** a small overlay with fps, tier, render scale and active lights. In dev builds, a QTE frame over 33ms is logged (`[qte] slow frame`).
 
 ## Where things live

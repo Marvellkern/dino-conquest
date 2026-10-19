@@ -33,6 +33,16 @@ class Rig {
   setBase(img, key) {
     img.baseKey = key;
     img.setTexture(this.flashOn ? `${key}_flash` : key);
+    if (this.litPipe && !this.flashOn) this.ensure?.(key); // a crouch / fill texture shown for the first time
+  }
+
+  // Lighting (render/lighting.js): parts draw with a Light2D pipeline; ensure(key) builds a
+  // texture's normal map the first time it's needed. The hit flash stays unlit (pure white).
+  setLit(pipeline, ensure) {
+    this.litPipe = pipeline;
+    this.ensure = ensure;
+    for (const p of this.parts) { ensure(p.baseKey); if (!this.flashOn) p.setPipeline(pipeline); }
+    return this;
   }
 
   get x() { return this.c.x; }
@@ -59,7 +69,10 @@ class Rig {
 
   setFlash(on) {
     this.flashOn = on;
-    for (const p of this.parts) p.setTexture(on ? `${p.baseKey}_flash` : p.baseKey);
+    for (const p of this.parts) {
+      p.setTexture(on ? `${p.baseKey}_flash` : p.baseKey);
+      if (this.litPipe) { if (on) p.resetPipeline(); else { this.ensure(p.baseKey); p.setPipeline(this.litPipe); } }
+    }
   }
 
   flash(ms = 50) {
@@ -151,6 +164,10 @@ export class RexRig extends Rig {
   }
 
   mouth() { return this.at(this.w - 2 + this.pose.hx, 7 + this.pose.hy); }
+
+  // Every part (and gap fill) is a full-size slice of the whole rex, so they all share its
+  // normal map: no seams where the parts meet.
+  normalSource() { return this.key; }
 }
 
 // Everyone else: whole sprite + a pre-built crouch texture.

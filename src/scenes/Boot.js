@@ -13,6 +13,7 @@ import { makeSpriteSet, makeTexture } from '../sprites/renderSprite.js';
 import { buildRexParts } from '../sprites/rexParts.js';
 import { buildFont } from '../ui/font.js';
 import { applySettings } from '../systems/meta.js';
+import { registerLitPipeline } from '../render/litPipeline.js';
 
 const DROP = { ...CROUCH_DROP, ...CROUCH_DROP2, ...CROUCH_DROP3 };
 
@@ -24,6 +25,7 @@ export class Boot extends Phaser.Scene {
   create() {
     buildFont(this);
     applySettings(this.registry);
+    registerLitPipeline(this.game); // Light2D for Medium / High (render/lighting.js)
 
     // Every species in 3 forms: base, _e1, _e2 (new silhouettes from sprites/forms.js).
     for (const [species, base] of Object.entries({ ...GRIDS, ...GRIDS2, ...GRIDS3 })) {
