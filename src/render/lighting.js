@@ -1,4 +1,4 @@
-import { W, H } from '../config.js';
+import { W, GROUND_Y } from '../config.js';
 import { TIERS } from '../data/quality.js';
 import { LIGHTING } from '../data/lighting.js';
 import { render } from './quality.js';
@@ -25,7 +25,8 @@ export class SceneLights {
     this.max = tier.lights;
     const L = LIGHTING[zone] ?? LIGHTING.jungle, k = L.key;
     scene.lights.enable().setAmbientColor(L.ambient);
-    this.key = scene.lights.addLight(Math.round(W * k.x), Math.round(H * k.y), k.radius, k.color, k.intensity);
+    const x = k.side === 'right' ? W + k.dx : k.side === 'left' ? -k.dx : W / 2 + k.dx;
+    this.key = scene.lights.addLight(Math.round(x), GROUND_Y - k.dy, k.radius, k.color, k.intensity);
     this.count();
     this.tick = () => this.update();
     scene.events.on('update', this.tick);

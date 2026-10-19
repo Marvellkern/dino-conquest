@@ -1,7 +1,9 @@
 // Per-zone lighting (lighting brief §5). Medium / High only; Low keeps the original look.
 //   ambient  base light on lit sprites (0xRRGGBB): darker = moodier
-//   key      the zone's sun / moon: a big far light that sets the rim-light direction.
-//            x, y are fractions of the screen (1.1 = past the right edge, -0.3 = above it)
+//   key      the zone's sun / moon: a big light that sets the rim-light direction. It's placed
+//            from the stage, not the screen, so both layouts light the fighters the same:
+//            side 'right' | 'left' | 'center', dx px past that edge (or off center), dy px above
+//            the ground line (negative = below it)
 //   spark    the light a hit throws on both fighters (crits use crit)
 // Light2D lights a sprite from its edges (the shader keeps lights near the sprite's plane),
 // so the key light reads as a rim; ambient fills the middle.
@@ -10,7 +12,7 @@ export const LIGHTING = {
   // until the baked night backdrop (step 3) darkens the rest of the scene to match.
   jungle: {
     ambient: 0x62768a,
-    key: { x: 1.05, y: -0.35, radius: 560, color: 0x8fb4ff, intensity: 2.6 },
+    key: { side: 'right', dx: 16, dy: 150, radius: 520, color: 0x8fb4ff, intensity: 1.6 },
     // Baked night backdrop (render/bake.js): per layer a color grade (rgb multipliers),
     // optional fog (color, amount) and a depth-of-field blur radius in world px.
     bake: {
@@ -25,10 +27,10 @@ export const LIGHTING = {
     }
   },
   // Provisional for the other zones until their own pass (step 5): neutral, soft.
-  swamp: { ambient: 0x8e9884, key: { x: -0.1, y: 0.4, radius: 480, color: 0xa8e080, intensity: 0.9 } },
-  volcano: { ambient: 0x9a8070, key: { x: 0.5, y: 1.4, radius: 520, color: 0xffa050, intensity: 1.0 } },
-  coast: { ambient: 0x8a94a4, key: { x: -0.1, y: -0.3, radius: 520, color: 0xd8e4f0, intensity: 1.0 } },
-  crater: { ambient: 0x8a7c98, key: { x: 0.5, y: -0.3, radius: 520, color: 0xfeae34, intensity: 1.0 } }
+  swamp: { ambient: 0x8e9884, key: { side: 'left', dx: 20, dy: 20, radius: 480, color: 0xa8e080, intensity: 0.9 } },
+  volcano: { ambient: 0x9a8070, key: { side: 'center', dx: 0, dy: -60, radius: 520, color: 0xffa050, intensity: 1.0 } },
+  coast: { ambient: 0x8a94a4, key: { side: 'left', dx: 16, dy: 150, radius: 520, color: 0xd8e4f0, intensity: 1.0 } },
+  crater: { ambient: 0x8a7c98, key: { side: 'center', dx: 0, dy: 160, radius: 520, color: 0xfeae34, intensity: 1.0 } }
 };
 
 // Hit lights: a warm burst at the impact point, brighter and bigger on a crit.
