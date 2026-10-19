@@ -1,5 +1,9 @@
 import { text } from '../ui/font.js';
 import { pixelCircle, pixelLine } from '../ui/pixel.js';
+import { render } from '../render/quality.js';
+
+const easeOut = (t) => t * (2 - t);
+const easeInOut = (t) => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t);
 
 // Hit feedback toolkit. One instance per scene; call update(dt) every frame.
 // Visual-only randomness uses Math.random (gameplay rolls use the seeded RNG).
@@ -10,15 +14,38 @@ export class Fx {
     scene.events.once('shutdown', () => clearTimeout(this.hs));
   }
 
+  // Shake and the kill push-in both move the camera from `base` (its scroll when the first
+  // one started) and put it back exactly when both are over. The camera's own zoom is the
+  // render scale (render/quality.js); the push-in multiplies it and shifts the scroll so it
+  // zooms toward the middle of the screen (the camera zooms from its top-left corner).
   update(dt) {
-    const sh = this.sh;
-    if (!sh) return;
+    const sh = this.sh, push = this.push;
+    if (!sh && !push) return;
+    const cam = this.s.cameras.main, b = this.base;
+    if (sh) {
+      sh.t += dt * this.s.time.timeScale;
+      if (sh.t >= sh.ms) this.sh = null;
+      else if (this.s.time.timeScale !== 0) { // the offset freezes during hitstop
+        const a = Math.max(1, Math.round(sh.px * (1 - sh.t / sh.ms)));
+        sh.dx = Phaser.Math.Between(-a, a);
+        sh.dy = Phaser.Math.Between(-a, a);
+      }
+    }
+    let k = 1;
+    if (push) {
+      const t = Date.now() - push.t0; // real time: the push-in ignores the slow-motion
+      if (t >= push.end) this.push = null;
+      else k = 1 + 0.05 * (t < push.in ? easeOut(t / push.in) : t < push.out ? 1 : 1 - easeInOut((t - push.out) / (push.end - push.out)));
+    }
+    if (!this.sh && !this.push) { cam.setZoom(render.rs).setScroll(b.x, b.y); this.base = null; return; }
+    const hw = cam.width / (2 * render.rs), hh = cam.height / (2 * render.rs);
+    cam.setZoom(render.rs * k);
+    cam.setScroll(b.x + (this.sh?.dx ?? 0) + hw * (1 - 1 / k), b.y + (this.sh?.dy ?? 0) + hh * (1 - 1 / k));
+  }
+
+  holdBase() {
     const cam = this.s.cameras.main;
-    sh.t += dt * this.s.time.timeScale;
-    if (sh.t >= sh.ms) { cam.setScroll(sh.x0, sh.y0); this.sh = null; return; }
-    if (this.s.time.timeScale === 0) return; // freeze the offset during hitstop
-    const a = Math.max(1, Math.round(sh.px * (1 - sh.t / sh.ms)));
-    cam.setScroll(sh.x0 + Phaser.Math.Between(-a, a), sh.y0 + Phaser.Math.Between(-a, a));
+    this.base ??= { x: cam.scrollX, y: cam.scrollY };
   }
 
   // Integer-pixel screen shake. Respects the 'shake' setting in the registry.
@@ -26,8 +53,8 @@ export class Fx {
     if (this.s.registry.get('shake') === false) return;
     if (!Number.isFinite(px) || px <= 0) return; // a NaN offset would scroll the camera into the void
     if (this.sh && this.sh.px > px) return;
-    const cam = this.s.cameras.main; // shake around where the camera is (the portrait map scrolls)
-    this.sh = this.sh ? { ...this.sh, px, ms, t: 0 } : { px, ms, t: 0, x0: cam.scrollX, y0: cam.scrollY };
+    this.holdBase(); // shake around where the camera is (the portrait map scrolls)
+    this.sh = { px, ms, t: 0, dx: 0, dy: 0 };
   }
 
   // Freeze the scene clock + tweens for a moment (real time).
@@ -41,13 +68,13 @@ export class Fx {
 
   // Killing blow: brief slow-motion plus a slight camera push-in.
   killCam(ms = 120) {
-    const s = this.s, cam = s.cameras.main;
+    const s = this.s;
     s.time.timeScale = 0.3;
     s.tweens.timeScale = 0.3;
     clearTimeout(this.hs);
     this.hs = setTimeout(() => { s.time.timeScale = 1; s.tweens.timeScale = 1; }, ms);
-    cam.zoomTo(1.05, 90, 'Quad.easeOut', true); // camera effects need the long ease names
-    setTimeout(() => s.sys.isActive() && cam.zoomTo(1, 220, 'Quad.easeInOut', true), ms + 60);
+    this.holdBase(); // a 5% push-in: 90ms in, held, 220ms back out (see update)
+    this.push = { t0: Date.now(), in: 90, out: ms + 60, end: ms + 60 + 220 };
   }
 
   sparks(x, y, { count = 8, dir = 1, big = false, gold = false } = {}) {
