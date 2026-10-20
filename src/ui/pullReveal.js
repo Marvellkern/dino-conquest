@@ -35,8 +35,8 @@ export const bestOf = (results) => results.reduce((a, b) => (lookOf(b).rank + (b
 export const resultName = (r) => (r.kind === 'shards' ? `+${r.n} BONE SHARDS` : r.kind === 'refund' ? `+${r.n} AMBER`
   : `${(SPECIES[r.species].short ?? SPECIES[r.species].name).toUpperCase()}${r.variant ? ` · ${VARIANTS[r.variant].name}` : ''}`);
 
-// One full reveal. known: species the player had before this pull (for NEW!).
-export async function revealOne(s, r, { x, ground, known = [] }) {
+// One full reveal (NEW! for a dino or variant you didn't have; a duplicate shows its Amber).
+export async function revealOne(s, r, { x, ground }) {
   const look = lookOf(r), objs = [];
   let skip = false;
   const off = seenOne ? onPress(s, () => { skip = true; }) : () => {};
@@ -87,13 +87,13 @@ export async function revealOne(s, r, { x, ground, known = [] }) {
     rig.startIdle();
   } else prize(s, r, x, ground, objs);
   // The card.
-  objs.push(...card(s, r, known));
+  objs.push(...card(s, r));
   seenOne = true;
   await tapToGo(s, objs);
 }
 
 // Ten pulls: the eggs crack one after another (tap to hurry), then the best gets the full reveal.
-export async function revealTen(s, results, { x, ground, known }) {
+export async function revealTen(s, results, { x, ground }) {
   const objs = [], n = results.length, cols = 5, gap = lp(46, 30);
   let fast = false;
   const off = onPress(s, () => { fast = true; });
@@ -119,7 +119,7 @@ export async function revealTen(s, results, { x, ground, known }) {
   off();
   await wait(s, 500);
   for (const o of objs) o.destroy();
-  await revealOne(s, bestOf(results), { x, ground, known });
+  await revealOne(s, bestOf(results), { x, ground });
 }
 
 function flash(s, color, alpha) {
@@ -144,18 +144,18 @@ function prize(s, r, x, ground, objs) {
 }
 
 // The result card slides in under the banner text.
-function card(s, r, known) {
+function card(s, r) {
   const w = lp(150, 168), h = 40, x = lp(W - 6 - w, 6), y = lp(30, 210);
   const g = s.add.graphics().setDepth(40);
   panel(g, x, y, w, h, { fill: r.kind === 'featured' ? 0x5a4a20 : undefined });
-  const isNew = r.species && (r.isNew || !known.includes(r.species));
+  const isNew = !!r.isNew;
   const sp = r.species ? SPECIES[r.species] : null;
   const line2 = r.variant ? VARIANTS[r.variant].desc : sp ? `${RARITIES[sp.rarity].name}  SPECIAL: ${MOVES[sp.special].name.toUpperCase()}` : r.kind === 'shards' ? 'FOR CRAFTING EGGS' : 'BACK TO YOUR AMBER';
   const out = [
     g,
     text(s, x + 6, y + 5, resultName(r), { color: r.kind === 'featured' ? '#ffd040' : COLORS.text }).setDepth(41),
     text(s, x + 6, y + 16, line2, { color: COLORS.textDim, small: true }).setDepth(41),
-    text(s, x + 6, y + 26, r.species ? 'AN EGG FOR YOUR COLLECTION' : '', { color: '#7fe0ff', small: true }).setDepth(41)
+    text(s, x + 6, y + 26, r.dupe ? `ALREADY YOURS: +${r.dupe} AMBER` : r.species ? 'YOURS FOR GOOD: START RUNS WITH IT' : '', { color: r.dupe ? '#e8a030' : '#7fe0ff', small: true }).setDepth(41)
   ];
   if (isNew) out.push(text(s, x + w - 6, y + 5, 'NEW!', { color: '#ff6040', origin: [1, 0] }).setDepth(41));
   for (const o of out) { o.x += 40; s.tweens.add({ targets: o, x: o.x - 40, duration: 180, ease: 'Quad.Out' }); }

@@ -1,7 +1,7 @@
 // Daily Hatchery rules (data/gacha.js). Phaser-free and pure on the save's `gacha` block,
 // so tools/gacha-odds.mjs can run them. Pulls are resolved and applied here; the caller
 // saves straight away, before any reveal animation (a refresh never rerolls or loses one).
-import { DAY_MS, PRICE, FEATURED_RATE, VARIANT_SHARE, PITY, FILLER, CRAFT, WEEK, ROTATION, HISTORY_MAX } from '../data/gacha.js';
+import { DAY_MS, PRICE, FEATURED_RATE, VARIANT_SHARE, PITY, FILLER, CRAFT, WEEK, ROTATION, HISTORY_MAX, DUPE_AMBER } from '../data/gacha.js';
 import { VARIANTS, VARIANT_ORDER } from '../data/variants.js';
 import { SPECIES } from '../data/species.js';
 import { makeRng } from './rng.js';
@@ -23,9 +23,9 @@ export function bannerFor(day) {
 /* ---------- the save block ---------- */
 
 export const defaultGacha = () => ({
-  eggs: {},         // egg key ('rex' or 'rex:magma') -> count
+  owned: {},        // species -> true: pulled dinos are yours for good (start runs with them any time)
   variants: {},     // species -> { variant: true } owned forever
-  shards: 0,        // Bone Shards
+  shards: 0,        // Bone Shards (buy variants you don't have yet)
   pity: 0,          // pulls since the last featured hit (every banner)
   lastFree: null,   // UTC day of the last free pull
   credits: 0,       // extra free pulls (goal rewards), used after the daily one
@@ -34,12 +34,34 @@ export const defaultGacha = () => ({
   history: []       // last HISTORY_MAX: { day, banner, result }
 });
 
+// Saves from before permanent ownership kept egg counts ({ 'rex:magma': 2 }): every egg
+// they had becomes owned (and the variant it carried).
+export function upgradeGacha(g) {
+  g.owned ??= {};
+  for (const k of Object.keys(g.eggs ?? {})) {
+    const { species, variant } = parseEgg(k);
+    if (!SPECIES[species]) continue;
+    g.owned[species] = true;
+    if (variant) (g.variants[species] ??= {})[variant] = true;
+  }
+  delete g.eggs;
+  for (const sp of Object.keys(g.variants)) if (SPECIES[sp]) g.owned[sp] = true; // a variant means you own the dino
+  return g;
+}
+
 export const eggKey = (species, variant = null) => (variant ? `${species}:${variant}` : species);
 export const parseEgg = (key) => { const [species, variant = null] = key.split(':'); return { species, variant }; };
 export const dailyReady = (g, day = utcDay()) => g.lastFree !== day;
 // A single pull is free now: today's daily one, or a free pull from a goal.
 export const freeReady = (g, day = utcDay()) => dailyReady(g, day) || (g.credits ?? 0) > 0;
 export const ownsVariant = (g, species, v) => !!g.variants[species]?.[v];
+export const ownsSpecies = (g, species) => !!g.owned?.[species];
+
+// What you can start a run with: each dino you own, and each of its variants you own.
+export function collection(g) {
+  return Object.keys(g.owned ?? {}).filter((sp) => SPECIES[sp])
+    .flatMap((sp) => [sp, ...VARIANT_ORDER.filter((v) => ownsVariant(g, sp, v)).map((v) => eggKey(sp, v))]);
+}
 
 /* ---------- one pull ---------- */
 
@@ -71,16 +93,21 @@ export function rollPull(g, banner, rng, eggPool) {
   return { kind: f.kind, n: rng.int(f.min, f.max) };
 }
 
-// Put a result into the save: eggs, a new variant, shards, Amber back (into meta.amber).
+// Put a result into the save. A dino you don't have yet (or a variant you don't have) is
+// yours for good (isNew); one you already own turns into Amber (dupe: how much, by rarity,
+// more for a variant). Shards and Amber back go where they belong.
 function apply(meta, r) {
   const g = meta.gacha;
   if (r.kind === 'featured' || r.kind === 'egg') {
-    const k = eggKey(r.species, r.variant);
-    g.eggs[k] = (g.eggs[k] ?? 0) + 1;
-    if (r.variant) {
-      r.isNew = !ownsVariant(g, r.species, r.variant);
-      (g.variants[r.species] ??= {})[r.variant] = true;
+    const had = r.variant ? ownsVariant(g, r.species, r.variant) : ownsSpecies(g, r.species);
+    if (had) {
+      r.dupe = r.variant ? DUPE_AMBER.variant : DUPE_AMBER[SPECIES[r.species].rarity];
+      meta.amber += r.dupe;
+      return;
     }
+    r.isNew = true;
+    g.owned[r.species] = true;
+    if (r.variant) (g.variants[r.species] ??= {})[r.variant] = true;
   } else if (r.kind === 'shards') g.shards += r.n;
   else if (r.kind === 'refund') meta.amber += r.n;
 }
@@ -114,23 +141,19 @@ export function doPulls(meta, n, { now = Date.now(), eggPool }) {
   return { results, banner, cost };
 }
 
-/* ---------- eggs and shards ---------- */
+/* ---------- Bone Shards ---------- */
 
-// Start a run with an egg: one is used up (call only when the run actually starts).
-export function useEgg(g, key) {
-  if (!(g.eggs[key] > 0)) return false;
-  if (--g.eggs[key] === 0) delete g.eggs[key];
-  return true;
-}
+// Variants you could buy with Bone Shards: the ones you don't have yet, for dinos you own.
+export const buyableVariants = (g) => Object.keys(g.owned ?? {}).filter((sp) => SPECIES[sp])
+  .flatMap((sp) => VARIANT_ORDER.filter((v) => !ownsVariant(g, sp, v)).map((v) => eggKey(sp, v)));
 
-// Craft an egg with Bone Shards: any species you've hatched or pulled (100), or another
-// egg of a variant you own (300). known: species hatched or pulled (meta.dex keys + eggs).
-export function craftCost(key) { return parseEgg(key).variant ? CRAFT.variant : CRAFT.species; }
-export function craft(g, key, known) {
-  const { species, variant } = parseEgg(key), cost = craftCost(key);
-  if (variant ? !ownsVariant(g, species, variant) : !known.includes(species)) return { error: 'NOT UNLOCKED' };
-  if (g.shards < cost) return { error: 'NOT ENOUGH SHARDS' };
-  g.shards -= cost;
-  g.eggs[key] = (g.eggs[key] ?? 0) + 1;
+// Buy a variant you don't have yet for a dino you own (CRAFT.variant shards).
+export function craft(g, key) {
+  const { species, variant } = parseEgg(key);
+  if (!variant || !ownsSpecies(g, species)) return { error: 'NOT YOURS' };
+  if (ownsVariant(g, species, variant)) return { error: 'ALREADY OWNED' };
+  if (g.shards < CRAFT.variant) return { error: 'NOT ENOUGH SHARDS' };
+  g.shards -= CRAFT.variant;
+  (g.variants[species] ??= {})[variant] = true;
   return { ok: true };
 }

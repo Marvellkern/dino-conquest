@@ -120,7 +120,7 @@ export class Daily extends Phaser.Scene {
     this.btns = [
       new Button(this, ...L[0], { key: '1', label: 'PULL X1', sub: '', subColor: '#e8a030', onClick: () => this.pull(1) }),
       new Button(this, ...L[1], { key: '2', label: 'PULL X10', sub: `${PRICE.ten}${AMB}`, subColor: '#e8a030', onClick: () => this.pull(10) }),
-      new Button(this, ...L[2], { key: 'E', label: 'EGGS', onClick: () => this.eggs() }),
+      new Button(this, ...L[2], { key: 'E', label: 'DINOS', onClick: () => this.eggs() }),
       new Button(this, ...L[3], { key: 'R', label: 'RATES', onClick: () => this.rates() }),
       new Button(this, ...L[4], { key: 'H', label: 'HISTORY', onClick: () => this.history() }),
       new Button(this, ...L[5], { key: 'ESC', label: 'BACK', onClick: () => this.leave() })
@@ -142,8 +142,7 @@ export class Daily extends Phaser.Scene {
     this.clockText.setText(`NEW BANNER IN ${clock(msToNextBanner())}`);
     this.pityText.setText(`PITY ${g.pity}/${PITY}  (GUARANTEED AT ${PITY})`);
     this.pityBar.clear().fillStyle(0x0c0e12).fillRect(px, py, pw, 2).fillStyle(0xffd040).fillRect(px, py, Math.round((pw * g.pity) / PITY), 2);
-    const eggs = Object.values(g.eggs).reduce((t, n) => t + n, 0);
-    this.owned.setText(`EGGS ${eggs}   BONE SHARDS ${g.shards}`);
+    this.owned.setText(`DINOS ${Object.keys(g.owned).length}   BONE SHARDS ${g.shards}`);
     const free = freeReady(g), one = this.btns[0];
     one.setText(free ? 'FREE PULL' : 'PULL X1', free ? (dailyReady(g) ? 'ONCE A DAY' : `${g.credits} LEFT`) : `${PRICE.one}${AMB}`);
   }
@@ -152,7 +151,6 @@ export class Daily extends Phaser.Scene {
     if (this.busy) return;
     const cost = pullCost(meta.gacha, n);
     if (meta.amber < cost) { sfx('deny'); this.flashText('NOT ENOUGH AMBER'); return; }
-    const known = [...new Set([...Object.keys(meta.dex), ...Object.keys(meta.gacha.eggs).map((k) => k.split(':')[0])])];
     const out = hatcheryPull(n); // paid, rolled and saved before anything is shown
     if (out.error) { sfx('deny'); this.flashText(out.error); return; }
     this.busy = true;
@@ -163,7 +161,7 @@ export class Daily extends Phaser.Scene {
       if (on) this.nextVariant(); else { this.vTimer?.remove(); this.vImg?.destroy(); this.vName?.destroy(); this.vImg = this.vName = null; }
     };
     show(false);
-    const at = { x: this.dinoX, ground: GROUND_Y, known };
+    const at = { x: this.dinoX, ground: GROUND_Y };
     if (n === 1) await revealOne(this, out.results[0], at);
     else {
       await revealTen(this, out.results, { ...at, x: W / 2 });
@@ -180,7 +178,7 @@ export class Daily extends Phaser.Scene {
     this.tweens.add({ targets: t, alpha: 0, delay: 700, duration: 300, onComplete: () => t.destroy() });
   }
 
-  // Your eggs, and Bone Shard crafting (ui/craftMenu.js).
+  // Your dinos, and buying variants with Bone Shards (ui/craftMenu.js).
   async eggs() {
     if (this.busy) return;
     this.busy = true;
@@ -202,6 +200,7 @@ export class Daily extends Phaser.Scene {
         `ELSE: SHARDS ${pc(miss * 0.6)}  EGG ${pc(miss * 0.35)}  AMBER ${pc(miss * 0.05)}`,
         `  SHARDS ${f.shards.min}-${f.shards.max}, AMBER ${f.refund.min}-${f.refund.max}`,
         `  EGG: COMMON 70% RARE 25% EPIC 5%`,
+        'A DINO YOU HAVE: AMBER INSTEAD.',
         `PITY: THE FEATURED DINO ON PULL ${PITY}`,
         'THE PITY COUNT CARRIES OVER ALL BANNERS.',
         'NO REAL MONEY. AMBER ONLY.'
@@ -216,7 +215,7 @@ export class Daily extends Phaser.Scene {
     this.busy = true;
     const h = meta.gacha.history, per = 8;
     for (let page = 0; ;) {
-      const rows = h.slice(page * per, (page + 1) * per).map((e) => `${e.kind === 'featured' ? '* ' : '  '}${resultName(e)}`);
+      const rows = h.slice(page * per, (page + 1) * per).map((e) => `${e.kind === 'featured' ? '* ' : '  '}${resultName(e)}${e.dupe ? ` (+${e.dupe} AMBER)` : e.isNew ? ' NEW' : ''}`);
       const pages = Math.max(1, Math.ceil(h.length / per));
       const opts = [{ label: 'BACK' }, ...(pages > 1 ? [{ label: `MORE (${page + 1}/${pages})` }] : [])];
       const i = await choose(this, { title: h.length ? 'LAST PULLS' : 'NO PULLS YET', lines: rows.length ? rows : ['YOUR PULLS SHOW UP HERE.'], options: opts, bh: 20 });
@@ -238,12 +237,14 @@ const pc = (k) => `${Math.round(k * 100)}%`;
 
 // The 10-pull's summary: what came out, grouped.
 function summary(results) {
-  const dinos = results.filter((r) => r.species).map(resultName), shards = results.filter((r) => r.kind === 'shards').reduce((t, r) => t + r.n, 0);
-  const amber = results.filter((r) => r.kind === 'refund').reduce((t, r) => t + r.n, 0), count = {};
-  for (const d of dinos) count[d] = (count[d] ?? 0) + 1;
+  const fresh = results.filter((r) => r.isNew).map(resultName), count = {};
+  for (const x of fresh) count[x] = (count[x] ?? 0) + 1;
+  const shards = results.filter((r) => r.kind === 'shards').reduce((t, r) => t + r.n, 0);
+  const amber = results.reduce((t, r) => t + (r.kind === 'refund' ? r.n : r.dupe ?? 0), 0);
+  const dupes = results.filter((r) => r.dupe).length;
   return [
-    ...Object.entries(count).map(([d, n]) => `EGG: ${d}${n > 1 ? ` X${n}` : ''}`),
+    ...Object.entries(count).map(([x, n]) => `NEW: ${x}${n > 1 ? ` X${n}` : ''}`),
     ...(shards ? [`+${shards} BONE SHARDS`] : []),
-    ...(amber ? [`+${amber} AMBER BACK`] : [])
+    ...(amber ? [`+${amber} AMBER${dupes ? ` (${dupes} DUPLICATE${dupes > 1 ? 'S' : ''})` : ''}`] : [])
   ];
 }

@@ -1,6 +1,6 @@
 // Versioned localStorage save. Every access is wrapped: private windows,
 // blocked storage or corrupt JSON fall back to a fresh save, never a crash.
-import { defaultGacha } from './gacha.js';
+import { defaultGacha, upgradeGacha } from './gacha.js';
 
 const KEY = 'dino-conquest:save';
 export const SAVE_VERSION = 3;
@@ -36,7 +36,7 @@ function migrate(data) {
     settings: { ...base.settings, ...data.settings },
     stats: { ...base.stats, ...data.stats },
     ext: { ...base.ext, ...data.ext },
-    gacha: { ...base.gacha, ...data.gacha } // v3: older saves start with nothing and a free pull
+    gacha: upgradeGacha({ ...base.gacha, ...data.gacha }) // v3: older saves start with nothing and a free pull; egg counts become owned dinos
   };
   if ((data.v ?? 1) < 2) {
     const stacks = Object.values(data.lineage ?? {}).reduce((t, n) => t + (Number(n) || 0), 0);

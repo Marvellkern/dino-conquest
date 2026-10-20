@@ -10,16 +10,15 @@ import { text } from './font.js';
 import { Button } from './button.js';
 import { FocusNav } from './focus.js';
 
-// From Collection (gacha brief §6): a grid of the eggs you own, with counts, a badge in the
-// variant's color and a rarity-colored frame. Tap one (or arrows + Enter). Resolves with
-// its egg key ('rex' or 'rex:magma'), or null on BACK. 12 a page.
-// opts: title; keys (which eggs to list; default: the ones owned); badge(k) (default "X2");
-// empty (the line when there are none). Crafting lists eggs to make with their price.
+// From Collection (gacha brief §6): a grid of dinos (keys 'rex' or 'rex:magma'), each in a
+// rarity-colored frame with a badge in its variant's color. Tap one (or arrows + Enter).
+// Resolves with its key, or null on BACK. 12 a page.
+// opts: title; badge(k) (a corner label, e.g. a price); empty (the line when there are none).
 const RANK = { legendary: 0, epic: 1, rare: 2, common: 3 };
 const hex = (c) => parseInt(c.slice(1), 16);
 
-export function eggPicker(scene, eggs, { title = 'YOUR EGGS', keys: only = null, badge = (k) => `X${eggs[k]}`, empty = 'NO EGGS YET: PULL SOME IN THE DAILY HATCHERY' } = {}) {
-  const keys = (only ?? Object.keys(eggs).filter((k) => eggs[k] > 0)).filter((k) => SPECIES[parseEgg(k).species])
+export function eggPicker(scene, list, { title = 'YOUR DINOS', badge = () => '', empty = 'NONE YET: PULL SOME IN THE DAILY HATCHERY' } = {}) {
+  const keys = list.filter((k) => SPECIES[parseEgg(k).species])
     .sort((a, b) => RANK[SPECIES[parseEgg(a).species].rarity] - RANK[SPECIES[parseEgg(b).species].rarity] || a.localeCompare(b));
   return new Promise((resolve) => {
     const cols = PORTRAIT ? 3 : 6, rows = PORTRAIT ? 4 : 2, per = cols * rows, cw = 46, ch = 42;

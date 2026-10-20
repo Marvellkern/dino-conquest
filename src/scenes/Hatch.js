@@ -28,7 +28,7 @@ import { roar, wait } from '../battle/anims.js';
 import { music } from '../systems/music.js';
 import { RANDOM_HATCH } from '../data/gacha.js';
 import { VARIANTS, HATCH_VARIANT_CHANCE } from '../data/variants.js';
-import { parseEgg, useEgg } from '../systems/gacha.js';
+import { parseEgg, collection } from '../systems/gacha.js';
 import { eggPicker } from '../ui/eggPicker.js';
 
 // Layout: the nest (x, ground), the info panel (px, py: its top-left) and the
@@ -53,7 +53,7 @@ export class Hatch extends Phaser.Scene {
     this.free = owned('whisper'); // Egg Whisper: free rerolls this hatch
     this.golden = false;
     this.variant = null; // a color variant (owned ones roll 10% of random hatches; an egg can carry one)
-    this.eggKey = null;  // From Collection: the egg this hatch uses (spent at START RUN, not before)
+    this.eggKey = null;  // From Collection: the owned dino ('rex' / 'rex:magma') this run starts as
     this.setup = runSetup();
 
     const L = this.L = LAYOUT(), PX = L.px + 6, PY = L.py;
@@ -174,18 +174,18 @@ export class Hatch extends Phaser.Scene {
 
   // Random Hatch (the bonus) or From Collection, if there are eggs. Returns 'random' or an egg key.
   async choosePath() {
-    const eggs = meta.gacha.eggs, n = Object.values(eggs).reduce((t, k) => t + k, 0);
+    const mine = collection(meta.gacha), n = mine.length;
     if (!n) return 'random';
     for (;;) {
       const i = await choose(this, {
         title: 'HOW TO HATCH?',
         options: [
           { label: 'RANDOM HATCH', sub: `+${Math.round((RANDOM_HATCH.amber - 1) * 100)}% AMBER, +${RANDOM_HATCH.rerolls} FREE REROLL` },
-          { label: 'FROM COLLECTION', sub: `${n} EGG${n > 1 ? 'S' : ''}: YOU PICK, THE TRAIT IS ROLLED` }
+          { label: 'FROM COLLECTION', sub: `${n} DINO${n > 1 ? 'S' : ''} YOU OWN: THE TRAIT IS ROLLED` }
         ]
       });
       if (i === 0) return 'random';
-      const key = await eggPicker(this, eggs);
+      const key = await eggPicker(this, mine, { title: 'START AS...' });
       if (key) return key;
     }
   }
@@ -336,7 +336,6 @@ export class Hatch extends Phaser.Scene {
       ...runSetup(), species: this.species, trait: this.trait, seed: randomSeed(), skin: this.skin(),
       variant: this.variant, egg: this.eggKey, amberBonus: this.eggKey ? 1 : RANDOM_HATCH.amber
     }), { kind: 'map' });
-    if (this.eggKey) useEgg(meta.gacha, this.eggKey); // the egg is spent now that the run has started
     meta.heir = null; // the heir's item is now in this run
     persist();
     this.cameras.main.fadeOut(150);
@@ -347,7 +346,7 @@ export class Hatch extends Phaser.Scene {
     this.amber.set(meta.amber);
     const [bs, bt, bg] = this.buttons;
     const price = (c) => (this.free > 0 ? `FREE (${this.free})` : `${c}${AMB}`);
-    bs.setText(null, this.eggKey ? 'FROM AN EGG' : price(REROLL_COST.species)).setEnabled(!this.eggKey && !this.busy && (this.free > 0 || meta.amber >= REROLL_COST.species));
+    bs.setText(null, this.eggKey ? 'YOUR DINO' : price(REROLL_COST.species)).setEnabled(!this.eggKey && !this.busy && (this.free > 0 || meta.amber >= REROLL_COST.species));
     bt.setText(null, price(REROLL_COST.trait)).setEnabled(!this.busy && (this.free > 0 || meta.amber >= REROLL_COST.trait));
     bg.setEnabled(!this.busy);
   }

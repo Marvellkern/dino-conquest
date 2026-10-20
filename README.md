@@ -338,13 +338,14 @@ A daily featured-dino egg banner paid with banked Amber. **No real money, ever:*
 - **Pulls:** 50 Amber, 450 for 10, and one free single a day (resets 00:00 UTC, doesn't stack).
   - **Featured chance:** Rare 12%, Epic 8%, Legendary 5%. A featured hit is a variant 30% of the time (weights 7/7/6/6/3/1).
   - **Pity:** the featured dino is guaranteed on the 30th pull without it. The counter is shared by every banner, carries over between days, and resets on any featured hit.
-  - **Never blank:** otherwise 60% Bone Shards (10–30), 35% a random egg (Common 70 / Rare 25 / Epic 5%, from what you can hatch, never a Legendary), 5% Amber back (25–75).
+  - **Never blank:** otherwise 60% Bone Shards (10–30), 35% a random dino (Common 70 / Rare 25 / Epic 5%, from what you can hatch, never a Legendary), 5% Amber back (25–75).
+- **Yours for good:** a pulled dino (or variant) you don't have yet joins your collection permanently, and you can start runs with it as often as you like. Pulling one you already have turns it into Amber instead (`DUPE_AMBER`): Common 10, Rare 20, Epic 35, Legendary 60, and 100 for a variant you already own. A new variant of a dino you own isn't a duplicate.
 - **Fairness:**
   - Each pull has its own seeded RNG from the save's pull counter and salt, not the date, so pulls can't be predicted or replayed.
   - Pulls are applied and saved before the reveal, so a refresh can't reroll or lose one.
   - Changing the device clock can still farm the free pull; that's accepted for a single-player game.
-- **Save v3:** `meta.gacha` holds `{ eggs, variants, shards, pity, lastFree, count, salt, history }`. Eggs are keyed `species` or `species:variant`, and the history keeps the last 50 pulls. Older saves start with nothing and a free pull.
-- **Eggs and shards:** `useEgg` uses one up when a run starts with it. `craft` makes an egg for 100 shards (any species you've hatched or pulled) or 300 (a variant you own).
+- **Save v3:** `meta.gacha` holds `{ owned, variants, shards, pity, lastFree, credits, count, salt, history }`, and the history keeps the last 50 pulls. Older saves start with nothing and a free pull. Saves from the egg-count version have every egg they held turned into an owned dino, and the variant it carried (`upgradeGacha`).
+- **Collection and shards:** `collection(g)` lists what you can start as: each owned dino and each of its owned variants (keys `rex` / `rex:magma`). `craft` buys a variant you don't have yet, for a dino you own, for 600 Bone Shards (`buyableVariants`).
 - **Variants (step 2):** six color variants for every hatchable species.
   - **Looks:** palettes in `sprites/variantArt.js`, applied on top of the skin's own colors (so every evolved form keeps its shape), then snapped to Endesga 32. Albino is pale with pink eyes; Melanistic near-black with amber eyes; Frost icy blue with a white belly; Magma red-black with glowing orange cracks; Fossil bone with dark rib gaps; Golden gold with sparkle pixels.
   - **Skins** are keyed `rex~magma` / `rex~magma_e2` (`skinOf(species, evo, skin, variant)`). They're built the first time they're drawn (`ensureSkin` in `sprites/skinBuild.js`, about 1ms each), since all 234 at boot would slow the start. `createRig` calls it, so any scene can show one.
@@ -360,24 +361,20 @@ A daily featured-dino egg banner paid with banked Amber. **No real money, ever:*
   - **Test fights:** `?p=rex&v=magma`.
 - **Banner screen (step 3,** `scenes/Daily.js`, the **DAILY** button on Home, key Y; it shows FREE PULL! when today's is unused):
   - The featured dino, big and idle in its home zone's lighting (`HOME_ZONE` in `data/gacha.js`; Sunday's Legendaries take turns). Beside it, its 6 variants come by one at a time: silhouettes unless you own them.
-  - The info panel: rarity and featured rate, stats, special, the variant share, a pity bar ("PITY 12/30"), the countdown to 00:00 UTC (the screen reloads itself with the new banner), and your eggs and Bone Shards.
-  - Buttons: FREE PULL / PULL X1 (50), PULL X10 (450), EGGS (your collection and crafting), RATES (every odd, the pity rule, "no real money"), HISTORY (the last 50 pulls, 8 a page, featured hits starred), BACK.
+  - The info panel: rarity and featured rate, stats, special, the variant share, a pity bar ("PITY 12/30"), the countdown to 00:00 UTC (the screen reloads itself with the new banner), and how many dinos you own and your Bone Shards.
+  - Buttons: FREE PULL / PULL X1 (50), PULL X10 (450), DINOS (your collection and buying variants), RATES (every odd, the pity rule, "no real money"), HISTORY (the last 50 pulls, 8 a page, featured hits starred), BACK.
 - **Pull reveals (step 3,** `ui/pullReveal.js`). The pull is paid, rolled and saved first (`hatcheryPull`), then shown.
   - **Single:** an egg drops in and cracks in 3 stages while light leaks out in the result's color: grey shards, amber refund, the egg's rarity color, or gold for a featured hit. A featured hit also ducks the music and rises a chime with each crack. A variant flashes its own color and slams VARIANT!.
-  - **The opening:** the egg bursts (the `victory` stinger for a featured hit, `hatch` otherwise), the dino roars, and its card slides in with its name and variant, its perk or special, and NEW! the first time. Shards and Amber show as a little pile.
-  - **Ten:** 10 eggs crack one after another, each showing what it held in its color (tap to hurry). Then the best one gets the full reveal, then a summary.
+  - **The opening:** the egg bursts (the `victory` stinger for a featured hit, `hatch` otherwise), the dino roars, and its card slides in with its name and variant, its perk or special, and NEW! for a dino or variant you didn't have (a duplicate says "ALREADY YOURS: +20 AMBER"). Shards and Amber show as a little pile.
+  - **Ten:** 10 eggs crack one after another, each showing what it held in its color (tap to hurry). Then the best one gets the full reveal, then a summary (what's new, shards, and the Amber from duplicates).
   - After the first reveal of a session, a tap skips the build-up.
-- **Starting a run (step 4,** `scenes/Hatch.js`). With eggs in the collection, tapping the nest asks HOW TO HATCH?:
-  - **Random Hatch:** the usual species and trait spins. Twin Clutch and the Golden Egg still work here, and choosing it gives **+25% Amber for the run** and **+1 free reroll** (`RANDOM_HATCH` in `data/gacha.js`; `run.amberBonus` goes into `amberMult`).
-  - **From Collection:** pick an egg in a grid of what you own (`ui/eggPicker.js`). Each cell has a rarity-colored frame, a badge in the variant's color and a count, and you pick by tap or arrows + Enter, 12 a page. The trait is still rolled (rerolls cost Amber as usual), and REROLL DINO is off. The egg is used up only at START RUN (`useEgg`), so backing out keeps it.
-  - With no eggs, it's a Random Hatch, bonus included.
+- **Starting a run (step 4,** `scenes/Hatch.js`). With dinos in the collection, tapping the nest asks HOW TO HATCH?:
+  - **Random Hatch:** the usual species and trait spins. Twin Clutch and the Golden Egg still work here, and choosing it gives **+50% Amber for the run** and **+1 free reroll** (`RANDOM_HATCH` in `data/gacha.js`; `run.amberBonus` goes into `amberMult`).
+  - **From Collection:** pick a dino you own in a grid (`ui/eggPicker.js`). Each cell has a rarity-colored frame and a badge in the variant's color, and you pick by tap or arrows + Enter, 12 a page. The trait is still rolled (rerolls cost Amber as usual), and REROLL DINO is off. Nothing is used up: it's yours to start as again.
+  - With nothing in the collection, it's a Random Hatch, bonus included.
   - **Variants on random hatches:** a species you own variants of comes out as one of them 10% of the time (rolled again on a species reroll).
-  - The variant shows under the dino with its perk. The run save stores `run.egg` (the key used, or null), `run.dino.variant` and `run.amberBonus`.
-- **Crafting (step 5,** `ui/craftMenu.js`, the EGGS button): shows your Bone Shards and your eggs (the same grid as the Hatch screen's collection).
-  - **CRAFT AN EGG** (100 shards): any species you've hatched, pulled or own a variant of.
-  - **CRAFT A VARIANT EGG** (300): another egg of a variant you own.
-
-  Each one asks first, then saves straight away.
+  - The variant shows under the dino with its perk. The run save stores `run.egg` (the collection key it started as, or null), `run.dino.variant` and `run.amberBonus`.
+- **DINOS screen (step 5,** `ui/craftMenu.js`, the DINOS button): your Bone Shards and your dinos (the same grid as the Hatch screen's collection), and **BUY A VARIANT**: a look you don't have yet for a dino you own, 600 shards. It asks first, saves straight away, and checks Collector / Rainbow Rex.
 - **Goals (step 5),** checked after every pull (event `{ type: 'pull', results }`):
   - **First Pull:** a free pull (`meta.gacha.credits`, used after the day's own, so the button reads "1 LEFT").
   - **Collector:** own 3 different variants; +300 Bone Shards.

@@ -22,9 +22,12 @@ export const FILLER = [
   { kind: 'refund', weight: 5, min: 25, max: 75 }
 ];
 
-// Bone Shards crafting: an egg of any species you've hatched or pulled, or another egg of a
-// variant you own.
-export const CRAFT = { species: 100, variant: 300 };
+// Pulled dinos are yours for good (start runs with them any time). Pulling one you already
+// have turns it into Amber, by rarity; a variant you already have gives more.
+export const DUPE_AMBER = { common: 10, rare: 20, epic: 35, legendary: 60, variant: 100 };
+
+// Bone Shards buy a variant you don't have yet, for a dino you own.
+export const CRAFT = { variant: 600 };
 
 // The week, by UTC weekday (0 = Sunday). Each rarity's list rotates on its own days, so
 // over three weeks every species gets featured (Rares and Epics twice a week each,
@@ -37,9 +40,9 @@ export const ROTATION = {
   anyLegendary: ['rex', 'carno']
 };
 
-// Starting a run (scenes/Hatch.js): a Random Hatch gets +25% Amber for the run and one free
-// reroll, so rolling stays the efficient choice; From Collection uses up one of your eggs.
-export const RANDOM_HATCH = { amber: 1.25, rerolls: 1 };
+// Starting a run (scenes/Hatch.js): a Random Hatch gets +50% Amber for the run and one free
+// reroll, so rolling stays worth it next to picking a dino you own From Collection.
+export const RANDOM_HATCH = { amber: 1.5, rerolls: 1 };
 
 // Pull history kept in the save (for the history screen).
 export const HISTORY_MAX = 50;
