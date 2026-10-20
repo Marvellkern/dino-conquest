@@ -6,7 +6,7 @@ import { PAL } from '../data/palette.js';
 
 const KEEP = new Set(['O', 'W', 'E', 'S']); // outline, teeth, eyes, sparks stay put
 
-function hexToHsl(hex) {
+export function hexToHsl(hex) {
   const n = parseInt(hex.slice(1), 16);
   const r = (n >> 16) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
   const max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2;
@@ -17,7 +17,7 @@ function hexToHsl(hex) {
   return [h * 60, s, l];
 }
 
-function hslToHex(h, s, l) {
+export function hslToHex(h, s, l) {
   h = ((h % 360) + 360) % 360;
   const c = (1 - Math.abs(2 * l - 1)) * s, x = c * (1 - Math.abs(((h / 60) % 2) - 1)), m = l - c / 2;
   const [r, g, b] = h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x] : h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x];

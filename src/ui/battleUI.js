@@ -7,6 +7,7 @@ import { Button } from './button.js';
 import { FocusNav } from './focus.js';
 import { panel } from './pixel.js';
 import { text } from './font.js';
+import { VARIANTS } from '../data/variants.js';
 
 // HUD panel width: landscape side by side, portrait full width (enemy top, player under the stage).
 const panelW = () => lp(120, W - 8);
@@ -20,7 +21,7 @@ const PLAYER_TAGS = [
   ['drain', '-EN', '#e0a040', false], ['blind', 'BLIND', '#c070ff', false], ['hooked', 'HOOKED', '#ff6040', false]
 ];
 const ENEMY_TAGS = [
-  ['atkDown', 'ATK-', '#e06060', true], ['poison', 'PSN', '#80d060', true], ['bleed', 'BLEED', '#e43b44', true], ['stun', 'STUN', '#fff096', false],
+  ['atkDown', 'ATK-', '#e06060', true], ['poison', 'PSN', '#80d060', true], ['bleed', 'BLEED', '#e43b44', true], ['burn', 'BURN', '#f77622', true], ['slow', 'SLOW', '#9ae8ff', true], ['fear', 'FEAR', '#c070ff', false], ['stagger', 'STAGGER', '#ffd040', false], ['stun', 'STUN', '#fff096', false],
   ['guard', 'GUARD', '#9ab8ff', false], ['charging', 'CHARGE', '#ff6040', false], ['submerged', 'UNDER', '#5aa0e0', false],
   ['lowWater', 'LOW', '#5aa0e0', false], ['hooking', 'HOLDING', '#ff6040', false]
 ];
@@ -52,8 +53,9 @@ export class Hud {
     const lv = f.levelLabel ?? `LV${f.level}`, room = Math.floor((this.pw - 18 - lv.length * 6) / 6);
     let name = String(f.name), elite = false;
     while (name.length > room && name.includes(' ')) { elite ||= name.startsWith('Elite '); name = name.slice(name.indexOf(' ') + 1); }
-    this.name.setText(name.slice(0, room));
-    this.name.label.setTint(elite ? 0xffd040 : tint(COLORS.text));
+    const v = VARIANTS[f.variant], withV = v && `${name} · ${v.name}`; // a color variant: "T-REX · MAGMA" (or the name in its color)
+    this.name.setText(withV && withV.length <= room ? withV : name.slice(0, room));
+    this.name.label.setTint(elite ? 0xffd040 : v ? v.glow : tint(COLORS.text));
     this.lv.setText(lv);
     this.lv.label.setTint(f.levelLabel ? 0xff6040 : tint(COLORS.textDim));
     this.shown = this.trail = f.hp;
@@ -187,11 +189,12 @@ export class MoveBar {
 
     const p = st.player, gap = 3, bw = lp(49, 56), bh = 34;
     const cell = (i) => (PORTRAIT ? [3 + (i % 3) * (bw + 3), top + 3 + Math.floor(i / 3) * (bh + 2)] : [3 + i * (bw + gap), top + 4]);
+    this.ids = [...p.moves]; // what each button plays (slot 5 becomes APEX in a Primal Surge: setSlot)
     this.btns = p.moves.map((id, i) => {
       const mu = MUTATIONS[id]?.[mutation(st, id)]; // mutated moves get new text + a colored badge
       const b = new Button(scene, ...cell(i), bw, bh, {
         key: String(i + 1), label: (mu?.btn ?? MOVES[id].btn) + '+'.repeat(p.moveUps[id] ?? 0), sub: mu?.desc ?? MOVES[id].desc,
-        cost: moveCost(st, id), textTop: 4, onClick: () => this.pick(id), onDeny: () => this.on && onDeny(blocked(st, id))
+        cost: moveCost(st, id), textTop: 4, onClick: () => this.pick(this.ids[i]), onDeny: () => this.on && onDeny(blocked(st, this.ids[i]))
       });
       if (mu) scene.add.rectangle(b.x + 8, b.y + 4, 4, 3, mu.color).setOrigin(0).setDepth(13); // badge beside the key number
       b.icon = scene.add.image(b.x + Math.floor(bw / 2) - 4, b.y + 2, iconOf(id, p.species)).setOrigin(0).setDepth(13);
@@ -214,6 +217,16 @@ export class MoveBar {
     this.draw();
   }
 
+  // Swap what slot i plays (APEX during a surge; back to the special after). sub: the text
+  // under it; icon: a texture key.
+  setSlot(i, id, { label = MOVES[id].btn, sub = MOVES[id].desc, icon = null } = {}) {
+    const b = this.btns[i];
+    this.ids[i] = id;
+    b.setText(label, sub);
+    if (icon) b.icon.setTexture(icon);
+    this.draw();
+  }
+
   // Resolves with a move id, or 'end'.
   choose() {
     return new Promise((res) => { this.cb = res; this.on = true; this.draw(); });
@@ -228,7 +241,7 @@ export class MoveBar {
   }
 
   draw() {
-    this.st.player.moves.forEach((id, i) => {
+    this.ids.forEach((id, i) => {
       this.btns[i].cost = moveCost(this.st, id);
       this.btns[i].setEnabled(this.on && !blocked(this.st, id));
       this.btns[i].icon.setAlpha(this.btns[i].enabled ? 1 : 0.45);

@@ -42,6 +42,12 @@ function audio() {
 // master output, and the shared 1s white-noise buffer.
 export const audioContext = () => audio();
 export const masterOut = () => master;
+// The SFX output, for sounds built elsewhere (systems/perfectSfx.js); null when muted.
+export function sfxBus() {
+  if (!enabled || sfxVol <= 0) return null;
+  const c = audio();
+  return c ? { c, out: sfxOut } : null;
+}
 export function noiseBuffer(c) {
   if (!noiseBuf) {
     noiseBuf = c.createBuffer(1, c.sampleRate, c.sampleRate);
@@ -108,7 +114,25 @@ const SOUNDS = {
   levelup: (c) => [523, 784, 1046, 1568].forEach((f, i) => tone(c, { f0: f, dur: 0.08, vol: 0.09, at: i * 0.07 })),
   evolve: (c) => { tone(c, { type: 'square', f0: 160, f1: 1400, dur: 2.6, vol: 0.06 }); tone(c, { type: 'triangle', f0: 80, f1: 700, dur: 2.6, vol: 0.08 }); },
   boom: (c) => { noise(c, { dur: 0.5, vol: 0.45, f: 1200, f1: 80 }); tone(c, { type: 'sawtooth', f0: 220, f1: 30, dur: 0.6, vol: 0.25 }); },
-  lose: (c) => [392, 330, 262].forEach((f, i) => tone(c, { f0: f, dur: 0.16, vol: 0.1, at: i * 0.14 }))
+  lose: (c) => [392, 330, 262].forEach((f, i) => tone(c, { f0: f, dur: 0.16, vol: 0.1, at: i * 0.14 })),
+  // Primal Surge (v2.5): a roar bigger than Roar, layered with a low boom.
+  surgeRoar: (c) => {
+    tone(c, { type: 'sawtooth', f0: 210, f1: 45, dur: 0.95, vol: 0.24 });
+    tone(c, { type: 'sawtooth', f0: 140, f1: 38, dur: 0.95, vol: 0.16, at: 0.03 });
+    noise(c, { dur: 0.9, vol: 0.18, f: 700, f1: 160 });
+    tone(c, { type: 'triangle', f0: 90, f1: 28, dur: 1.1, vol: 0.35 });
+  },
+  // An Apex Strike beat landing: k = 0-4, each a step higher.
+  beat: (c, k = 0) => {
+    const f = 330 * 2 ** ((k * 3) / 12);
+    tone(c, { f0: f * 1.5, f1: f, dur: 0.09, vol: 0.12 });
+    noise(c, { dur: 0.07, vol: 0.22, f: 1400 + k * 300, f1: 500 });
+  },
+  // The ancestor fades in: a high shimmer.
+  shimmer: (c) => {
+    [1568, 2093, 2637, 3136, 4186].forEach((f, i) => tone(c, { type: 'triangle', f0: f, dur: 0.35, vol: 0.045, at: i * 0.06 }));
+    noise(c, { dur: 0.6, vol: 0.05, f: 6000, f1: 9000, q: 3 });
+  }
 };
 
 export const setSfx = (on) => { enabled = on; };
@@ -118,10 +142,10 @@ export function setSfxVolume(v) {
   if (sfxOut) sfxOut.gain.value = v;
 }
 
-export function sfx(name) {
+export function sfx(name, arg) {
   if (!enabled || sfxVol <= 0) return;
   try {
     const c = audio();
-    if (c) SOUNDS[name]?.(c);
+    if (c) SOUNDS[name]?.(c, arg);
   } catch { /* audio is optional */ }
 }

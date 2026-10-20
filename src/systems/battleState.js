@@ -1,6 +1,7 @@
 import { MOVES, ENERGY, STREAK, COAST } from '../data/moves.js';
 import { RELIC_TUNING as RT } from '../data/relics.js';
 import * as BLD from './build.js';
+import * as SG from './surge.js';
 import { BRAINS, DEFAULT_BRAIN, INTENT_ICONS, MOVE_INTENT_ICONS, PHASE2_AT, RING_ICONS } from '../data/brains.js';
 import { zoneTiming, BOSS_RINGS, fatigueMult } from '../data/qteProfiles.js';
 import {
@@ -29,17 +30,11 @@ export function createBattle({ player, enemies, rng, spawn = null, build = null,
   return st;
 }
 
-export function startBattle(st) { BLD.onBattleStart(st); }
+export function startBattle(st) { BLD.onBattleStart(st); SG.initSurge(st); } // the Primal meter (systems/surge.js)
 
 // Run-long counters for goals (run.stats; none in test fights).
-function tally(st, k, n = 1) {
-  const s = st.build.run?.stats;
-  if (s) s[k] = (s[k] ?? 0) + n;
-}
-function tallyMax(st, k, n) {
-  const s = st.build.run?.stats;
-  if (s) s[k] = Math.max(s[k] ?? 0, n);
-}
+function tally(st, k, n = 1) { const s = st.build.run?.stats; if (s) s[k] = (s[k] ?? 0) + n; }
+function tallyMax(st, k, n) { const s = st.build.run?.stats; if (s) s[k] = Math.max(s[k] ?? 0, n); }
 const noteKill = (st, killed) => { if (killed) st.fight.moveKills++; };
 export const maxEnergy = (st) => BLD.maxEnergy(st);
 
@@ -140,6 +135,7 @@ export function beginPlayerTurn(st) {
   const tick = startTurn(p);
   const revived = BLD.tryRevive(st);
   rollIntents(st);
+  SG.onPlayerTurn(st); // a Primal Surge turn passes (+1 energy, or it ends)
   return { ...tick, gain, fast, volcanic, pearl, revived };
 }
 
@@ -155,6 +151,7 @@ export const takenMult = (e) => (e.status.lowWater ? COAST.lowMult : 1) * (e.sta
 export function blocked(st, id) {
   const m = MOVES[id];
   if (st.energy < moveCost(st, id)) return 'NOT ENOUGH ENERGY';
+  if (id === 'apex' && !SG.apexReady(st)) return 'ONCE PER SURGE';
   if (m.brace && st.player.status.braced) return 'ALREADY BRACED';
   if ((m.brace || m.status) && hooked(st)) return 'HOOKED: ATTACK ONLY';
   if (!m.status && !m.brace && !targetable(st).length) return 'NO TARGET';
@@ -213,7 +210,7 @@ export function playerStrike(st, id, target, qte) {
   const m = MOVES[id], p = st.player;
   if (qte === 'miss' && target.brain.evadeMiss && !m.sure) return { dmg: 0, evaded: true };
   const mods = BLD.strikeMods(st, id, target);
-  const mult = (st.activeEmpower ? 1 + STREAK.bonus : 1) * mods.mult * takenMult(target);
+  const mult = (st.activeEmpower ? 1 + STREAK.bonus : 1) * mods.mult * takenMult(target) * (qte === 'crit' ? SG.critMult(st) : 1); // surge crits hit harder
   const dmg = Math.min(target.hp, computeDamage(p, target, m, st.rng, { qte, mult }) + mods.flat);
   target.hp -= dmg;
   tally(st, 'dmgDealt', dmg);
@@ -247,10 +244,10 @@ export const dodgeFatigue = (st) => fatigueMult(st.fatigue);
 // The perfect-dodge counter fires at most once per enemy phase.
 export const counterReady = (st) => !st.counterUsed;
 
-export function counterStrike(st, target) {
+export function counterStrike(st, target, qte = 'good') { // qte: 'crit' when aimed at the head (systems/flow.js)
   st.counterUsed = true;
   const mult = BLD.counterMult(st) * takenMult(target);
-  const dmg = Math.min(target.hp, computeDamage(st.player, target, MOVES.counter, st.rng, { qte: 'good', mult }));
+  const dmg = Math.min(target.hp, computeDamage(st.player, target, MOVES.counter, st.rng, { qte, mult }));
   target.hp -= dmg;
   tally(st, 'dmgDealt', dmg);
   const killed = target.hp <= 0;
@@ -388,7 +385,7 @@ export function finishEnemyAction(st, e) {
 // First time a boss drops to PHASE2_AT: switch cycle, speed up, maybe summon.
 export function checkPhase(st, e) {
   const p2 = e.brain.phase2;
-  if (!p2 || e.phase !== 1 || e.hp <= 0 || e.hp > e.maxHp * PHASE2_AT) return null;
+  if (!p2 || e.phase !== 1 || e.hp <= 0 || e.hp > e.maxHp * PHASE2_AT || SG.active(st)) return null; // STAGGER: phase 2 waits for the surge to end
   e.phase = 2;
   e.step = 0;
   e.tellMult = p2.tellMult ?? 1;

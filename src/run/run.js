@@ -54,25 +54,28 @@ export function statsFor(species, level, evo = 0, bonus = {}, base = SPECIES[spe
 
 export const dinoStats = (d) => statsFor(d.species, d.level, d.evo, d.bonus);
 export const dinoName = (d) => FORMS[d.species]?.[d.evo]?.name ?? SPECIES[d.species].name + EVO_SUFFIX[d.evo];
-// skin 'alpha': the Alpha Rex look (a goal reward), on every T-Rex form.
-export const skinOf = (species, evo = 0, skin = null) => {
-  const key = skin === 'alpha' && species === 'rex' ? 'alpharex' : species;
+// skin 'alpha': the Alpha Rex look (a goal reward), on every T-Rex form. variant (data/variants.js)
+// wins over it: 'rex~magma', 'rex~magma_e1' (built on first use, sprites/skinBuild.js).
+export const skinOf = (species, evo = 0, skin = null, variant = null) => {
+  const key = variant ? `${species}~${variant}` : skin === 'alpha' && species === 'rex' ? 'alpharex' : species;
   return evo ? `${key}_e${evo}` : key;
 };
-export const dinoSkin = (d) => skinOf(d.species, d.evo, d.skin);
+export const dinoSkin = (d) => skinOf(d.species, d.evo, d.skin, d.variant);
 export const enemyName = (e) => (e.name ?? SPECIES[e.species].name);
 
 /* ---------- fighters ---------- */
 
 export function playerFighter(run) {
   const d = run.dino;
-  return makeFighter(d.species, {
+  const f = makeFighter(d.species, {
     side: 'player', level: d.level, traits: d.traits, stats: dinoStats(d), hp: d.hp, name: dinoName(d), moveUps: d.moveUps
   });
+  f.variant = d.variant ?? null; // shown on the HUD ("T-REX · MAGMA")
+  return f;
 }
 
 // The build handed to a fight: fossils + perks + mutations (systems/build.js).
-export const buildOf = (run) => ({ relics: new Set([...run.relics, ...run.perks]), mut: { ...run.mutations }, run });
+export const buildOf = (run) => ({ relics: new Set([...run.relics, ...run.perks]), mut: { ...run.mutations }, run, variant: run.dino.variant ?? null, zone: run.zone });
 
 // One enemy spec → fighter. type: node type, for ENEMY_SCALE.
 export function enemyFighter(e, type) {
@@ -85,7 +88,7 @@ export function enemyFighter(e, type) {
   f.brainId = e.brain ?? e.species;
   f.skin = e.skin ?? skinOf(e.species, e.evo);
   f.small = !!e.small;
-  if (type === 'boss') f.levelLabel = 'BOSS';
+  if (type === 'boss') { f.levelLabel = 'BOSS'; f.boss = true; }
   return f;
 }
 
@@ -172,7 +175,13 @@ export function relicOffers(run, n = 3, from = null) {
 }
 
 // Fossils with an effect the moment they are picked up.
-const ON_PICKUP = { crystalHeart: (run, k) => addStat(run.dino, 'hp', k * RELIC_TUNING.crystalHp) };
+const ON_PICKUP = {
+  crystalHeart: (run, k) => addStat(run.dino, 'hp', k * RELIC_TUNING.crystalHp),
+  rageGland: (run, k) => { // -10% max HP (given back if it's lost)
+    if (k > 0) run.rageHp = Math.round(dinoStats(run.dino).hp * RELIC_TUNING.rageHp);
+    addStat(run.dino, 'hp', -k * (run.rageHp ?? 0));
+  }
+};
 
 export function addRelic(run, id) {
   if (run.relics.includes(id)) return;
@@ -218,6 +227,7 @@ export function advanceZone(run) {
   run.zone = id;
   run.map = generateMap(run.rng, id, run.mods);
   run.at = null;
+  run.surgeMeter = 0; // the Primal meter starts each zone empty
   heal(run.dino, ZONE_HEAL);
   return id;
 }

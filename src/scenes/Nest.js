@@ -11,6 +11,8 @@ import { FocusNav } from '../ui/focus.js';
 import { meta, owned, buyUnlock } from '../systems/meta.js';
 import { rewardText, goalsDone } from '../systems/goals.js';
 import { dinoName, skinOf } from '../run/run.js';
+import { ensureSkin } from '../sprites/skinBuild.js';
+import { VARIANTS } from '../data/variants.js';
 import { sfx } from '../systems/sfx.js';
 import { music } from '../systems/music.js';
 
@@ -143,18 +145,18 @@ export class Nest extends Phaser.Scene {
     const g = this.add.graphics();
     g.fillStyle(0x3a3f4a).fillRect(lp(25, 19), y, 2, rh); // the bloodline
     panel(g, lx - 4, y + 1, W - lx, rh - 2, { fill: f.won ? 0x265c42 : 0x262b44, rivets: false });
-    const key = skinOf(f.species, f.evo ?? 0);
-    const icon = this.add.image(lp(26, 20), cy, this.textures.exists(key) ? key : f.species);
+    const icon = this.add.image(lp(26, 20), cy, ensureSkin(this, skinOf(f.species, f.evo ?? 0, null, f.variant)));
     if (PORTRAIT) icon.setScale(icon.width > 36 ? 0.5 : 1); // big forms stay inside the narrow column
     if (!f.won) icon.setTint(0xb0a890);
     const zone = ZONES[f.zone]?.name ?? '???';
     const fate = f.won ? `CLEARED THE RUN${f.ext ? ` (EXTINCTION ${f.ext})` : ''}` : `FELL TO ${String(f.cause ?? '???').toUpperCase()} - ${zone} ${f.col ?? 0}`;
-    const passed = [f.inherited && `GOT ${f.inherited.toUpperCase()}`, f.passed && `GAVE ${f.passed.toUpperCase()}`].filter(Boolean).join('  ');
-    const name = dinoName({ species: f.species, evo: f.evo ?? 0 }).toUpperCase();
+    const passed = [f.inherited && `GOT ${f.inherited.toUpperCase()}`, f.passed && `GAVE ${f.passed.toUpperCase()}`, f.helped && `ANSWERED ${f.helped}'S CALL`].filter(Boolean).join('  ');
+    const name = dinoName({ species: f.species, evo: f.evo ?? 0 }).toUpperCase() + (VARIANTS[f.variant] ? ` · ${VARIANTS[f.variant].name}` : '');
     const lines = PORTRAIT
       ? [[name, null], [`GEN ${f.gen ?? '?'}  LV${f.level}`, COLORS.textDim], [fate, f.won ? '#7fe0ff' : '#e08070'], [passed || 'NO INHERITANCE', passed ? '#e8a030' : COLORS.textDim]]
       : [[`GEN ${f.gen ?? '?'}  ${name}  LV${f.level}`, null], [fate, f.won ? '#7fe0ff' : '#e08070'], [passed || 'NO INHERITANCE', passed ? '#e8a030' : COLORS.textDim]];
     this.rows.push(g, icon);
+    if (f.answered) this.rows.push(text(this, lp(26, 20) + 10, y + 2, '*', { color: '#9ae8ff', shadow: false })); // it answered an Ancestor Call
     lines.forEach(([s, color], i) => {
       const t = i === 0
         ? text(this, lx, y + 4, s, { shadow: false })

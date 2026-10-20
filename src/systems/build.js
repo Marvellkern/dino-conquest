@@ -1,6 +1,7 @@
 import { MOVES, ENERGY, STREAK, DEFEND_MULT } from '../data/moves.js';
 import { RELIC_TUNING as RT } from '../data/relics.js';
 import { MUTATION_TUNING as MT } from '../data/mutations.js';
+import { VARIANTS, NIGHT_ZONES } from '../data/variants.js';
 
 // Effects of the run's build: fossils (relics), evolution perks and move
 // mutations. battleState.js calls these hooks; nothing here knows about Phaser.
@@ -9,6 +10,9 @@ import { MUTATION_TUNING as MT } from '../data/mutations.js';
 export const emptyBuild = () => ({ relics: new Set(), mut: {} });
 export const has = (st, id) => !!st.build?.relics.has(id);
 export const mutation = (st, move) => st.build?.mut?.[move] ?? null;
+// The dino's color variant (data/variants.js), and its perk numbers if it is v.
+export const variant = (st) => st.build?.variant ?? null;
+const vPerk = (st, v) => (variant(st) === v ? VARIANTS[v].perk : null);
 
 const heal = (f, n) => { const h = Math.min(n, f.maxHp - f.hp); f.hp += h; return h; };
 const aliveCount = (st) => st.enemies.filter((e) => e.hp > 0).length;
@@ -41,7 +45,7 @@ export const hitsAll = (st, id) =>
 
 export const counterMult = (st) => (has(st, 'raptorClaw') ? RT.raptorClawMult / MOVES.counter.power : 1) * (has(st, 'perkShadow') ? RT.shadowMult : 1);
 export const dodgeMult = (st) => (has(st, 'swiftFeather') ? RT.swiftMult : 1) * (has(st, 'perkFeathers') ? RT.feathersMult : 1)
-  * (has(st, 'perkSky') ? RT.skyMult : 1);
+  * (has(st, 'perkSky') ? RT.skyMult : 1) * (vPerk(st, 'albino')?.dodge ?? 1);
 
 // Damage taken by the player on a block.
 export function blockMult(st, m) {
@@ -59,6 +63,7 @@ export function strikeMods(st, id, target) {
   if (id === 'tail' && has(st, 'twinHorn')) mult *= RT.twinHornMult;
   if (MOVES[id].execute && target.hp < target.maxHp / 2) mult *= 1 + MOVES[id].execute;
   if (has(st, 'perkToxic') && target.status.poison > 0) mult *= RT.toxicMult;
+  if (vPerk(st, 'melanistic') && NIGHT_ZONES.includes(st.build.zone)) mult *= VARIANTS.melanistic.perk.nightDmg;
   const flat = (has(st, 'packTotem') ? RT.packTotemDmg * aliveCount(st) : 0) + (has(st, 'emberCore') ? RT.emberDmg : 0);
   return { mult, flat };
 }
@@ -99,7 +104,7 @@ export const pearlHeal = (st) => (has(st, 'pearlHeart') ? heal(st.player, RT.pea
 export const onDodge = (st) => (has(st, 'pteraBone') ? heal(st.player, RT.pteraHeal) : 0);
 
 // Banked Amber from fights (Amber Geode). build: a run build (works without a battle).
-export const amberMult = (build) => (build?.relics?.has('amberGeode') ? RT.geodeMult : 1);
+export const amberMult = (build) => (build?.relics?.has('amberGeode') ? RT.geodeMult : 1) * (build?.variant === 'golden' ? VARIANTS.golden.perk.amber : 1);
 
 // Start of the player's turn. Returns HP lost to Volcanic Heart.
 export function onTurnStart(st, first) {
@@ -130,6 +135,9 @@ export function onPlayerHit(st, id, target, qte, dmg) {
       || (crit && has(st, 'lavaFang') ? RT.lavaPoison : 0);
     if (poison) { applyPoison(st, target, poison); out.poisoned = true; }
     if (crit && has(st, 'sharkTooth')) { target.status.bleed = RT.bleedTurns; target.bleedDmg = RT.bleedDmg; out.bled = true; }
+    const frost = crit && vPerk(st, 'frost'), magma = vPerk(st, 'magma');
+    if (frost && st.rng.chance(frost.slowChance)) { target.status.slow = frost.slowTurns; out.slowed = true; }
+    if (magma && st.rng.chance(magma.burnChance)) { target.status.burn = magma.burnTurns; target.burnDmg = magma.burnDmg; out.burned = true; }
     if (crit && ((id === 'tail' && m === 'stun') || (id === 'skullBash' && has(st, 'perkBonehead')) || MOVES[id].critStun)) {
       target.status.stun = 1;
       target.intent = { kind: 'stunned' };
@@ -191,11 +199,21 @@ export function ghostBite(st, target) {
   return dmg;
 }
 
-// Old Egg: survive one lethal blow per run at 30% HP.
+// Old Egg: survive one lethal blow per run at 30% HP. The Fossil variant does the same at 20%
+// once per run, unless the Old Egg is there (they don't stack; the Old Egg wins).
 export function tryRevive(st) {
   const p = st.player, b = st.build;
-  if (p.hp > 0 || !has(st, 'oldEgg') || b.eggUsed || b.run?.eggUsed) return false;
+  if (p.hp > 0) return false;
+  if (!has(st, 'oldEgg') && vPerk(st, 'fossil') && !b.fossilUsed && !b.run?.fossilUsed) {
+    b.fossilUsed = true;
+    b.revivedBy = 'fossil';
+    if (b.run) b.run.fossilUsed = true;
+    p.hp = Math.max(1, Math.round(p.maxHp * VARIANTS.fossil.perk.revive));
+    return true;
+  }
+  if (!has(st, 'oldEgg') || b.eggUsed || b.run?.eggUsed) return false;
   b.eggUsed = true;
+  b.revivedBy = 'egg';
   if (b.run) b.run.eggUsed = true;
   p.hp = Math.max(1, Math.round(p.maxHp * RT.oldEggHp));
   return true;

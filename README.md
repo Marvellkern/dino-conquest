@@ -320,6 +320,55 @@ Test a build quickly: `?p=compy&e=compy-s,compy-s,compy-s&r=packTotem,meteorChip
 - **Extinction levels 1–10** (unlocked by clearing the Swamp): pick one on Home (X). Each adds a modifier on top of the ones below it, through `run.mods` (enemy HP / ATK, faster wind-ups, fewer nests, 2-trait elites, one life fewer, weaker nests, tougher bosses). Each level banks +10% Amber. The Dino-dex shows the highest level each species has cleared (`X3`).
 - **Save v2**: `migrate()` in `systems/save.js` turns v1 Lineage stacks into 15 Amber each, and keeps the Dino-dex, stats and old fossils (as the family tree). Home shows a one-time notice.
 
+### Daily Hatchery (v2.6, steps 1–2 of 5: rules and variants, no banner screen yet)
+
+A daily featured-dino egg banner paid with banked Amber. **No real money, ever:** there are no purchase buttons, no ads and nothing tied to pulls outside the game.
+- **Data:**
+  - `data/gacha.js`: prices, rates, pity, filler, crafting, the weekly schedule;
+  - `data/variants.js`: the 6 variants, their weights, glows and perk numbers.
+
+  The rules are in `systems/gacha.js` (Phaser-free and pure on `meta.gacha`). `hatcheryPull(n)` in `systems/meta.js` pulls on today's banner and saves before any reveal.
+- **Banner:** one per UTC day (`bannerFor(day)`), the same for everyone with no server:
+  - Mon / Thu: a Rare (Raptor, Sarco, Pteranodon, Dilophosaurus);
+  - Tue / Fri: a Legendary (T-Rex, Carno);
+  - Wed / Sat: an Epic (Trike, Spino, Stego, Therizinosaurus);
+  - Sun: Any Legendary.
+
+  Each rarity rotates through its list on its own days, so every species comes round within two weeks. Commons are never featured. A banner can feature a species whose Nest egg isn't bought yet; pulling it is the other way to get one.
+- **Pulls:** 50 Amber, 450 for 10, and one free single a day (resets 00:00 UTC, doesn't stack).
+  - **Featured chance:** Rare 12%, Epic 8%, Legendary 5%. A featured hit is a variant 30% of the time (weights 7/7/6/6/3/1).
+  - **Pity:** the featured dino is guaranteed on the 30th pull without it. The counter is shared by every banner, carries over between days, and resets on any featured hit.
+  - **Never blank:** otherwise 60% Bone Shards (10–30), 35% a random egg (Common 70 / Rare 25 / Epic 5%, from what you can hatch, never a Legendary), 5% Amber back (25–75).
+- **Fairness:**
+  - Each pull has its own seeded RNG from the save's pull counter and salt, not the date, so pulls can't be predicted or replayed.
+  - Pulls are applied and saved before the reveal, so a refresh can't reroll or lose one.
+  - Changing the device clock can still farm the free pull; that's accepted for a single-player game.
+- **Save v3:** `meta.gacha` holds `{ eggs, variants, shards, pity, lastFree, count, salt, history }`. Eggs are keyed `species` or `species:variant`, and the history keeps the last 50 pulls. Older saves start with nothing and a free pull.
+- **Eggs and shards:** `useEgg` uses one up when a run starts with it. `craft` makes an egg for 100 shards (any species you've hatched or pulled) or 300 (a variant you own).
+- **Variants (step 2):** six color variants for every hatchable species.
+  - **Looks:** palettes in `sprites/variantArt.js`, applied on top of the skin's own colors (so every evolved form keeps its shape), then snapped to Endesga 32. Albino is pale with pink eyes; Melanistic near-black with amber eyes; Frost icy blue with a white belly; Magma red-black with glowing orange cracks; Fossil bone with dark rib gaps; Golden gold with sparkle pixels.
+  - **Skins** are keyed `rex~magma` / `rex~magma_e2` (`skinOf(species, evo, skin, variant)`). They're built the first time they're drawn (`ensureSkin` in `sprites/skinBuild.js`, about 1ms each), since all 234 at boot would slow the start. `createRig` calls it, so any scene can show one.
+  - **Perks** (`systems/build.js`, numbers in `data/variants.js`):
+    - Albino: +10% dodge window.
+    - Melanistic: +10% damage in the Jungle, Coast and Crater.
+    - Frost: crits have a 15% chance to SLOW for 2 turns. SPD only decides who goes first in a fight, so SLOW makes the enemy's wind-ups 20% longer instead.
+    - Magma: hits have a 10% chance to BURN (3 a turn for 2 turns).
+    - Fossil: revive once per run at 20% HP. It doesn't stack with the Old Egg; the Old Egg wins.
+    - Golden: +25% Amber from fights.
+  - **Shown:** each variant has its own soft light in fights (Medium / High). The HUD reads "T-REX · MAGMA" in the variant's color (just the colored name if it doesn't fit). The family tree shows the variant's sprite and name.
+  - **Dino-dex:** tap a discovered card, or press V, for that species' variant page: owned variants with their perk, the rest as silhouettes with their odds. Use < > or the arrow keys to flip species. Cards show a gold `n/6` badge.
+  - **Test fights:** `?p=rex&v=magma`.
+  - Random hatches rolling an owned variant, and starting a run from a pulled egg, come with step 4.
+- **Odds check** (`node tools/gacha-odds.mjs`, exact and simulated through the real rules):
+
+  | Banner | Avg pulls | Avg Amber (singles / 10-pulls) | Worst case |
+  |---|---|---|---|
+  | Rare 12% | 8.2 | 408 / 367 | 30 pulls: 1,500 / 1,350 |
+  | Epic 8% | 11.5 | 574 / 516 | 30 pulls: 1,500 / 1,350 |
+  | Legendary 5% | 15.7 | 785 / 707 | 30 pulls: 1,500 / 1,350 |
+
+  On the way to a Legendary hit you also collect about 178 shards, 5 eggs and 37 Amber back on average. At 100–200 Amber a run, that's about 4–6 runs for a Legendary, with the guarantee at about 9.
+
 ### Art (v2 Phase 4)
 
 - **Palette**: all sprite art is locked to Endesga 32 (`data/palette.js`). `PAL` keys are picked from it, and `renderSprite.js` snaps every pixel (evolution hue shifts, skins, fossils) to the nearest entry with `toEndesga()`. `E32` names the palette for code-drawn backgrounds and UI.
@@ -331,6 +380,98 @@ Test a build quickly: `?p=compy&e=compy-s,compy-s,compy-s&r=packTotem,meteorChip
 ### Hatching
 
 `scenes/Hatch.js` handles the egg, the species spin, the trait spin, rerolls, and START RUN. The reels are in `ui/reel.js`, the buttons in `ui/button.js`, and the egg in `sprites/egg.js`.
+
+### Perfect Moments (v2.5 step 0)
+
+Every perfect dodge and every crit gets a short tension → calm → release beat. The numbers are in `data/flow.js`, the rules (streak, aimed counter) in `systems/flow.js`, and the presentation in `battle/flow.js` (one `Flow` per battle, `scene.flow`).
+- **Perfect dodge → aimed counter:**
+  - **Calm:** when the dodge is on the attack's last hit, the clock slows to 0.2× for 350ms (real time). Everything but the player's dino dims, the music ducks to 25% with a 900 Hz lowpass (`music.setCalm`), a water-drop chime plays, a ripple runs across the ground, and a cyan afterimage stays where the hit would have landed.
+  - **Aim** (up to 600ms, still slowed): three weak points on the attacker. Head = the counter crits; legs = HOBBLED (ATK down for 2 turns); tail = BLEED (2 a turn for 2 turns). Tap one, or use ←/→ then Space; ↑/↓, Tab or a tap on another enemy switches target in packs. Running out of time picks the head.
+  - **Release:** time snaps back, then a 2-frame dash with speed lines and afterimages, a 90ms hitstop, a snap, and a zip home. The counter happens before the attacker heads home.
+  - The damage rules are unchanged (once per enemy phase, 0.4× base, fossils still boost it); a head counter rolls as a crit.
+  - **Guardrails:** the calm only starts once the dodge ring has resolved, and a combo's next ring only opens at full speed, so QTE timing never changes. From the 3rd perfect dodge in a round, the calm is 150ms and the aim reuses the last point. Settings → **Counter aim: Manual / Auto** (Auto always takes the head, with no aim window).
+- **Crit → clean hit:** the bar flashes white and a crystal ting plays (it replaces the old ding in battles), then a 150ms freeze with a vignette pull and a short music duck. The swing then plays at 1.6× with afterimages and speed lines, and lands with extra sparks and a bigger light flash.
+- **Streak:** consecutive perfects (dodges and crits). Each one plays its chime / ting a note higher, climbing a pentatonic scale in the current track's key (`music.key`; minor tracks use the minor pentatonic). A hit taken or a missed attack breaks it with a soft sigh. Blocks and good hits don't count either way.
+- **Aura** (`battle/aura.js`): a shimmer at a streak of 1, flames at the feet from 3, and a full aura plus a soft light from 5. No new particles while a QTE is open.
+- **Sounds** (`systems/perfectSfx.js`): chime, ting, snap and sigh, with a convolver reverb whose impulse response (decaying noise, 1.2s) is built once on the first tap.
+- The sim still uses the plain counter.
+
+### Primal Surge, Apex Strike, Ancestor Call (v2.5)
+
+A rage meter that ends in a species-unique cinematic finisher. The numbers are in `data/surge.js`, the rules in `systems/surge.js` (Phaser-free, `st.surge`), the meter / button / activation in `battle/surge.js` (`scene.surge`, made by the `Flow`), and the strike in `battle/apex.js`, `battle/rhythm.js` and `battle/apexMoves*.js`.
+- **Meter** (0–100), a thin bar under the player's HP, dim orange to gold. When full it pulses and a gold light glows at the dino's feet.
+  - **Gains** (halved from the brief in the balance pass, see below): perfect dodge +10, crit +8 (once per move), kill +5, hit taken +5, block +3. Perfects on a streak above 2 get +5 more, and every gain is ×0.5 in a boss fight. Each gain pops a gold "+n".
+  - **Carry-over:** half carries into the next fight through `run.surgeMeter`, which is saved with the run and reset to 0 in a new zone. A reload restarts the fight from its checkpoint with the meter it started with.
+- **SURGE! button** (key **R**): appears above the move bar when the meter is full, on the player's turn, for 0 energy.
+  - **Activation** (~1.2s): the arena darkens, the music cuts for a beat, the dino crouches and roars (shockwave, dust, debris), grows 15%, and a flickering aura in the species' color (a variant's glow if it has one) lights the arena. The music switches to its surge layer (`music.setSurge`: +10 BPM, the lead on `square25` an octave up, `hard` drums) and PRIMAL SURGE slams in. After the first time each run it runs faster and a tap skips it.
+- **The surge:** 2 player turns (the one it starts on counts).
+  - +1 energy when it starts, even past the max, and attacks can't miss (the bar can't come up MISS).
+  - Crits hit for ×2.0 instead of ×1.75.
+  - Enemies get FEAR (−10% ATK). Bosses get STAGGER instead: their next charge-up is skipped, and phase 2 waits until the surge ends, then plays out.
+  - Slot 5 (the special) becomes **APEX**. When the surge ends, the aura fades, the dino shrinks back, the music returns and the special comes back.
+- **Apex Strike** (2 energy, once per surge):
+  - **Presentation:** letterbox bars, the clock at half speed, a 1.25× camera zoom toward the action (Medium / High only, since on Low the HUD would zoom too), and the arena dims.
+  - **Rhythm QTE:** 5 markers scroll to a hit line on the music's beat (`music.beat()` gives the next beat in `performance.now()` time, output latency included). The QTE runs on real time, so the slowed clock never moves the beats. Windows are perfect ±60ms and good ±130ms, scaled by the zone like the other QTEs. A combo shows "PERFECT x3!", and each landed beat is one hit in the animation.
+  - **Finale:** a 200ms hitstop, a white flash, a shockwave, the biggest shake in the game and a 3× damage number that holds for 600ms. A kill dissolves in slow motion, and all 5 perfect flashes APEX!.
+  - **Damage:** each landed beat is a share of the target's max HP (6% of a normal enemy, 2% of a boss) × a species factor from its special (√(special power / 1.5), about 0.9–1.15). Perfect beats are ×1.25 and all perfect is ×1.35. Enemy HP grows much faster across the zones than the dino's damage, so a share keeps it on target everywhere: 3 perfect + 2 good takes ~35% of a normal enemy and ~11% of a boss. The aoe species (Compy, Trike, Ankylo, Stego) hit every enemy at ×0.6.
+- **The 13 strikes** (`APEX_ANIMS` in `battle/apexMoves.js` + `apexMoves2.js`; each is `{ start?, beat(ctx, i), finale(ctx) }`, and the finale awaits `ctx.impact()` as the last hit lands):
+  - T-Rex Tyrant Crush: clamps and shakes the enemy every beat, then slams it.
+  - Raptor Pack Frenzy: a ghost raptor leaps in every beat, and the last one is the real one.
+  - Carno Horned Rampage: dashes through with afterimages.
+  - Compy Swarm Tide: waves of tiny compies.
+  - Trike Stampede: glowing horns, charges through everyone.
+  - Ankylo Earthshaker: the club slams and cracks spread.
+  - Pachy Skullquake: a headbutt combo with stars.
+  - Stego Spike Storm: spikes fired up rain down.
+  - Spino Tidal Maw: rides a rising wave in, biting.
+  - Sarco Abyss Roll: a death roll, faster each beat.
+  - Pteranodon Sky Strike: dives from off the top.
+  - Dilophosaurus Venom Bloom: frill flare, spit, poison clouds.
+  - Therizinosaurus Reaper's Harvest: crossing slashes and an X.
+
+  Evolved forms (evo 2) get extra particles. **To add one for a new species:** give it an `APEX_STRIKES` entry (name, aura, `aoe`) and an animation set, built from `battle/apexKit.js` (cloneRig, slash, crack, shoot, puff, beatHit).
+- **Ancestor Call (step 4):** `systems/ancestors.js` (rules), `battle/ancestor.js` (on screen), numbers in `ANCESTOR` (`data/surge.js`).
+  - **When:** once per run (`run.ancestorCalls`), after the Apex Strike's 5th beat, if the family tree has anyone and a target survived the strike. A "CALL YOUR ANCESTOR? [TAP]" prompt waits 1.2s while the clock is still slowed.
+  - **Who:** the strongest ancestor: highest level, then the more evolved form, then the most recent.
+  - **The sequence:**
+    - The screen goes nearly black but for the fighters, and a soft held chord in the Nest's key swells (the `ancestor` stinger).
+    - The ancestor rises behind the player as a spirit: its last form and color variant, washed pale cyan, see-through with a soft glow, 10% bigger, with dust motes and a cold light behind.
+    - Its card shows the family tree's name, level, generation and fate ("FELL IN THE VOLCANO").
+    - After the player's finale, it strikes with its own species' Apex finale, nods, and dissolves upward into light.
+  - **Its hit** is a share of max HP like the Apex Strike: 22% of a normal enemy and 9% of a boss, ×0.8–1.2 by its level (full at 15), with its species' factor and aoe.
+  - **Family tree:** the ancestor gets a cyan ✱ and "ANSWERED <NAME>'S CALL" (`answered`, `helped` on its entry).
+  - **First fall:** a one-time hint pops up in the Nest: "Fallen dinos can answer your call in future runs." (`meta.hints.ancestor`; `meta.notice` can now be `{ title, lines }`).
+- **Sounds and lights (step 5):**
+  - **Sounds:** `surgeRoar` (a roar bigger than Roar over a low boom), `beat` (each landed Apex beat a step higher), the `apex` stinger on APEX!, the `shimmer` as the ancestor rises, and the `ancestor` held chord.
+  - **Lights:** the surge aura is a flickering point light in the species' color. The Apex finale lights the whole arena with a big white burst, and the ancestor has a cold light behind it.
+  - **On Low**, with no real lights, the aura and the ancestor get a soft additive glow instead, and the white flash still plays. During the rhythm QTE the only particles are the beat hits.
+- **Fossils (step 6):**
+  - Primal Fang: +25 meter at the start of every fight.
+  - War Drum Bone: the surge lasts 3 turns.
+  - Rage Gland: hits taken give 2× meter, −10% max HP.
+  - Spirit Amber: two Ancestor Calls a run.
+
+  War Drum Bone and Rage Gland are the **Surge Fossils** Nest pack (80 Amber). Primal Fang and Spirit Amber are goal rewards.
+- **Goals (step 6):**
+  - **Apex Predator:** an Apex Strike with all 5 beats perfect; +100 Amber and Primal Fang.
+  - **Blood Remembers:** your ancestor finishes a boss; Spirit Amber.
+  - **One-Turn Wonder:** 3 kills with one Apex Strike; +150 Amber.
+
+  They read `run.stats` (`apexPerfect`, `ancestorBoss`, `apexKills`), and a goal reward can now carry Amber and a fossil together.
+- **Balance (step 6, `node tools/sim.mjs`, with `SURGE=0` for the game without v2.5):**
+  - **Sim policy:** the sim fills the meter the same way and surges at 100 on the first turn an elite or boss is there or the dino is under half HP. It uses the Apex as soon as it can, with beats perfect 85 / 65 / 40% for expert / skilled / decent (else good 70%, miss 30%). It counters perfect dodges at the head, and veterans call a Lv10 ancestor.
+  - **The brief's numbers were far too strong:** expert Crater clears went from 24% to 62%, with 0.5–0.8 surges a fight. The tuning knobs (`GAIN_K`, `APEX_K`, `APEX_BOSS`, `CRIT`, `FEAR`, `SENERGY`, `SETURN`, `ALLP`) showed the Apex damage and the +1 energy every turn did most of it. So the gains are halved (with a capped streak bonus), the +1 energy only comes when the surge starts, crits are ×2.0, FEAR is −10%, and the Apex was cut, then brought halfway back up after play-testing (it felt too weak).
+  - **Now:** about 1 surge every 2–3 fights (0.3–0.6 a fight; the long Volcano fights get the most).
+  - **Clear rates vs `SURGE=0`**, by zone (Jungle → Crater):
+
+    | Player | Jungle | Swamp | Volcano | Coast | Crater |
+    |---|---|---|---|---|---|
+    | Expert | 0 | +3 | +14 | +13 | +12 |
+    | Skilled | +1 | +5 | +9 | +6 | +4 |
+    | Decent | +15 | +2 | +1 | 0 | +1 |
+
+    Decent players get the most help in the Jungle, from the hits they take, which is the comeback the brief asked for. The aimed head counter alone is worth +1–4.
+  - **The trade-off:** a well-played Apex takes ~35% of a normal enemy and ~11% of a boss: the low end of the brief's 35–50%, and under its 15–20% for bosses. That's a deliberate middle between its damage targets and its clear-rate cap (+5–8), which experts now pass in the late zones.
 
 ### Battle code (v2 combat)
 

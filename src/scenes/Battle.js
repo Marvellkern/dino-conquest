@@ -31,11 +31,11 @@ import { deathAnim, phaseAnim, enterAnim } from '../battle/gimmicks.js';
 import { playerMove } from '../battle/playerMoves.js';
 import { enemyAction, evadePounce } from '../battle/enemyMoves.js';
 import {
-  session, playerFighter, enemyFighters, enemyFighter, minionFighter, gainXp, dinoStats, advanceZone, dinoSkin,
-  buildOf
+  session, playerFighter, enemyFighters, enemyFighter, minionFighter, gainXp, dinoStats, advanceZone, dinoSkin, buildOf, skinOf
 } from '../run/run.js';
 import { music } from '../systems/music.js';
 import { battleMusic } from '../battle/battleMusic.js';
+import { Flow } from '../battle/flow.js';
 
 const playerX = () => lp(80, 36);
 // Dinos stand at 3x (2x in portrait); small pack members and summoned minions
@@ -62,6 +62,7 @@ export class Battle extends Phaser.Scene {
       enemies: data.enemies ?? (q.get('e') ?? 'raptor').split(','),
       seed: data.seed ?? randomSeed(),
       zone: data.zone ?? (q.get('z') in ZONES ? q.get('z') : 'jungle'),
+      variant: data.variant ?? q.get('v'), // ?v=magma: a color variant (data/variants.js)
       relics: data.relics ?? (q.get('r') ? q.get('r').split(',').filter((r) => r in RELICS) : []),
       mutations: data.mutations ?? Object.fromEntries((q.get('m') ?? '').split(',').filter(Boolean).map((t) => t.split(':'))
         .filter(([mv, id]) => MUTATIONS[mv]?.[id]))
@@ -96,28 +97,27 @@ export class Battle extends Phaser.Scene {
     } else {
       player = makeFighter(this.cfg.player, { side: 'player', traits: this.cfg.trait ? [this.cfg.trait] : [] });
       enemies = this.cfg.enemies.map((tok) => this.testEnemy(tok));
-      build = { relics: new Set(this.cfg.relics), mut: { ...this.cfg.mutations } };
+      build = { relics: new Set(this.cfg.relics), mut: { ...this.cfg.mutations }, variant: this.cfg.variant, zone: this.cfg.zone }; pSkin = skinOf(this.cfg.player, 0, null, this.cfg.variant);
     }
     player.rig = this.lighting.lit(createRig(this, player.species, playerX(), GROUND_Y, 1, pSkin, BIG()).addShadow());
     player.rig.homeX = player.rig.x = Math.max(playerX(), player.rig.halfW + 2); // wide dinos stay on screen
     const timing = zoneTiming(this.zone, this.node ? session.run.ext ?? 0 : 0);
     this.st = B.createBattle({ player, enemies: [], rng: this.rng, spawn: (sp) => this.spawn(sp), build, timing });
     this.markers = new EnemyMarkers(this, (e) => this.setTarget(e));
+    this.flow = new Flow(this); // perfect moments: dodge calm + aimed counter, clean-hit crits, the streak aura
     for (const e of enemies) this.addEnemy(e);
     this.layout(false);
     B.startBattle(this.st);
     // Fossils: between the HUDs (landscape), a row under the enemy HUD (portrait).
     this.relicBar = new RelicBar(this, lp(129, 6), lp(6, 48), { cols: lp(7, 18), onInfo: (t) => this.say(t) }).set([...build.relics]);
 
-    this.playerHud = new Hud(this, 'player', this.st);
-    this.playerHud.bind(player);
+    (this.playerHud = new Hud(this, 'player', this.st)).bind(player);
     this.targetHud = new Hud(this, 'enemy');
     this.target = this.st.enemies[0];
     this.bar = new MoveBar(this, this.st, { onDeny: (why) => why && this.say(why) });
     this.msg = text(this, W / 2, lp(47, 66), '', { origin: 0.5 }).setDepth(12); // under the status tags, above the enemy markers
 
-    // Tab / Shift+Tab cycle the target (the arrows walk the move bar). Tab is captured so the
-    // browser doesn't move focus off the game.
+    // Tab / Shift+Tab cycle the target (the arrows walk the move bar); captured so focus stays.
     this.input.keyboard.addCapture('TAB');
     this.onKey = (ev) => {
       if (!this.planning || ev.repeat) return;
@@ -229,7 +229,7 @@ export class Battle extends Phaser.Scene {
 
   revivePop() {
     const t = this.st.player.rig.top();
-    this.fx.pop(t.x, t.y - 12, 'OLD EGG! REVIVED', '#ffd040', 1, 1200);
+    this.fx.pop(t.x, t.y - 12, this.st.build.revivedBy === 'fossil' ? 'FOSSIL! REVIVED' : 'OLD EGG! REVIVED', '#ffd040', 1, 1200);
     this.fx.sparks(t.x, t.y, { count: 16, big: true, gold: true });
     sfx('levelup');
   }

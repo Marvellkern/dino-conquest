@@ -11,7 +11,8 @@ export class Fx {
   constructor(scene) {
     this.s = scene;
     this.sh = null;
-    scene.events.once('shutdown', () => clearTimeout(this.hs));
+    this.speed = 1; // the clock's speed between hitstops (slow-motion calm, fast crit swings)
+    scene.events.once('shutdown', () => { clearTimeout(this.hs); scene.time.timeScale = 1; scene.tweens.timeScale = 1; });
   }
 
   // Shake and the kill push-in both move the camera from `base` (its scroll when the first
@@ -19,8 +20,8 @@ export class Fx {
   // render scale (render/quality.js); the push-in multiplies it and shifts the scroll so it
   // zooms toward the middle of the screen (the camera zooms from its top-left corner).
   update(dt) {
-    const sh = this.sh, push = this.push;
-    if (!sh && !push) return;
+    const sh = this.sh, push = this.push, hold = this.zoomHold;
+    if (!sh && !push && !hold) return;
     const cam = this.s.cameras.main, b = this.base;
     if (sh) {
       sh.t += dt * this.s.time.timeScale;
@@ -37,15 +38,31 @@ export class Fx {
       if (t >= push.end) this.push = null;
       else k = 1 + 0.05 * (t < push.in ? easeOut(t / push.in) : t < push.out ? 1 : 1 - easeInOut((t - push.out) / (push.end - push.out)));
     }
-    if (!this.sh && !this.push) { cam.setZoom(render.rs).setScroll(b.x, b.y); this.base = null; return; }
-    const hw = cam.width / (2 * render.rs), hh = cam.height / (2 * render.rs);
+    if (hold) { // a held zoom toward a point (the Apex Strike), real time like the push-in
+      const e = Math.min(1, (Date.now() - hold.t0) / hold.ms);
+      k *= 1 + (hold.k - 1) * (hold.out ? 1 - easeInOut(e) : easeOut(e));
+      if (hold.out && e >= 1) this.zoomHold = null;
+    }
+    if (!this.sh && !this.push && !this.zoomHold) { cam.setZoom(render.rs).setScroll(b.x, b.y); this.base = null; return; }
+    // Zoom toward the focus point (the middle of the screen unless a held zoom names one).
+    const fx = hold ? hold.x - b.x : cam.width / (2 * render.rs), fy = hold ? hold.y - b.y : cam.height / (2 * render.rs);
     cam.setZoom(render.rs * k);
-    cam.setScroll(b.x + (this.sh?.dx ?? 0) + hw * (1 - 1 / k), b.y + (this.sh?.dy ?? 0) + hh * (1 - 1 / k));
+    cam.setScroll(b.x + (this.sh?.dx ?? 0) + fx * (1 - 1 / k), b.y + (this.sh?.dy ?? 0) + fy * (1 - 1 / k));
   }
 
   holdBase() {
     const cam = this.s.cameras.main;
     this.base ??= { x: cam.scrollX, y: cam.scrollY };
+  }
+
+  // Zoom in toward world point (x, y) and hold it until zoomOut().
+  zoomTo(k, x, y, ms = 250) {
+    this.holdBase();
+    this.zoomHold = { k, x, y, t0: Date.now(), ms, out: false };
+  }
+
+  zoomOut(ms = 250) {
+    if (this.zoomHold) Object.assign(this.zoomHold, { t0: Date.now(), ms, out: true });
   }
 
   // Integer-pixel screen shake. Respects the 'shake' setting in the registry.
@@ -63,7 +80,23 @@ export class Fx {
     s.time.timeScale = 0;
     s.tweens.timeScale = 0;
     clearTimeout(this.hs);
-    this.hs = setTimeout(() => { s.time.timeScale = 1; s.tweens.timeScale = 1; }, ms);
+    this.frozen = true;
+    this.hs = setTimeout(() => { this.frozen = false; s.time.timeScale = this.speed; s.tweens.timeScale = this.speed; }, ms);
+  }
+
+  // Run the scene clock and tweens at k (a hitstop in progress keeps its freeze, then lands on k).
+  setSpeed(k) {
+    this.speed = k;
+    if (!this.frozen) { this.s.time.timeScale = k; this.s.tweens.timeScale = k; }
+  }
+
+  // Horizontal speed lines behind a dash (dir: the way it's moving).
+  speedLines(x, y, dir, n = 5) {
+    for (let i = 0; i < n; i++) {
+      const w = Phaser.Math.Between(10, 22), ly = y + Phaser.Math.Between(-12, 12);
+      const r = this.s.add.rectangle(Math.round(x - dir * Phaser.Math.Between(4, 20)), ly, w, 1, 0xf0ecdc, 0.8).setOrigin(dir > 0 ? 1 : 0, 0.5).setDepth(8);
+      this.s.tweens.add({ targets: r, x: r.x - dir * 14, alpha: 0, duration: 140, onComplete: () => r.destroy() });
+    }
   }
 
   // Killing blow: brief slow-motion plus a slight camera push-in.
@@ -72,7 +105,8 @@ export class Fx {
     s.time.timeScale = 0.3;
     s.tweens.timeScale = 0.3;
     clearTimeout(this.hs);
-    this.hs = setTimeout(() => { s.time.timeScale = 1; s.tweens.timeScale = 1; }, ms);
+    this.frozen = true;
+    this.hs = setTimeout(() => { this.frozen = false; s.time.timeScale = this.speed; s.tweens.timeScale = this.speed; }, ms);
     this.holdBase(); // a 5% push-in: 90ms in, held, 220ms back out (see update)
     this.push = { t0: Date.now(), in: 90, out: ms + 60, end: ms + 60 + 220 };
   }

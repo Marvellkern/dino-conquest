@@ -1,5 +1,6 @@
 import { load, save, wipe, defaultSave } from './save.js';
 import { setSfx, setSfxVolume } from './sfx.js';
+import { doPulls } from './gacha.js';
 import { music } from './music.js';
 import { RELICS } from '../data/relics.js';
 import { UNLOCKS, levelsOf, priceOf, BASE_RELICS, PACK_RELICS, GOAL_RELICS, LOCKED_MUTATIONS, STURDY_HP } from '../data/unlocks.js';
@@ -37,6 +38,15 @@ export function relicPool() {
 
 // Species that can hatch: the base 7 plus bought eggs.
 export const hatchable = () => HATCHABLE.filter((id) => !SPECIES[id].unlock || owned(SPECIES[id].unlock));
+
+// Daily Hatchery: n pulls (1 or 10) on today's banner, saved before any reveal. Random
+// filler eggs come from what you can hatch, never a Legendary.
+export const gachaEggPool = () => hatchable().filter((id) => SPECIES[id].rarity !== 'legendary');
+export function hatcheryPull(n, now = Date.now()) {
+  const out = doPulls(meta, n, { now, eggPool: gachaEggPool() });
+  if (!out.error) persist();
+  return out;
+}
 
 export const lockedMutations = () => LOCKED_MUTATIONS.filter((k) => !owned(`mut:${k}`));
 export const extUnlocked = () => !!owned('ext');
@@ -90,10 +100,14 @@ export function addAncestor(run, won, passed) {
   const d = run.dino, col = run.at ? run.map.nodes[run.at].row + 1 : 0;
   meta.stats.gens = (meta.stats.gens ?? 0) + 1;
   meta.fossils.push({
-    gen: meta.stats.gens, species: d.species, evo: d.evo, level: d.level, zone: run.zone, col,
+    gen: meta.stats.gens, species: d.species, evo: d.evo, variant: d.variant ?? null, level: d.level, zone: run.zone, col,
     cause: won ? null : run.cause, won, ext: run.ext ?? 0, inherited: run.heir?.name ?? null, passed: passed?.name ?? null, at: Date.now()
   });
   if (meta.fossils.length > 60) meta.fossils.shift();
+  if (!won && !meta.hints?.ancestor) { // the first fall: a one-time hint about Ancestor Call
+    meta.hints = { ...meta.hints, ancestor: true };
+    meta.notice = { title: 'YOUR BLOODLINE', lines: ['FALLEN DINOS CAN ANSWER', 'YOUR CALL IN FUTURE RUNS', '(DURING AN APEX STRIKE).'] };
+  }
   meta.heir = passed;
   persist();
 }
@@ -108,6 +122,7 @@ export function applySettings(registry) {
   music.setEnabled(s.sfx);
   music.setVolume((s.music ?? 60) / 100);
   registry.set('shake', meta.settings.shake);
+  registry.set('aim', s.aim ?? 'manual'); // counter aim (battle/flow.js)
 }
 
 // Erase everything and start from a fresh save (same object, so imports stay valid).

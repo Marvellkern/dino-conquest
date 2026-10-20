@@ -261,6 +261,25 @@ export const STINGERS = {
       { wave: 'triangle', vol: 0.4, line: 'C3 - - - - - - - G2 - - - C3 - - .' }
     ]
   },
+  // Ancestor Call: a soft held chord in the Nest's key that swells in (a choir, on chiptune).
+  ancestor: {
+    bpm: 60, env: [0.35, 0.3, 0.8, 0.7],
+    parts: [
+      { wave: 'triangle', vol: 0.22, line: 'C4 - - - - - - - - - .' },
+      { wave: 'triangle', vol: 0.2, line: 'G4 - - - - - - - - - .' },
+      { wave: 'triangle', vol: 0.18, line: 'E5 - - - - - - - - - .' },
+      { wave: 'square12', vol: 0.06, line: '. . B4 - - - - - - - .' }
+    ]
+  },
+  // APEX!: all 5 beats perfect, a bright quick fanfare.
+  apex: {
+    bpm: 180, ...HOLD,
+    parts: [
+      { wave: 'square50', line: 'C5 E5 G5 C6 - - - - - .' },
+      { wave: 'square25', vol: 0.12, line: '. . . E6 - - - - - .' },
+      { wave: 'triangle', vol: 0.4, line: 'C3 - - C3 - - - - - .' }
+    ]
+  },
   // The egg cracks open: a quick sparkle up high.
   hatch: {
     bpm: 200,

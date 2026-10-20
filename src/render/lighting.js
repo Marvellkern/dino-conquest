@@ -59,6 +59,14 @@ export class SceneLights {
     return light;
   }
 
+  // Give back a held light.
+  release(light) {
+    if (!light) return;
+    this.scene.lights.removeLight(light);
+    this.steadies = this.steadies.filter((l) => l !== light);
+    this.count();
+  }
+
   steady(radius, color, intensity) { return this.hold(radius, color, intensity, 4); }
   emitter(x, y, radius, color, intensity) { return this.hold(radius, color, intensity, 2)?.setPosition(x, y) ?? null; }
 

@@ -1,5 +1,9 @@
 // 8x8 fossil (relic) icons, keyed `relic_<id>`. Evolution perks share `relic_perk`.
 export const RELIC_ICONS = {
+  primalFang:    ['..OOOO..', '.OxxxxO.', '.OWWWWO.', '.OWSWWO.', '..OWWO..', '..OWxO..', '...OO...', '........'],
+  warDrumBone:   ['O......O', '.O....O.', '..OOOO..', '.OjjjjO.', 'OjWjjWjO', 'OjjjjjjO', '.OjjjjO.', '..OOOO..'],
+  rageGland:     ['.OO..OO.', 'OxxOOxxO', 'OxEEEExO', 'OEEWEEEO', '.OEEEEO.', '..OEEO..', '...OO...', '........'],
+  spiritAmber:   ['..OOOO..', '.OllllO.', 'OlWllllO', 'OllWWllO', 'OllWWllO', '.OllllO.', '..OOOO..', '........'],
   pearlHeart:    ['.OO..OO.', 'OVVOOVVO', 'OVWVVVVO', 'OVVVVVVO', '.OVVVVO.', '..OVVO..', '...OO...', '........'],
   tideCharm:     ['...OO...', '..OQQO..', '.OQWWQO.', 'OQWQQWQO', 'OQQQQQQO', '.OQQQQO.', '..OFFO..', '...OO...'],
   kelpWrap:      ['..O..O..', '.OYOOYO.', '.OYHHYO.', 'OYHYYHYO', 'OHYHHYHO', '.OYHHYO.', '.OHYYHO.', '..OOOO..'],

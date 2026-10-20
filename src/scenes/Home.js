@@ -21,6 +21,7 @@ import { gfxLabel } from '../render/quality.js';
 import { GFX_SETTINGS } from '../data/quality.js';
 import { sfx } from '../systems/sfx.js';
 import { music } from '../systems/music.js';
+import { variantDex } from '../ui/variantDex.js';
 
 const DEX_ORDER = ['compy', 'raptor', 'trike', 'rex', 'pachy', 'sarco', 'spino', 'ankylo', 'ptera', 'stego', 'carno', 'dilo', 'theri'];
 const DEX_PAGE = 4;
@@ -79,6 +80,7 @@ export class Home extends Phaser.Scene {
       else if (e.code === 'KeyN' && this.saved) this.hatchBtn.click();
       else if (e.code === 'KeyS') this.settingsBtn.click();
       else if (e.code === 'KeyD') this.flipDex();
+      else if (e.code === 'KeyV') this.openVariants();
       else if (this.nestKeys[e.code]) this.nestKeys[e.code].click();
     };
     this.input.keyboard.on('keydown', this.onKey);
@@ -141,7 +143,9 @@ export class Home extends Phaser.Scene {
   // One-time message (the v2 save upgrade).
   async notice() {
     this.inMenu = true;
-    await choose(this, { title: 'THE NEST HAS CHANGED', lines: [meta.notice, 'SPEND AMBER ON UNLOCKS,', 'CHASE GOALS, GROW A BLOODLINE.'], options: [{ label: 'OK' }] });
+    const n = meta.notice; // a string (the v2 upgrade) or { title, lines }
+    await choose(this, typeof n === 'object' ? { title: n.title, lines: n.lines, options: [{ label: 'OK' }] }
+      : { title: 'THE NEST HAS CHANGED', lines: [n, 'SPEND AMBER ON UNLOCKS,', 'CHASE GOALS, GROW A BLOODLINE.'], options: [{ label: 'OK' }] });
     meta.notice = null;
     persist();
     this.inMenu = false;
@@ -183,6 +187,10 @@ export class Home extends Phaser.Scene {
         card.fillStyle(0x262b44).fillRect(cx - 32, top + 1, 64, 46);
         card.fillStyle(rc).fillRect(cx - 32, top, 64, 1).fillRect(cx - 32, top + 47, 64, 1);
         this.dexCells.push(card);
+        // Tap a card: its color variants (ui/variantDex.js); a badge counts the ones owned.
+        this.dexCells.push(this.add.zone(cx - 33, top, 66, 48).setOrigin(0).setInteractive({ useHandCursor: true }).on('pointerdown', () => this.openVariants(id)));
+        const nv = Object.keys(meta.gacha.variants[id] ?? {}).length;
+        if (nv) this.dexCells.push(text(this, cx - 30, top + 3, `${nv}/6`, { color: '#ffd040', small: true }));
       }
       const img = this.add.image(cx, top + 18, id);
       if (!entry) img.setTintFill(0x0c0e12);
@@ -198,6 +206,15 @@ export class Home extends Phaser.Scene {
         text(this, cx, top + 41, best ?? (entry ? 'NO RUNS YET' : locked ? 'NEST EGG' : rar.name), { origin: [0.5, 0], color: locked ? rar.color : COLORS.textDim, small: true })
       );
     });
+  }
+
+  // Variant pages, from a species (default: the first one shown on the current page).
+  async openVariants(id = DEX_ORDER[this.dexPage * DEX_PAGE]) {
+    if (this.inMenu) return;
+    this.inMenu = true;
+    sfx('blip');
+    await variantDex(this, DEX_ORDER, id, (sp) => meta.gacha.variants[sp] ?? {});
+    this.inMenu = false;
   }
 
   // The Nest panel: heir, then a 2x2 grid of menu buttons.
@@ -279,6 +296,7 @@ export class Home extends Phaser.Scene {
       const items = [
         ['sound', { label: 'SOUND', sub: s.sfx ? `MUSIC ${s.music}  SFX ${s.sfxVol}` : 'OFF' }],
         ['shake', { label: `SCREEN SHAKE: ${s.shake ? 'ON' : 'OFF'}` }],
+        ['aim', { label: `COUNTER AIM: ${s.aim === 'auto' ? 'AUTO' : 'MANUAL'}` }],
         ['gfx', { label: `GRAPHICS: ${gfxLabel(this.game)}` }],
         ...(canFullscreen() ? [['full', { label: `FULLSCREEN: ${isFullscreen() ? 'ON' : 'OFF'}` }]] : []),
         ['reset', { label: 'RESET SAVE', sub: 'ERASES ALL PROGRESS' }],
@@ -287,6 +305,7 @@ export class Home extends Phaser.Scene {
       const pick = items[await choose(this, { title: 'SETTINGS', options: items.map(([, o]) => o), bh: 26 })][0];
       if (pick === 'sound') await this.soundMenu();
       else if (pick === 'shake') s.shake = !s.shake;
+      else if (pick === 'aim') s.aim = s.aim === 'auto' ? 'manual' : 'auto';
       else if (pick === 'gfx') { s.gfx = GFX_SETTINGS[(GFX_SETTINGS.indexOf(s.gfx ?? 'auto') + 1) % GFX_SETTINGS.length]; gfxChanged = true; }
       else if (pick === 'full') { if (isFullscreen()) exitFullscreen(); else enterFullscreen(); await new Promise((r) => setTimeout(r, 250)); }
       else if (pick === 'reset') {

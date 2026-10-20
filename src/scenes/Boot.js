@@ -1,22 +1,20 @@
-import { GRIDS, REX, CROUCH_DROP, crouchGrid } from '../sprites/grids.js';
-import { GRIDS2, CROUCH_DROP2, BOSS_SKINS } from '../sprites/grids2.js';
-import { GRIDS3, CROUCH_DROP3 } from '../sprites/grids3.js';
+import { GRIDS, REX, CROUCH_DROP } from '../sprites/grids.js';
+import { GRIDS2, BOSS_SKINS } from '../sprites/grids2.js';
+import { GRIDS3 } from '../sprites/grids3.js';
+import { buildSkin, DROP } from '../sprites/skinBuild.js';
 import { PAL } from '../data/palette.js';
 import { FX_GRIDS } from '../sprites/fxGrids.js';
 import { ICONS } from '../sprites/icons.js';
 import { EGG, EGG_STAGES, crackedEgg } from '../sprites/egg.js';
-import { SKIN_GRIDS, ALPHA, alphaColor, spikedGrid } from '../sprites/skins.js';
+import { ALPHA, alphaColor, spikedGrid } from '../sprites/skins.js';
 import { FORM_ART, buildForm, formColor } from '../sprites/forms.js';
 import { RELIC_ICONS, SHOP_ICON } from '../sprites/relicIcons.js';
 import { MOVE_ICONS, ICON_SPECIES, speciesIcon } from '../sprites/moveIcons.js';
-import { makeSpriteSet, makeTexture } from '../sprites/renderSprite.js';
-import { buildRexParts } from '../sprites/rexParts.js';
+import { makeTexture } from '../sprites/renderSprite.js';
 import { buildFont } from '../ui/font.js';
 import { applySettings } from '../systems/meta.js';
 import { registerLitPipeline } from '../render/litPipeline.js';
 import { registerPost } from '../render/post.js';
-
-const DROP = { ...CROUCH_DROP, ...CROUCH_DROP2, ...CROUCH_DROP3 };
 
 // Generates every texture from code, then hands off.
 // URL ?p=<species> jumps straight into a test battle (see Battle.init).
@@ -63,11 +61,5 @@ export class Boot extends Phaser.Scene {
     this.scene.start(testBattle ? 'Battle' : 'Title');
   }
 
-  // Whole sprite (+flash), crouch frame, and T-rex parts when needed.
-  buildSkin(species, key, grid, colorOf, layout = {}, crouchRow = DROP[species]) {
-    SKIN_GRIDS[key] = grid;
-    makeSpriteSet(this, key, grid, colorOf);
-    if (species in DROP) makeSpriteSet(this, `${key}_crouch`, crouchGrid(grid, crouchRow), colorOf);
-    if (species === 'rex') buildRexParts(this, key, grid, colorOf, layout);
-  }
+  buildSkin(species, key, grid, colorOf, layout, crouchRow) { buildSkin(this, species, key, grid, colorOf, layout, crouchRow); }
 }

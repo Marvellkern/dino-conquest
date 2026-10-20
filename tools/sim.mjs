@@ -4,6 +4,12 @@
 // usage: node tools/sim.mjs [runs]
 // env:   PLAYS=expert,skilled,decent,average   ONLY=compy,rex   ZONES=5 (default 5, all zones)
 //        VET=1 (veteran save: every fossil pack, Sturdy Blood 3, Nine Lives)   EXT=n
+//        SURGE=0 (play without v2.5: no Primal Surge / Apex / Ancestor Call, plain counters)
+//
+// v2.5 policy: the meter fills like the game's (systems/surge.js); the surge goes off at 100
+// on the first turn an elite or boss is there or the dino is under half HP; the Apex Strike
+// is used as soon as it can be, its beats perfect at APEX_PERFECT (else good 70%, miss 30%).
+// Perfect dodges counter at the head (a crit). Veterans have an ancestor (Lv10) to call.
 //
 // QTE model. Every press lands with a normal timing error (ms). Skill sets
 // its spread; a defend ring's timing profile widens it (harder to read).
@@ -25,6 +31,25 @@ import * as BLD from '../src/systems/build.js';
 import { dodgeWindow } from '../src/systems/combat.js';
 import { makeRng } from '../src/systems/rng.js';
 import * as R from '../src/run/run.js';
+import * as SG from '../src/systems/surge.js';
+import * as F from '../src/systems/flow.js';
+import { ancestorHit, callsLeft } from '../src/systems/ancestors.js';
+import { APEX_STRIKES, APEX, SURGE } from '../src/data/surge.js';
+// Tuning knobs (try numbers here before changing data/surge.js): GAIN_K scales every meter gain,
+// APEX_K the Apex share, CRIT the surge crit multiplier, FEAR the enemies' ATK under FEAR, SENERGY.
+if (process.env.GAIN_K) { for (const k in SURGE.gain) SURGE.gain[k] = Math.round(SURGE.gain[k] * +process.env.GAIN_K); SURGE.streakMax *= +process.env.GAIN_K; }
+if (process.env.APEX_K) for (const k in APEX.share) APEX.share[k] *= +process.env.APEX_K;
+if (process.env.APEX_BOSS) APEX.share.boss = +process.env.APEX_BOSS;
+if (process.env.CRIT) SURGE.critMult = +process.env.CRIT;
+if (process.env.FEAR) SURGE.fear = +process.env.FEAR;
+if (process.env.SENERGY) SURGE.energy = +process.env.SENERGY;
+if (process.env.SETURN) SURGE.energyTurn = +process.env.SETURN;
+if (process.env.ALLP) APEX.allPerfect = +process.env.ALLP;
+
+const SURGE_ON = process.env.SURGE !== '0';
+const METER_ON = SURGE_ON && process.env.AIMONLY !== '1'; // AIMONLY=1: only the aimed counter (tuning)
+const APEX_PERFECT = { expert: 0.85, skilled: 0.65, decent: 0.4, average: 0.15 };
+const SIM_ANCESTOR = { species: 'rex', evo: 1, level: 10 };
 
 const N = +(process.argv[2] ?? 200);
 const ZONES = +(process.env.ZONES ?? 5);
@@ -48,7 +73,31 @@ function gauss(rng) {
 
 // Stats per play profile and zone: rings, perfect dodges, bars, crits, damage, fights.
 const stats = {};
-const zstat = (play, zone) => ((stats[play] ??= {})[zone] ??= { rings: 0, dodges: 0, bars: 0, crits: 0, dmg: 0, fights: 0 });
+const zstat = (play, zone) => ((stats[play] ??= {})[zone] ??= { rings: 0, dodges: 0, bars: 0, crits: 0, dmg: 0, fights: 0, surges: 0, apex: 0 });
+
+// The meter (and the perfect streak that adds to it), like battle/flow.js and battle/surge.js.
+function meter(st, ev) {
+  if (!METER_ON) return;
+  if (ev === 'dodge' || ev === 'crit') F.perfect(st); else if (ev === 'hit' || ev === 'miss') F.breakStreak(st);
+  if (ev !== 'miss') SG.gain(st, ev, st.flowStreak ?? 0);
+}
+const counter = (st, t) => (SURGE_ON ? F.aimedCounter(st, t, 'head') : B.counterStrike(st, t));
+const defended = (st, r) => meter(st, r.defend === 'dodge' ? 'dodge' : r.defend === 'block' ? 'block' : 'hit');
+
+// Apex Strike: the beats, then the ancestor if there's one to call.
+function apex(st, play, S) {
+  st.energy -= BLD.moveCost(st, 'apex');
+  const aoe = !!APEX_STRIKES[st.player.species]?.aoe, tl = B.targetable(st).sort((a, b) => a.hp - b.hp);
+  const beats = Array.from({ length: APEX.beats }, () => (st.rng.chance(APEX_PERFECT[play]) ? 'perfect' : st.rng.chance(0.7) ? 'good' : 'miss'));
+  const out = SG.apexHit(st, aoe ? tl : tl.slice(0, 1), beats);
+  S.apex++;
+  const run = st.build.run;
+  if (process.env.VET && run && callsLeft(run) > 0 && tl.some((e) => e.hp > 0)) {
+    run.ancestorCalls = (run.ancestorCalls ?? 0) + 1;
+    ancestorHit(st, tl, SIM_ANCESTOR, false);
+  }
+  for (const h of out.hits) if (h.killed) meter(st, 'kill');
+}
 
 function attackQte(st, play, m, muddy, S, blind = false) {
   const sh = rollBar(st.rng, st.timing.bar);
@@ -58,7 +107,7 @@ function attackQte(st, play, m, muddy, S, blind = false) {
   const err = Math.abs(gauss(st.rng) * PLAY[play].atk * (sh.drift ? 1.25 : 1) * blindK) * speed;
   const sweet = sh.sweetW * (muddy ? MUDDY.sweet : 1), good = sh.goodW * (muddy ? MUDDY.good : 1);
   let q = err <= sweet / 2 ? 'crit' : err <= good / 2 ? 'good' : 'miss';
-  if (m.sure && q === 'miss') q = 'good';
+  if ((m.sure || SG.active(st)) && q === 'miss') q = 'good'; // a surge can't miss
   S.bars++; if (q === 'crit') S.crits++;
   return q;
 }
@@ -81,12 +130,15 @@ function defendQte(st, play, e, moveId, S) {
 // at all: brace can't stop them), special when affordable, else bite.
 function playerTurn(st, play, S) {
   const p = st.player;
+  // The surge: at 100, when an elite or boss is there or the dino is hurt.
+  if (METER_ON && SG.ready(st) && (st.simBig || p.hp < p.maxHp * 0.5)) { SG.activate(st); S.surges++; }
   for (let guard = 0; guard < 10 && B.affordable(st) && !B.won(st); guard++) {
     const incoming = B.alive(st).reduce((t, e) => t + (B.isStrike(e.intent) && e.intent.ring !== 'purple'
       ? B.intentDamage(st, e) * (e.intent.hits ?? 1) * (e.intent.ring === 'red' ? 1.5 : 1) : 0), 0);
     const tgts = B.targetable(st).sort((a, b) => a.hp - b.hp);
     const sp = p.moves[4];
     let id;
+    if (SURGE_ON && SG.apexReady(st) && !B.blocked(st, 'apex')) { apex(st, play, S); continue; }
     if (!p.status.braced && incoming >= p.hp * 0.3 && !B.blocked(st, 'brace') && (st.energy === 1 || incoming >= p.hp * 0.5)) id = 'brace';
     else if (!B.blocked(st, sp)) id = sp;
     else if (!B.blocked(st, 'roar') && incoming >= p.hp * 0.25 && B.alive(st).some((e) => !e.status.atkDown)) id = 'roar';
@@ -94,6 +146,7 @@ function playerTurn(st, play, S) {
     else if (!p.status.braced && !B.blocked(st, 'brace')) id = 'brace';
     else break;
     B.beginMove(st, id);
+    SG.startMove(st);
     const m = MOVES[id];
     if (m.status) B.playerRoar(st);
     else if (m.brace) B.playerBrace(st);
@@ -104,15 +157,18 @@ function playerTurn(st, play, S) {
       for (let h = 0; h < strikes && main && main.hp > 0; h++) {
         const q = B.finalQte(st, attackQte(st, play, m, muddy && h === 0, S, blind && h === 0)).qte;
         B.noteQte(st, q);
+        if (q === 'crit' || q === 'miss') meter(st, q);
         const tl = B.targetable(st);
         const victims = BLD.hitsAll(st, id) ? tl : m.spread ? Array.from({ length: BLD.spreadCount(st, m) }, (_, k) => tl[k % Math.max(1, tl.length)]) : [main];
         for (const t of victims) {
           if (!t || t.hp <= 0) continue;
           const res = B.playerStrike(st, id, t, q);
+          if (res.killed) meter(st, 'kill');
           if (res.evaded && t.brain.noPounce) continue;
           if (res.evaded) { // raptor / ptera pounce back
             const r = B.enemyStrike(st, t, defendQte(st, play, t, 'pounce', S), 'pounce');
-            if (r.defend === 'dodge' && t.hp > 0 && B.counterReady(st)) B.counterStrike(st, t);
+            defended(st, r);
+            if (r.defend === 'dodge' && t.hp > 0 && B.counterReady(st)) counter(st, t);
             if (B.lost(st)) return;
           } else if (res.fx?.chain && chains < 2) { chains++; strikes++; }
         }
@@ -129,16 +185,18 @@ function enemyPhase(st, play, S) {
     if (e.hp <= 0) continue;
     const tick = B.beginEnemyAction(st, e);
     if (e.hp <= 0) continue;
+    if (!tick.stunned && e.status.stagger > 0 && e.intent.kind === 'charge') { e.status.stagger = 0; B.finishEnemyAction(st, e); continue; } // STAGGER
     if (!tick.stunned) {
       B.enemyAct(st, e);
       if (B.isStrike(e.intent)) {
         let dodged = false;
         for (let h = 0; h < (e.intent.hits ?? 1); h++) {
           const r = B.enemyStrike(st, e, defendQte(st, play, e, e.intent.move, S));
+          defended(st, r);
           if (r.defend === 'dodge') { dodged = true; S.dodges++; }
           if (B.lost(st)) return;
         }
-        if (dodged && !e.status.submerged && e.hp > 0 && B.counterReady(st)) B.counterStrike(st, e);
+        if (dodged && !e.status.submerged && e.hp > 0 && B.counterReady(st)) { const r = counter(st, e); if (r.killed) meter(st, 'kill'); }
       }
     }
     B.finishEnemyAction(st, e);
@@ -151,9 +209,12 @@ function fight(rng, run, node, play) {
   const st = B.createBattle({ player, enemies: R.enemyFighters(node), rng, spawn: null, build: R.buildOf(run), timing: zoneTiming(run.zone, run.ext ?? 0) });
   st.spawn = (sp) => B.addEnemy(st, R.minionFighter(run.zone, sp, node.enemies[0].level));
   B.startBattle(st);
+  st.simBig = node.type === 'elite' || node.type === 'boss';
   let rounds = 0;
   while (rounds++ < 60) {
+    const was = SG.active(st);
     const t = B.beginPlayerTurn(st);
+    if (was && !SG.active(st)) for (const e of B.alive(st)) B.checkPhase(st, e); // a boss phase that waited for the surge
     if (B.lost(st)) break;
     if (!t.stunned) playerTurn(st, play, S);
     if (B.won(st) || B.lost(st)) break;
@@ -169,6 +230,7 @@ function fight(rng, run, node, play) {
 // Fossil picks: the best of the offers by a rough value a player would see
 // (generic damage / survival high, situational ones low), ties at random.
 const VALUE = {
+  primalFang: 2, warDrumBone: 2, rageGland: 1, spiritAmber: 0,
   amberFang: 4, bloodAmber: 4, oldEgg: 4, emberCore: 3, obsidianScale: 3, crystalHeart: 3, sharpStone: 3, huntersEye: 3,
   packTotem: 3, mossyShell: 3, starShard: 3, swiftFeather: 3, tarPitStone: 3, meteorChip: 2, glowShard: 2, thickSkull: 2,
   fernCushion: 2, stormEgg: 2, raptorClaw: 2, echoRock: 2, ashCloak: 2, lavaFang: 2, pteraBone: 2, venomGland: 1,
@@ -255,4 +317,5 @@ for (const play of (process.env.PLAYS ?? 'expert,skilled,decent').split(',')) {
   console.log(`dodge%   ${zonesShown.map((z) => pct(zs[z]?.dodges, zs[z]?.rings).padStart(8)).join('')}   perfect dodges per enemy hit`);
   console.log(`crit%    ${zonesShown.map((z) => pct(zs[z]?.crits, zs[z]?.bars).padStart(8)).join('')}   crits per attack bar`);
   console.log(`dmg/fght ${zonesShown.map((z) => (zs[z]?.fights ? Math.round(zs[z].dmg / zs[z].fights) : '-').toString().padStart(8)).join('')}   damage taken per fight`);
+  if (SURGE_ON) console.log(`surge/f  ${zonesShown.map((z) => (zs[z]?.fights ? (zs[z].surges / zs[z].fights).toFixed(2) : '-').padStart(8)).join('')}   Primal Surges per fight`);
 }

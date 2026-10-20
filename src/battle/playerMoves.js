@@ -9,12 +9,17 @@ import { sfx } from '../systems/sfx.js';
 import { animSet, roar } from './anims.js';
 import './anims2.js'; // spit + claws sets
 import { braceAnim } from './gimmicks.js';
+import { apexStrike } from './apex.js';
+import * as SG from '../systems/surge.js';
 import { hitFeedback, traitFeedback, dodgeHop } from './feedback.js';
 
 // One player move, animated. Energy is spent here. Returns enemies that
 // evaded a missed attack (Raptors), so the scene can let them pounce back.
 export async function playerMove(scene, id) {
+  if (id === 'surge') { await scene.surge.activate(); return []; } // Primal Surge (battle/surge.js)
+  if (id === 'apex') { await apexStrike(scene); return []; }         // its Apex Strike (battle/apex.js)
   const st = scene.st, m = MOVES[id], p = st.player, rig = p.rig;
+  scene.surge?.startMove(); // a crit fills the meter once per move
   B.beginMove(st, id);
   rig.stopIdle();
   rig.c.setDepth(7);
@@ -51,6 +56,7 @@ export async function playerMove(scene, id) {
       muddy = false;
       blind = false;
       await set.strike(scene, rig, target.rig, ctx);
+      scene.flow?.endFast(); // a crit's fast swing is over
       if (ctx.chained && chains < MUTATION_TUNING.chainMax && target.hp > 0) { chains++; strikes++; scene.say('CHAIN BITE!'); }
     }
     if (m.self) applyStatus(p, m.self, true);
@@ -95,8 +101,8 @@ function strikeCtx(scene, id, victims, aoe, muddy, evaders, blind = false) {
     hit: 0,
     chained: false,
     spread: victims.length,
-    open: () => { if (!bar) bar = attackBar(scene, { rng: st.rng, sure: !!MOVES[id].sure, muddy, blind, shape: rollBar(st.rng, st.timing.bar) }); },
-    result: () => bar,
+    open: () => { if (!bar) bar = attackBar(scene, { rng: st.rng, sure: !!MOVES[id].sure || SG.active(st), muddy, blind, shape: rollBar(st.rng, st.timing.bar) }); }, // a surge can't miss
+    result: () => bar && (ctx.flowBar ??= scene.flow ? scene.flow.bar(bar) : bar), // a crit: freeze, then a fast swing
     targetRig: (i) => victims[i % victims.length].rig,
     impact: (res) => {
       if (qte === null) { // first impact of this QTE: Meteor Chip, crit streak
@@ -127,11 +133,14 @@ function strikeOne(scene, id, v, qte, k, evaders, ctx) {
     return;
   }
   hitFeedback(scene, st.player, v, r.dmg, qte, 'hit', k, { gold: st.activeEmpower, move: id });
+  if (qte === 'crit' && k === 0) scene.flow?.critImpact(v);
   traitFeedback(scene, st.player, v, r.trait);
   const t = v.rig.top();
   if (r.fx.healed) healPop(scene, r.fx.healed);
   if (r.fx.poisoned) scene.fx.pop(t.x, t.y - 4, 'POISON', '#80d060', 1, 700);
   if (r.fx.bled) scene.fx.pop(t.x, t.y - 22, 'BLEED', '#e43b44', 1, 700);
+  if (r.fx.burned) scene.fx.pop(t.x, t.y - 30, 'BURN', '#f77622', 1, 700);
+  if (r.fx.slowed) scene.fx.pop(t.x, t.y - 30, 'SLOWED', '#9ae8ff', 1, 700);
   if (r.fx.stunned) scene.fx.pop(t.x, t.y - 14, 'STUNNED!', '#fff096', 1, 900);
   if (r.fx.chain) ctx.chained = true;
   if (r.calmed) scene.fx.pop(t.x, t.y - 14, 'CALMED', '#9ab8ff', 1, 900);

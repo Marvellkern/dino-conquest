@@ -23,14 +23,15 @@ function safeTest(g, ev, run) {
   try { return !!g.test(ev, run, meta); } catch { return false; }
 }
 
-function grant(r) {
+function grant(r) { // a reward can carry several things (Amber and a fossil)
   if (r.amber) meta.amber += r.amber;
-  else if (r.relic) meta.unlocks[`relic:${r.relic}`] = 1;
-  else if (r.mutation) meta.unlocks[`mut:${r.mutation}`] = 1;
-  else if (r.unlock) meta.unlocks[r.unlock] = 1;
+  if (r.relic) meta.unlocks[`relic:${r.relic}`] = 1;
+  if (r.mutation) meta.unlocks[`mut:${r.mutation}`] = 1;
+  if (r.unlock) meta.unlocks[r.unlock] = 1;
 }
 
 export function rewardText(r) {
+  if (r.amber && (r.relic || r.mutation || r.unlock)) return `+${r.amber}${AMB} + ${rewardText({ ...r, amber: 0 })}`;
   if (r.amber) return `+${r.amber}${AMB}`;
   if (r.relic) return `FOSSIL: ${RELICS[r.relic].name.toUpperCase()}`;
   if (r.mutation) { const [mv, id] = r.mutation.split(':'); return `MUTATION: ${MUTATIONS[mv][id].name.toUpperCase()}`; }

@@ -9,7 +9,7 @@ import { SPECIES, HATCHABLE } from './species.js';
 //   { type: 'end', won }            the run is over
 //   { type: 'hatch' }               a new dino hatched (run is null)
 // run.stats holds the in-run counters (systems/battleState.js tally()).
-// reward: { amber } | { relic } | { mutation: 'move:id' } | { unlock: key, label }
+// reward: any of { amber, relic, mutation: 'move:id', unlock: key + label }
 const common = (run) => SPECIES[run.dino.species].rarity === 'common';
 const zoneClear = (ev, z) => ev.type === 'zone' && ev.zone === z;
 const n = (run, k) => run?.stats?.[k] ?? 0;
@@ -62,7 +62,14 @@ export const GOALS = {
   dryFeet:      { name: 'Dry Feet',      desc: 'CLEAR THE COAST WITHOUT AN UNBLOCKABLE HIT', reward: { amber: 200 },
     test: (ev, run) => zoneClear(ev, 'coast') && n(run, 'purpleHits_coast') === 0 },
   titanSlayer:  { name: 'Titan Slayer',  desc: 'BEAT THE METEOR TITAN', reward: { amber: 300 },
-    test: (ev) => zoneClear(ev, 'crater') }
+    test: (ev) => zoneClear(ev, 'crater') },
+  // v2.5 Primal Surge
+  apexPredator: { name: 'Apex Predator', desc: 'LAND AN APEX STRIKE WITH ALL 5 BEATS PERFECT', reward: { amber: 100, relic: 'primalFang' },
+    test: (ev, run) => n(run, 'apexPerfect') >= 1 },
+  bloodRemembers: { name: 'Blood Remembers', desc: 'FINISH A BOSS WITH YOUR ANCESTOR', reward: { relic: 'spiritAmber' },
+    test: (ev, run) => n(run, 'ancestorBoss') >= 1 },
+  oneTurnWonder: { name: 'One-Turn Wonder', desc: 'KILL A 3-ENEMY PACK WITH ONE APEX STRIKE', reward: { amber: 150 },
+    test: (ev, run) => n(run, 'apexKills') >= 3 }
 };
 
 export const GOAL_ORDER = Object.keys(GOALS);

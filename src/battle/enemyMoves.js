@@ -7,8 +7,9 @@ import { sfx } from '../systems/sfx.js';
 import { animSet, roar, chargeUp, wait } from './anims.js';
 import './anims2.js'; // spit + claws sets
 import { defendAnim, submergeAnim, surfaceAnim, floodAnim } from './gimmicks.js';
-import { hitFeedback, traitFeedback } from './feedback.js';
+import { hitFeedback } from './feedback.js';
 import { rollTiming, MIN_DODGE_MS } from '../data/qteProfiles.js';
+import { VARIANTS } from '../data/variants.js';
 
 // One enemy's action during the enemy phase, exactly as its intent showed.
 export async function enemyAction(scene, e) {
@@ -31,10 +32,18 @@ export async function enemyAction(scene, e) {
     return;
   }
 
+  if (e.status.stagger > 0 && i.kind === 'charge') { // a Primal Surge staggers a boss: its charge-up is skipped
+    e.status.stagger = 0;
+    const t = rig.top();
+    scene.fx.pop(t.x, t.y, 'STAGGERED!', '#ffd040', 1, 800);
+    rig.flash(60);
+    await wait(scene, 650);
+    B.finishEnemyAction(st, e);
+    return;
+  }
   rig.stopIdle();
   rig.c.setDepth(7);
   B.enemyAct(st, e);
-  let dodged = false;
   if (i.kind === 'defend') { scene.say(`${e.name} GUARDS`); await defendAnim(scene, rig); }
   else if (i.kind === 'charge') {
     scene.say(`${e.name} IS CHARGING ${MOVES[i.move].name.toUpperCase()}!`);
@@ -57,12 +66,11 @@ export async function enemyAction(scene, e) {
     if (i.kind === 'ambush' && i.move === 'breach') { const c = rig.center(); scene.lighting?.breach(c.x, c.y); } // dark, then a splash of light
     if (i.kind === 'ambush') { scene.say(i.move === 'ambush' ? `${e.name} AMBUSHES!` : `${e.name}: ${MOVES[i.move].name.toUpperCase()}!`); await surfaceAnim(scene, rig); }
     else scene.say(`${e.name}: ${MOVES[i.move].name.toUpperCase()}`);
-    dodged = await enemyAttack(scene, e, i.move, { feint: !!i.feint });
+    await enemyAttack(scene, e, i.move, { feint: !!i.feint });
   }
-  if (!e.status.submerged) resetRig(rig);
+  if (!e.status.submerged && e.hp > 0) resetRig(rig); // a dead attacker (the counter killed it) dissolves where it stands
   rig.c.setDepth(5);
 
-  if (dodged && e.hp > 0 && p.hp > 0 && !e.status.submerged && B.counterReady(st)) await counterAttack(scene, e);
   B.finishEnemyAction(st, e);
 }
 
@@ -75,16 +83,23 @@ function resetRig(rig) {
   rig.startIdle();
 }
 
-// Animated enemy attack with the defend ring. Returns true if any hit was perfectly dodged.
+// Animated enemy attack with the defend ring. A perfect dodge earns the counter (battle/flow.js:
+// calm, aim, a fast riposte) before the attacker heads home. Returns true if any hit was dodged.
 export async function enemyAttack(scene, e, moveId, { feint = false } = {}) {
   const st = scene.st, m = MOVES[moveId], p = st.player, set = animSet(e.species, m.anim);
   let dodged = false;
   scene.lighting?.moveStart(moveId, e.rig.x); // Starfall: light from the sky
   if (set.approach) await set.approach(scene, e.rig, p.rig);
-  for (let h = 0; h < (m.hits ?? 1) && p.hp > 0 && e.hp > 0; h++) {
-    await set.strike(scene, e.rig, p.rig, defendCtx(scene, e, moveId, h, feint, (r) => { if (r.defend === 'dodge') dodged = true; }));
+  const hits = m.hits ?? 1;
+  for (let h = 0; h < hits && p.hp > 0 && e.hp > 0; h++) {
+    await set.strike(scene, e.rig, p.rig, defendCtx(scene, e, moveId, h, feint, (r) => {
+      if (r.defend === 'dodge') dodged = true;
+      scene.flow?.defended(e, r.defend, h === hits - 1 || p.hp <= 0 || e.hp <= 0);
+    }));
   }
-  if (set.retreat && p.hp > 0) await set.retreat(scene, e.rig);
+  const pick = await scene.flow?.settle(e, dodged);
+  if (pick) await scene.flow.counter(pick);
+  if (set.retreat && p.hp > 0 && e.hp > 0) await set.retreat(scene, e.rig);
   return dodged;
 }
 
@@ -99,7 +114,7 @@ function defendCtx(scene, e, moveId, h, feint, onHit) {
   return {
     isPlayer: false,
     hit: h,
-    tellMult: e.tellMult * (st.build.run?.mods?.tell ?? 1), // Extinction 2+: faster wind-ups
+    tellMult: e.tellMult * (st.build.run?.mods?.tell ?? 1) * (e.status.slow > 0 ? VARIANTS.frost.perk.slowTell : 1), // Extinction 2+: faster wind-ups; SLOW (Frost): slower
     timing: rollTiming(st.rng, Array.isArray(profile) ? profile[0] : profile, h),
     open: (leadMs = 0, shape = {}) => {
       if (ring) return;
@@ -135,32 +150,7 @@ export async function evadePounce(scene, e) {
   scene.say(`${e.name} POUNCES BACK!`);
   rig.stopIdle();
   rig.c.setDepth(7);
-  const dodged = await enemyAttack(scene, e, 'pounce');
-  resetRig(rig);
-  rig.c.setDepth(5);
-  if (dodged && e.hp > 0 && scene.st.player.hp > 0 && B.counterReady(scene.st)) await counterAttack(scene, e);
-}
-
-// Perfect dodge reward: a free quick bite (0.5×, no energy, no QTE).
-async function counterAttack(scene, e) {
-  const st = scene.st, p = st.player, rig = p.rig, set = animSet(p.species, 'bite');
-  scene.say('COUNTER!');
-  rig.stopIdle();
-  rig.c.setDepth(7);
-  if (set.approach) await set.approach(scene, rig, e.rig);
-  await set.strike(scene, rig, e.rig, {
-    isPlayer: true, hit: 0,
-    open: () => {}, result: () => Promise.resolve('good'),
-    impact: () => {
-      const r = B.counterStrike(st, e);
-      const t = e.rig.top();
-      scene.fx.pop(t.x, t.y - 8, 'COUNTER!', '#ffd040', 1, 800);
-      hitFeedback(scene, p, e, r.dmg, 'good', 'hit', 0, { gold: true });
-      traitFeedback(scene, p, e, r.trait);
-      scene.afterDamage(e, r);
-    }
-  });
-  if (set.retreat) await set.retreat(scene, rig);
+  await enemyAttack(scene, e, 'pounce');
   resetRig(rig);
   rig.c.setDepth(5);
   await scene.settle();

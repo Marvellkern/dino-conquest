@@ -99,7 +99,7 @@ export function attackBar(scene, { rng, sure = false, muddy = false, blind = fal
       hint.setText(res === 'crit' ? 'CRIT!' : res === 'good' ? 'GOOD' : 'MISS');
       hint.label.setTint(res === 'crit' ? 0xfff096 : res === 'good' ? 0xf0ecdc : 0x8a90a0);
       if (res === 'crit') g.fillStyle(0xffffff).fillRect(x0, y0, BW, BH);
-      sfx(res === 'crit' ? 'ding' : res === 'good' ? 'tick' : 'early');
+      sfx(res === 'crit' ? (scene.flow ? null : 'ding') : res === 'good' ? 'tick' : 'early'); // battles ring their own crit (battle/flow.js)
       cover.clear();
       scene.time.delayedCall(260, () => { g.destroy(); zone.destroy(); m.destroy(); cover.destroy(); hint.destroy(); });
       resolve(res);

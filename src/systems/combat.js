@@ -1,6 +1,7 @@
 import { SPECIES } from '../data/species.js';
 import { MOVE_UP, STATUS, QTE, QTE_MULT, DEFEND_MULT, DAMAGE } from '../data/moves.js';
 import { TRAIT_TUNING as T } from '../data/traits.js';
+import { SURGE } from '../data/surge.js';
 
 // Pure combat rules — no Phaser in here. Turn flow lives in battleState.js.
 
@@ -18,7 +19,8 @@ export function makeFighter(species, {
     atk: st.atk, def: st.def, spd: st.spd,
     moves: ['bite', 'tail', 'roar', 'brace', sp.special],
     status: {
-      atkDown: 0, defUp: 0, poison: 0, stun: 0, bleed: 0,
+      atkDown: 0, defUp: 0, poison: 0, stun: 0, bleed: 0, burn: 0, slow: 0, // burn / slow: Magma / Frost variants
+      fear: 0, stagger: 0, // a Primal Surge: enemies' ATK down, bosses skip a charge-up
       braced: 0, muddy: 0, drain: 0, blind: 0, hooked: 0,     // player
       guard: 0, charging: 0, submerged: 0, lowWater: 0, hooking: 0 // enemies
     }
@@ -35,6 +37,11 @@ export function startTurn(f) {
     f.hp -= Math.min(f.hp, f.bleedDmg ?? 3);
     f.status.bleed--;
   }
+  if (f.status.burn > 0) { // Magma variant: burning, also shown in the poison number
+    out.poison += Math.min(f.hp, f.burnDmg ?? 3);
+    f.hp -= Math.min(f.hp, f.burnDmg ?? 3);
+    f.status.burn--;
+  }
   if (f.status.poison > 0) {
     const p = Math.min(f.hp, T.venomDmg + (f.poisonBonus ?? 0));
     out.poison += p;
@@ -49,7 +56,7 @@ export function startTurn(f) {
 }
 
 // Timed buffs/debuffs tick at the end of the affected fighter's turn.
-const TIMED = ['atkDown', 'defUp'];
+const TIMED = ['atkDown', 'defUp', 'slow'];
 export function endTurn(f) {
   for (const k of TIMED) if (f.status[k] > 0) f.status[k]--;
 }
@@ -62,6 +69,7 @@ export function applyStatus(f, { stat, turns }, self = false) {
 export function effAtk(f) {
   let a = f.atk;
   if (f.status.atkDown > 0) a *= STATUS.atkDownMult;
+  if (f.status.fear > 0) a *= SURGE.fear; // Primal Surge
   if (hasTrait(f, 'packInstinct') && f.hp < f.maxHp / 2) a *= T.packMult;
   return a;
 }

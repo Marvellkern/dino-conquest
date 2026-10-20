@@ -24,6 +24,7 @@ export const MOVES = {
   goreRush:     { name: 'Gore Rush',     btn: 'GORE',    desc: 'EXECUTE',  cost: 2, power: 1.4, anim: 'charge', execute: 0.5 },
   // calm: the target's next attack loses its timing profile (plain 'steady'). critDef: +DEF per crit, for the fight.
   venomSpit:    { name: 'Venom Spit',    btn: 'SPIT',    desc: 'PSN+CLM',  cost: 1, power: 0.6, anim: 'spit', poison: 2, calm: true },
+  apex:         { name: 'Apex Strike',   btn: 'APEX',    desc: '5 BEATS',  cost: 2, power: 0, anim: 'apex' }, // replaces the special in a Primal Surge (systems/surge.js)
   scytheClaws:  { name: 'Scythe Claws',  btn: 'SCYTHE',  desc: '3 HITS',   cost: 2, power: 0.5, anim: 'claws', hits: 3, critDef: 1 },
 
   // Enemy-only moves (picked by systems/brains.js).

@@ -1,7 +1,9 @@
 // Versioned localStorage save. Every access is wrapped: private windows,
 // blocked storage or corrupt JSON fall back to a fresh save, never a crash.
+import { defaultGacha } from './gacha.js';
+
 const KEY = 'dino-conquest:save';
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 // v1 Lineage stacks are refunded at this much Amber each when a save moves to v2.
 export const LINEAGE_REFUND = 15;
@@ -9,15 +11,17 @@ export const LINEAGE_REFUND = 15;
 export const defaultSave = () => ({
   v: SAVE_VERSION,
   amber: 30,
-  fossils: [],      // ancestors: [{ gen, species, evo, level, zone, col, cause, won, ext, inherited, passed, at }]
+  fossils: [],      // ancestors: [{ gen, species, evo, variant, answered, helped, level, zone, col, cause, won, ext, inherited, passed, at }]
   dex: {},          // species -> { hatched, best, wins, ext }
   unlocks: {},      // Nest unlock id / goal reward key -> level owned
   goals: {},        // goal id -> true
   heir: null,       // { kind: 'relic' | 'mutation', id, move?, from } carried into the next hatchling
   ext: { sel: 0, best: 0 }, // chosen Extinction level, highest cleared
-  settings: { sfx: true, shake: true, gfx: 'auto', music: 60, sfxVol: 100 }, // gfx: auto | low | medium | high (gfxAuto: Auto's remembered tier); sfx: the Sound toggle; music / sfxVol: 0-100
+  settings: { sfx: true, shake: true, gfx: 'auto', music: 60, sfxVol: 100, aim: 'manual' }, // gfx: auto | low | medium | high (gfxAuto: Auto's remembered tier); sfx: the Sound toggle; music / sfxVol: 0-100; aim: the perfect-dodge counter, manual | auto
   stats: { runs: 0, wins: 0, gens: 0 },
-  notice: null      // one-time message for the Nest (the v2 upgrade)
+  gacha: defaultGacha(), // Daily Hatchery: eggs, variants, Bone Shards, pity, free pull, history (systems/gacha.js)
+  hints: {},        // one-time hints shown (ancestor: the Ancestor Call hint after the first fall)
+  notice: null      // one-time message for the Nest: a string (the v2 upgrade) or { title, lines }
 });
 
 // Bring older saves up to the current shape.
@@ -31,7 +35,8 @@ function migrate(data) {
     v: SAVE_VERSION,
     settings: { ...base.settings, ...data.settings },
     stats: { ...base.stats, ...data.stats },
-    ext: { ...base.ext, ...data.ext }
+    ext: { ...base.ext, ...data.ext },
+    gacha: { ...base.gacha, ...data.gacha } // v3: older saves start with nothing and a free pull
   };
   if ((data.v ?? 1) < 2) {
     const stacks = Object.values(data.lineage ?? {}).reduce((t, n) => t + (Number(n) || 0), 0);

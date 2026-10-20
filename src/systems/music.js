@@ -25,6 +25,8 @@ const LAYERS = { map: { lead: 0.7, drums: 0, bpm: 0 }, battle: { lead: 1, drums:
 const LOW_HP = { lowpass: 1500, ms: 400, beat: [[0, 0.32], [4, 0.24]] };
 const DUCK = { level: 0.6, ms: 300 };
 const PHASE2 = { bpm: 8, arp: 'square25', hush: 4 };
+// Primal Surge layer: faster, the lead an octave up on square25, hard drums.
+const SURGE_LAYER = { bpm: 10, lead: 'square25', up: 12, drums: 'hard' };
 const DIM = 0.4;
 const STING_DUCK = 0.3; // the track's level under a stinger
 
@@ -103,7 +105,7 @@ class Player {
     this.next = at;
   }
 
-  get bpm() { return this.t.bpm + this.layer.bpm + (this.phase2 ? PHASE2.bpm : 0); }
+  get bpm() { return this.t.bpm + this.layer.bpm + (this.phase2 ? PHASE2.bpm : 0) + (this.surge ? SURGE_LAYER.bpm : 0); }
   get stepDur() { return 60 / this.bpm / 4; }
 
   setLayer(name, ms = 400) {
@@ -147,8 +149,9 @@ class Player {
     const n = tr.lead[i];
     if (n) {
       const len = n.len * sd * 0.95, lfo = this.lfo;
-      if (tr.detune) for (const dt of [-tr.detune, tr.detune]) voice(c, ch.lead, tr.leadWave, n.m, t, len, LEAD.vol * 0.7, LEAD.env, { detune: dt, lfo });
-      else voice(c, ch.lead, tr.leadWave, n.m, t, len, LEAD.vol, LEAD.env, { lfo });
+      const wave = this.surge ? SURGE_LAYER.lead : tr.leadWave, m = n.m + (this.surge ? SURGE_LAYER.up : 0);
+      if (tr.detune) for (const dt of [-tr.detune, tr.detune]) voice(c, ch.lead, wave, m, t, len, LEAD.vol * 0.7, LEAD.env, { detune: dt, lfo });
+      else voice(c, ch.lead, wave, m, t, len, LEAD.vol, LEAD.env, { lfo });
     }
     const bass = BASS[tr.bass];
     if (bass) for (const [at, kind, oct] of bass.notes) {
@@ -158,7 +161,7 @@ class Player {
     if (surf && s === 0 && bar % surf.every === 0) swell(c, ch.fx, t, surf.every * 16 * sd, surf);
     const arp = ARP[tr.arp];
     if (arp && s % arp.every === 0) voice(c, ch.arp, this.phase2 ? PHASE2.arp : 'square12', b.arp[(s / arp.every) % b.arp.length], t, arp.len * sd, arp.vol, arp.env);
-    const dr = DRUMS[Array.isArray(tr.drums) ? tr.drums[bar] : tr.drums]; // one pattern, or one per bar
+    const dr = DRUMS[this.surge ? SURGE_LAYER.drums : Array.isArray(tr.drums) ? tr.drums[bar] : tr.drums]; // one pattern, or one per bar
     if (dr) {
       const k = kit(c), bars = tr.bars.length;
       const fill = dr.fill && (dr.fill.bars === 'last' ? bar === bars - 1 : dr.fill.bars.includes(bar + 1));
@@ -183,11 +186,12 @@ let c = null, bus = null, vol = null, duckG = null, timer = null;
 let players = [];   // the playing track last; earlier ones are fading out
 let wanted = null;  // the track the game asked for (kept while muted or locked)
 let volume = DEFAULT_VOL, enabled = true;
-let layer = 'battle', lowHp = false, dimmed = false;
+let layer = 'battle', lowHp = false, dimmed = false, calm = null; // calm: { level, lowpass } during a perfect moment
 let stBus = null, stVol = null; // stingers: their own path, not ducked with the tracks
 let after = null;               // { id, timer }: the track to start once a stinger ends
 const live = () => players.filter((p) => !p.dying);
-const duckBase = () => (dimmed ? DIM : 1);
+const duckBase = () => (dimmed ? DIM : 1) * (calm ? calm.level : 1);
+const lowpassNow = () => (calm ? calm.lowpass : lowHp ? LOW_HP.lowpass : LOWPASS);
 
 const audible = () => enabled && volume > 0;
 const busGain = () => BUS * volume / DEFAULT_VOL;
@@ -275,7 +279,20 @@ export const music = {
     if (on === lowHp) return;
     lowHp = on;
     for (const p of live()) p.lowHp = on;
-    if (bus) bus.frequency.setTargetAtTime(on ? LOW_HP.lowpass : LOWPASS, c.currentTime, LOW_HP.ms / 3000);
+    if (bus) bus.frequency.setTargetAtTime(lowpassNow(), c.currentTime, LOW_HP.ms / 3000);
+  },
+
+  // Primal Surge: the playing track switches to its surge layer (and back).
+  setSurge(on) { for (const p of live()) { p.surge = on; p.retime(); } },
+
+  // When the next beats fall, for the Apex Strike's rhythm QTE: { beatMs, next } with next
+  // in performance.now() time (as heard: output latency included). null when silent.
+  beat() {
+    const p = live().at(-1);
+    if (!p || !c || c.state !== 'running') return null;
+    const sd = p.stepDur, toBeat = (4 - (p.step % 4)) % 4;
+    const at = p.next + toBeat * sd + (c.outputLatency || c.baseLatency || 0);
+    return { beatMs: sd * 4000, next: performance.now() + (at - c.currentTime) * 1000 };
   },
 
   // The playing track's boss phase 2 (a new track always starts in phase 1).
@@ -310,6 +327,22 @@ export const music = {
     const ms = steps * sd * 1000 + 250;
     if (then) after = { id: then, timer: setTimeout(() => { after = null; if (wanted === then) this.play(then, { fade: 800 }); }, ms) };
     else this.duck(ms, STING_DUCK);
+  },
+
+  // A perfect moment's calm (battle/flow.js): the music ducks and goes muffled, then back.
+  setCalm(on, { level = 0.25, lowpass = 900 } = {}) {
+    calm = on ? { level, lowpass } : null;
+    if (!duckG) return;
+    const now = c.currentTime, k = on ? 0.03 : 0.06;
+    duckG.gain.cancelScheduledValues(now);
+    duckG.gain.setTargetAtTime(duckBase(), now, k);
+    bus.frequency.setTargetAtTime(lowpassNow(), now, k);
+  },
+
+  // The playing track's key, for chimes in tune: { root: 'C' | 'A' ..., minor }.
+  get key() {
+    const name = live().at(-1)?.t.chords[0];
+    return name ? { root: CHORDS[name][0], minor: /m(?!aj)/.test(name) } : { root: 'C', minor: false };
   },
 
   // Settings open: the music drops to 40%.
