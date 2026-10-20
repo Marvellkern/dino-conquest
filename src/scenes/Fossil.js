@@ -14,6 +14,7 @@ import { Fx } from '../systems/fx.js';
 import { sfx } from '../systems/sfx.js';
 import { onPress } from '../systems/qte.js';
 import { wait } from '../battle/anims.js';
+import { music } from '../systems/music.js';
 
 // The rock slab and the summary panel: side by side, or stacked in portrait.
 let SLAB = { x: 12, y: 34, w: 164, h: 118 };
@@ -30,6 +31,8 @@ export class Fossil extends Phaser.Scene {
     SLAB = BOXES().slab;
     const run = session.run;
     if (!run) { this.scene.start('Home'); return; }
+    music.setLayer('full');
+    music.stinger('defeat', { then: 'nest' }); // the run is over
     this.fx = new Fx(this);
     this.cameras.main.fadeIn(150);
     this.play(run);

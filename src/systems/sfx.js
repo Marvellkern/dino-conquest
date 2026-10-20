@@ -1,14 +1,25 @@
 // Tiny WebAudio synth — every sound is generated, no audio files.
 // Audio only starts after the first user gesture (browser autoplay rules).
 let ctx = null;
-let master = null;
+let master = null; // everything: SFX and music
+let sfxOut = null; // SFX volume, into master
+let sfxVol = 1;
 let noiseBuf = null;
 let unlocked = false;
 let enabled = true;
 
-const unlock = () => { unlocked = true; };
-window.addEventListener('pointerdown', unlock, { once: true, capture: true });
-window.addEventListener('keydown', unlock, { once: true, capture: true });
+// The first tap / key unlocks audio; the music starts from here (onUnlock), inside the gesture.
+const waiting = [];
+const unlock = () => {
+  if (unlocked) return;
+  unlocked = true;
+  window.removeEventListener('pointerdown', unlock, true);
+  window.removeEventListener('keydown', unlock, true);
+  for (const fn of waiting.splice(0)) { try { fn(); } catch { /* audio is optional */ } }
+};
+window.addEventListener('pointerdown', unlock, { capture: true });
+window.addEventListener('keydown', unlock, { capture: true });
+export const onUnlock = (fn) => { if (unlocked) fn(); else waiting.push(fn); };
 
 function audio() {
   if (!unlocked) return null;
@@ -19,9 +30,25 @@ function audio() {
     master = ctx.createGain();
     master.gain.value = 0.5;
     master.connect(ctx.destination);
+    sfxOut = ctx.createGain();
+    sfxOut.gain.value = sfxVol;
+    sfxOut.connect(master);
   }
-  if (ctx.state === 'suspended') ctx.resume();
+  if (ctx.state === 'suspended' && !document.hidden) ctx.resume();
   return ctx;
+}
+
+// For the music engine (systems/music.js): the shared context (null until unlocked), the
+// master output, and the shared 1s white-noise buffer.
+export const audioContext = () => audio();
+export const masterOut = () => master;
+export function noiseBuffer(c) {
+  if (!noiseBuf) {
+    noiseBuf = c.createBuffer(1, c.sampleRate, c.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
+  return noiseBuf;
 }
 
 function tone(c, { type = 'square', f0 = 440, f1 = f0, dur = 0.08, vol = 0.15, at = 0 }) {
@@ -33,29 +60,24 @@ function tone(c, { type = 'square', f0 = 440, f1 = f0, dur = 0.08, vol = 0.15, a
   o.frequency.exponentialRampToValueAtTime(Math.max(1, f1), t + dur);
   g.gain.setValueAtTime(vol, t);
   g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-  o.connect(g).connect(master);
+  o.connect(g).connect(sfxOut);
   o.start(t);
   o.stop(t + dur + 0.02);
 }
 
 function noise(c, { dur = 0.1, vol = 0.2, f = 1200, f1 = f, q = 1, at = 0 }) {
-  if (!noiseBuf) {
-    noiseBuf = c.createBuffer(1, c.sampleRate, c.sampleRate);
-    const d = noiseBuf.getChannelData(0);
-    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-  }
   const t = c.currentTime + at;
   const src = c.createBufferSource();
   const bp = c.createBiquadFilter();
   const g = c.createGain();
-  src.buffer = noiseBuf;
+  src.buffer = noiseBuffer(c);
   bp.type = 'bandpass';
   bp.Q.value = q;
   bp.frequency.setValueAtTime(f, t);
   bp.frequency.exponentialRampToValueAtTime(f1, t + dur);
   g.gain.setValueAtTime(vol, t);
   g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-  src.connect(bp).connect(g).connect(master);
+  src.connect(bp).connect(g).connect(sfxOut);
   src.start(t);
   src.stop(t + dur + 0.02);
 }
@@ -90,9 +112,14 @@ const SOUNDS = {
 };
 
 export const setSfx = (on) => { enabled = on; };
+// SFX volume 0-1 (Settings), separate from the music's.
+export function setSfxVolume(v) {
+  sfxVol = v;
+  if (sfxOut) sfxOut.gain.value = v;
+}
 
 export function sfx(name) {
-  if (!enabled) return;
+  if (!enabled || sfxVol <= 0) return;
   try {
     const c = audio();
     if (c) SOUNDS[name]?.(c);

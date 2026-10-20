@@ -1,5 +1,6 @@
 import { load, save, wipe, defaultSave } from './save.js';
-import { setSfx } from './sfx.js';
+import { setSfx, setSfxVolume } from './sfx.js';
+import { music } from './music.js';
 import { RELICS } from '../data/relics.js';
 import { UNLOCKS, levelsOf, priceOf, BASE_RELICS, PACK_RELICS, GOAL_RELICS, LOCKED_MUTATIONS, STURDY_HP } from '../data/unlocks.js';
 import { EXT_AMBER, MAX_EXT, extMods } from '../data/extinction.js';
@@ -99,9 +100,13 @@ export function addAncestor(run, won, passed) {
 
 /* ---------- settings ---------- */
 
-// Push settings into the systems that use them (SFX module, shake flag).
+// Push settings into the systems that use them (SFX, music, shake flag).
 export function applySettings(registry) {
-  setSfx(meta.settings.sfx);
+  const s = meta.settings;
+  setSfx(s.sfx);
+  setSfxVolume((s.sfxVol ?? 100) / 100);
+  music.setEnabled(s.sfx);
+  music.setVolume((s.music ?? 60) / 100);
   registry.set('shake', meta.settings.shake);
 }
 

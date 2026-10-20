@@ -11,6 +11,7 @@ import { sfx } from '../systems/sfx.js';
 import { onPress } from '../systems/qte.js';
 import { menuLight } from '../render/menuLight.js';
 import { roar, wait } from '../battle/anims.js';
+import { music } from '../systems/music.js';
 
 // Stage center and floor, read per layout in create().
 let X = 160, GROUND = 138;
@@ -71,6 +72,7 @@ export class Evolution extends Phaser.Scene {
 
     // Flicker between the two silhouettes, speeding up.
     sfx('evolve');
+    music.stinger('evolve'); // its held note lands on the flash
     before.setFlash(true);
     after.setFlash(true);
     let gap = 260;

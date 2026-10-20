@@ -96,6 +96,33 @@ Scaling is integer-only by design (crisp pixels), so some screens show black bor
   The zone intro uses the baked backdrop, so it previews the zone as its fights look. When a scene splits off its UI camera mid fade-in, the UI joins that fade. Low adds nothing anywhere.
 - **`?fps` in the URL:** a small overlay with fps, tier, render scale and active lights. In dev builds, a QTE frame over 33ms is logged (`[qte] slow frame`).
 
+### Music (v2.4)
+
+Chiptune music, generated live from note data like the SFX: no audio files.
+- **Engine:** `systems/music.js` (Phaser-free). A 25ms timer schedules notes about 120ms ahead on the audio clock, so frame drops never make it stutter. Each note is its own oscillator; the pulse waves (`square50` / `25` / `12`) and the drum sounds (kick, snare, closed and open hat, tom, bloop) are built once per audio context. The instruments live in `systems/musicSynth.js`. The mix is lead / bass / arp / drums, then a lowpass at 5.5 kHz to soften the squares, then the music volume, then the shared master in `systems/sfx.js`. The lead also gets one echo, 3 steps later at 0.25. It shares the SFX audio context and starts on the first tap or key. When the tab is hidden, the scheduler stops and the audio clock pauses.
+- **API:** `music.play(id, { fade })` crossfades (600ms). Asking for the track that's already playing does nothing, so Map → Battle in the same zone keeps it going. `music.stop({ fade })`. Dev: `__music.render(id, loops)` renders a track offline into an AudioBuffer, for measuring loudness.
+- **Reactive music (step 2):** the numbers are at the top of `systems/music.js`.
+  - `music.setLayer('map' | 'battle' | 'elite')`: the map has no drums and the lead at 70%; elite fights add a hat after each off-beat and +4 BPM. The layer carries across tracks; menus play `nest` with `{ layer: 'full' }`.
+  - `music.setLowHp(on)`: under 25% HP (`battle/battleMusic.js` checks every frame), the lowpass slides to 1.5 kHz over 400ms and a soft heartbeat kick plays on beats 1 and 2.
+  - `music.duck(ms)`: −40% for 300ms on crits, kills, Roar and boss phase changes.
+  - `music.setPhase2(on)`: one beat of silence, then +8 BPM and the arp switches to `square25`. A new track always starts in phase 1, and leaving a fight resets it.
+  - `music.setDim(on)`: 40% while Settings is open.
+  - Dev: `__music.state` shows the layer, BPM, lowpass and duck level.
+- **Tracks** live in `data/music.js` (`TRACKS`), with the chords, the bass / arp / drum patterns and the lead envelope. The format: `bpm` (16 steps a bar), `leadWave`, `swing`, one chord per bar, one 16-token lead string per bar (a note starts, `-` holds, `.` rests), pattern ids (drums can be a list with one pattern per bar), and a `gain` trim. Optional: `vibrato` on the lead, `detune` (two lead voices, one either side), and `surf` (a filtered-noise swell every few bars, kept on the map layer).
+- **The 8 tracks:** `nest`, `jungle` and `boss` from the brief, plus `swamp` (E phrygian, triangle lead with vibrato, bloops for hats), `volcano` (C minor, chugging square bass, tom fills), `coast` (D dorian, long `square12` notes, surf), `crater` (B minor, detuned leads, sparse with soft drums for 4 bars, then full) and `titan` (the final boss: D minor, its lead quoting the Nest motif in minor).
+- **Stingers (step 4):** one-shots in `STINGERS` (`data/music.js`). Each is a few parts, each a wave with its own note line, and a held chord is several parts. `music.stinger(id)` plays one on its own path and ducks the track to 30% until it ends. `music.stinger(id, { then: 'nest' })` stops the track instead and starts `then` once the stinger is over.
+  - `victory` when a run is cleared (RunEnd), then `nest`;
+  - `defeat` when the run is lost (Fossil), then `nest`;
+  - `zoneClear` on the ZONE CLEAR banner when there's a next zone;
+  - `evolve` starts with the Evolution flicker, so its held note lands on the flash;
+  - `hatch` when the egg bursts.
+- **Adding a track:** add it to `TRACKS`, set its `gain` so `__music.render` reads about −15 dB RMS like the others, and pick it in `trackFor()`.
+- **Where tracks play:**
+  - `nest` on Title, Home, the Nest screens and Hatch, and after the end-of-run stinger;
+  - each zone's track on the map, zone intro and fights;
+  - `boss` in boss fights, `titan` against the Meteor Titan.
+- **Settings → Sound:** Music (default 60) and SFX (default 100) volume, 0–100 in steps of 10, plus the Sound on/off toggle, which mutes both. They're saved in `settings.music` / `settings.sfxVol`. The music sits under the SFX (its bus is 0.55 at the default volume).
+
 ## Where things live
 
 ```
@@ -315,7 +342,7 @@ Each round: every enemy shows an **intent** (what it will do next, with exact da
 - `battle/anims.js`: attack animations (T-rex bite timing from the brief, pounce with feint, tail whip, roar, Compy swarm, Trike ram and horn charge). `animSet()` picks the set per species.
 - `ui/battleUI.js`: HUDs (energy pips, crit streak, status tags), intent markers with the target arrow, and the move bar.
 - `sprites/rexParts.js` + `sprites/rig.js`: the T-rex part rig and the whole-sprite rig.
-- `systems/qte.js`: attack bar and defend ring. `systems/fx.js`: shake, hitstop, kill cam, sparks, numbers. `systems/sfx.js`: generated sounds.
+- `systems/qte.js`: attack bar and defend ring. `systems/fx.js`: shake, hitstop, kill cam, sparks, numbers. `systems/sfx.js`: generated sounds. `systems/music.js`: generated music (see Music).
 
 **Testing matchups:** `http://localhost:5173/?p=compy&e=compy-s,compy-s,compy-s&t=venomBite` skips the hatchery. `p` is the player species, `e` a comma list of enemies (`-s` = small pack member, `boss` = the zone boss), `t` an optional trait id, `z` the zone (`z=swamp`).
 

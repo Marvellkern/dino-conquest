@@ -18,6 +18,8 @@ import {
 } from '../run/run.js';
 import { Fx } from '../systems/fx.js';
 import { sfx } from '../systems/sfx.js';
+import { music } from '../systems/music.js';
+import { trackFor } from '../data/music.js';
 
 // Landscape: columns left to right, lanes stacked. Portrait: rows climb from
 // the bottom (start) to the boss at the top, lanes side by side.
@@ -42,6 +44,8 @@ export class MapScene extends Phaser.Scene {
     if (!this.run) { this.scene.start('Hatch'); return; }
     // First visit to this zone: play its intro cutscene, which comes back here.
     if (this.run.introZone !== this.run.zone) { this.run.introZone = this.run.zone; this.scene.start('ZoneIntro'); return; }
+    music.play(trackFor(this.run.zone)); // the zone's track (the intro started it; a fight keeps it going)
+    music.setLayer('map'); // calmer: no drums, softer lead
     this.d = this.run.dino;
     this.fx = new Fx(this);
     this.busy = false;

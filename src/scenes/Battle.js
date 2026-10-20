@@ -34,6 +34,8 @@ import {
   session, playerFighter, enemyFighters, enemyFighter, minionFighter, gainXp, dinoStats, advanceZone, dinoSkin,
   buildOf
 } from '../run/run.js';
+import { music } from '../systems/music.js';
+import { battleMusic } from '../battle/battleMusic.js';
 
 const playerX = () => lp(80, 36);
 // Dinos stand at 3x (2x in portrait); small pack members and summoned minions
@@ -79,6 +81,7 @@ export class Battle extends Phaser.Scene {
     // progress: how far into the zone (the Meteor Crater's meteor grows with it).
     const progress = this.node ? this.node.row / ZONES[this.zone].rows : 0;
     const boss = this.node ? this.node.type === 'boss' : this.cfg.enemies.includes('boss');
+    battleMusic(this, { zone: this.zone, boss, elite: this.node?.type === 'elite' }); // the map's zone track keeps playing
     this.lighting = new SceneLights(this, this.zone, { progress }); // Light2D on Medium / High; a no-op on Low
     this.backdrop = drawZone(this, this.zone, { progress, boss, baked: true, lights: this.lighting });
     this.post = applyPost(this, this.zone, { boss }); // bloom, grade, vignette (Medium / High)
@@ -207,6 +210,7 @@ export class Battle extends Phaser.Scene {
   afterDamage(e, r) {
     if (r.killed) {
       this.fx.killCam();
+      music.duck();
       this.markers.remove(e);
       this.pending.push(deathAnim(this, e.rig));
     }
@@ -218,7 +222,7 @@ export class Battle extends Phaser.Scene {
     while (this.pending.length || this.phases.length) {
       const anims = this.pending.splice(0);
       await Promise.all(anims);
-      for (const ph of this.phases.splice(0)) if (ph.e.hp > 0) { this.backdrop.onPhase?.(); this.lighting.bossPhase(); await phaseAnim(this, ph.e.rig, ph.line); }
+      for (const ph of this.phases.splice(0)) if (ph.e.hp > 0) { this.backdrop.onPhase?.(); this.lighting.bossPhase(); music.duck(); music.setPhase2(true); await phaseAnim(this, ph.e.rig, ph.line); }
     }
     this.layout();
   }
@@ -353,7 +357,7 @@ export class Battle extends Phaser.Scene {
     const next = type === 'boss' ? advanceZone(run) : null;
     const done = type === 'boss' && !next;
     if (d.pendingEvo && !done) lines.push('SOMETHING IS STIRRING...');
-    if (next) lines.push(`ONWARD TO THE ${ZONES[next].name}!`);
+    if (next) { lines.push(`ONWARD TO THE ${ZONES[next].name}!`); music.stinger('zoneClear'); }
     lines.push(...goalLines(goals));
     const levels = d.level - (this.levelBefore ?? d.level);
     // Saved as won before the banner: a reload now goes straight to the reward picks.

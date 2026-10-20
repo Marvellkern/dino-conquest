@@ -12,6 +12,7 @@ import { meta, owned, buyUnlock } from '../systems/meta.js';
 import { rewardText, goalsDone } from '../systems/goals.js';
 import { dinoName, skinOf } from '../run/run.js';
 import { sfx } from '../systems/sfx.js';
+import { music } from '../systems/music.js';
 
 // Nest sub-screens, one per mode (data.mode):
 //   unlocks  spend banked Amber on permanent unlocks
@@ -31,6 +32,7 @@ export class Nest extends Phaser.Scene {
 
   create(data) {
     syncLayout(this);
+    music.play('nest', { layer: 'full' });
     this.mode = MODES[data.mode] ? data.mode : 'unlocks';
     this.page = 0;
     this.rows = [];

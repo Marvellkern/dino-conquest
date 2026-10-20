@@ -1,4 +1,5 @@
 import { sfx } from '../systems/sfx.js';
+import { music } from '../systems/music.js';
 import { SPARK } from '../data/lighting.js';
 
 // Hit feedback for one impact. n = index within one QTE (Swarm lands 3):
@@ -23,6 +24,7 @@ export function hitFeedback(scene, att, dfd, dmg, qte, defend, n = 0, { gold = f
   const heavy = Math.min(4, Math.round((dmg / Math.max(1, dfd.maxHp || 60)) * 10) || 0); // title props have no maxHp
   if (defend !== 'block' && qte !== 'miss') fx.debris(p.x, p.y, scene.zone, qte === 'crit' ? 7 : 4);
   if (qte === 'crit') {
+    if (n === 0) music.duck();
     fx.hitstop(120);
     fx.shake(3 + heavy, 260);
     fx.impactStar(p.x, p.y);

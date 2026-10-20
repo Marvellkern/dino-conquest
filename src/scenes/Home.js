@@ -20,6 +20,7 @@ import { menuLight } from '../render/menuLight.js';
 import { gfxLabel } from '../render/quality.js';
 import { GFX_SETTINGS } from '../data/quality.js';
 import { sfx } from '../systems/sfx.js';
+import { music } from '../systems/music.js';
 
 const DEX_ORDER = ['compy', 'raptor', 'trike', 'rex', 'pachy', 'sarco', 'spino', 'ankylo', 'ptera', 'stego', 'carno', 'dilo', 'theri'];
 const DEX_PAGE = 4;
@@ -45,6 +46,7 @@ export class Home extends Phaser.Scene {
 
   create() {
     syncLayout(this);
+    music.play('nest', { layer: 'full' });
     this.inMenu = false; // scene instances are reused across restarts
     this.cameras.main.fadeIn(150);
     const g = this.add.graphics();
@@ -271,10 +273,11 @@ export class Home extends Phaser.Scene {
     this.inMenu = true;
     const s = meta.settings;
     let gfxChanged = false; // a new tier applies when Home is rebuilt after the menu
+    music.setDim(true);
     for (;;) {
       // Each entry: [id, option]. Fullscreen only where the browser supports it.
       const items = [
-        ['sfx', { label: `SOUND: ${s.sfx ? 'ON' : 'OFF'}` }],
+        ['sound', { label: 'SOUND', sub: s.sfx ? `MUSIC ${s.music}  SFX ${s.sfxVol}` : 'OFF' }],
         ['shake', { label: `SCREEN SHAKE: ${s.shake ? 'ON' : 'OFF'}` }],
         ['gfx', { label: `GRAPHICS: ${gfxLabel(this.game)}` }],
         ...(canFullscreen() ? [['full', { label: `FULLSCREEN: ${isFullscreen() ? 'ON' : 'OFF'}` }]] : []),
@@ -282,7 +285,7 @@ export class Home extends Phaser.Scene {
         ['back', { label: 'BACK' }]
       ];
       const pick = items[await choose(this, { title: 'SETTINGS', options: items.map(([, o]) => o), bh: 26 })][0];
-      if (pick === 'sfx') s.sfx = !s.sfx;
+      if (pick === 'sound') await this.soundMenu();
       else if (pick === 'shake') s.shake = !s.shake;
       else if (pick === 'gfx') { s.gfx = GFX_SETTINGS[(GFX_SETTINGS.indexOf(s.gfx ?? 'auto') + 1) % GFX_SETTINGS.length]; gfxChanged = true; }
       else if (pick === 'full') { if (isFullscreen()) exitFullscreen(); else enterFullscreen(); await new Promise((r) => setTimeout(r, 250)); }
@@ -293,6 +296,7 @@ export class Home extends Phaser.Scene {
           options: [{ label: 'CANCEL' }, { label: 'YES, ERASE IT ALL' }]
         });
         if (yes === 1) {
+          music.setDim(false);
           resetMeta();
           applySettings(this.registry);
           this.scene.restart();
@@ -305,7 +309,28 @@ export class Home extends Phaser.Scene {
       sfx('blip');
     }
     this.inMenu = false;
+    music.setDim(false);
     if (gfxChanged) this.scene.restart(); // rebuild at the new render scale
+  }
+
+  // Sound sub-menu: Music and SFX volume (0-100, each tap +10, wrapping) and the mute toggle.
+  async soundMenu() {
+    const s = meta.settings, VOLS = ['music', 'sfxVol'];
+    for (;;) {
+      const items = [
+        ['music', { label: `MUSIC: ${s.music}`, sub: 'TAP TO CHANGE' }],
+        ['sfxVol', { label: `SFX: ${s.sfxVol}`, sub: 'TAP TO CHANGE' }],
+        ['sfx', { label: `SOUND: ${s.sfx ? 'ON' : 'OFF'}` }],
+        ['back', { label: 'BACK' }]
+      ];
+      const pick = items[await choose(this, { title: 'SOUND', options: items.map(([, o]) => o), bh: 26 })][0];
+      if (pick === 'back') return;
+      if (VOLS.includes(pick)) s[pick] = (s[pick] + 10) % 110;
+      else s.sfx = !s.sfx;
+      persist();
+      applySettings(this.registry);
+      sfx('blip');
+    }
   }
 
   go() {

@@ -25,6 +25,7 @@ import { onPress } from '../systems/qte.js';
 import { menuLight } from '../render/menuLight.js';
 import { FocusNav } from '../ui/focus.js';
 import { roar, wait } from '../battle/anims.js';
+import { music } from '../systems/music.js';
 
 // Layout: the nest (x, ground), the info panel (px, py: its top-left) and the
 // three buttons [x, y, w, h]. Landscape: side by side; portrait: stacked.
@@ -39,6 +40,7 @@ export class Hatch extends Phaser.Scene {
 
   create() {
     syncLayout(this);
+    music.play('nest', { layer: 'full' });
     this.rng = makeRng(randomSeed());
     this.fx = new Fx(this);
     this.rig = null;
@@ -203,6 +205,7 @@ export class Hatch extends Phaser.Scene {
     this.egg = null;
     this.flash();
     sfx('crit');
+    music.stinger('hatch');
     this.fx.shake(3, 220);
     const colors = [0xe8dcb8, 0xb8a880, 0x7a9a50];
     for (let i = 0; i < 10; i++) {

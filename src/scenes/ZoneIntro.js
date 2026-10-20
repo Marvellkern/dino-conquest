@@ -10,6 +10,8 @@ import { Fx } from '../systems/fx.js';
 import { sfx } from '../systems/sfx.js';
 import { onPress } from '../systems/qte.js';
 import { roar, wait } from '../battle/anims.js';
+import { music } from '../systems/music.js';
+import { trackFor } from '../data/music.js';
 
 // A ~3s cutscene each time a run reaches a new zone (Map starts it once per
 // zone): letterbox bars, the dino walks in, the zone's boss looms as a
@@ -22,6 +24,8 @@ export class ZoneIntro extends Phaser.Scene {
     syncLayout(this);
     const run = session.run;
     if (!run) { this.scene.start('Home'); return; }
+    music.play(trackFor(run.zone));
+    music.setLayer('map');
     this.fx = new Fx(this);
     this.done = false;
     this.cameras.main.fadeIn(150);

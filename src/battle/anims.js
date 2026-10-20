@@ -1,6 +1,7 @@
 import { QTE } from '../data/moves.js';
 import { FEINT_MS } from '../data/qteProfiles.js';
 import { sfx } from '../systems/sfx.js';
+import { music } from '../systems/music.js';
 
 // Attack animations. Each move kind is a set of { approach?, strike, retreat? }.
 // strike(scene, rig, target, ctx) talks to the battle through ctx:
@@ -315,6 +316,7 @@ export async function chargeUp(s, rig) {
 // Roar (status move): shockwave rings from the mouth.
 export async function roar(s, rig, onRoar) {
   s.lighting?.roar(); // the scene dims for a beat (lit tiers)
+  music.duck();
   rig.setPose(rig.roarPose);
   sfx('roar');
   for (let i = 0; i < 3; i++) {

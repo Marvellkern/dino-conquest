@@ -12,6 +12,7 @@ import { showRunStats } from '../ui/runStats.js';
 import { sfx } from '../systems/sfx.js';
 import { onPress } from '../systems/qte.js';
 import { wait } from '../battle/anims.js';
+import { music } from '../systems/music.js';
 
 // Victory screen after the final zone's boss: banks the Amber, sums up the run,
 // checks goals, and the champion passes a fossil or mutation to its heir.
@@ -24,6 +25,8 @@ export class RunEnd extends Phaser.Scene {
     const run = session.run;
     if (!run) { this.scene.start('Home'); return; }
     const d = run.dino, won = !!data.won, zone = zoneOf(run);
+    music.setLayer('full');
+    music.stinger(won ? 'victory' : 'defeat', { then: 'nest' });
     const col = run.at ? run.map.nodes[run.at].row + 1 : 0;
     // Banked once: a reload on this screen resumes here without banking again.
     if (run.banked == null) { run.banked = bankRun(run, won); checkpoint(run, { kind: 'end', won }); }

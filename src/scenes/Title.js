@@ -10,6 +10,7 @@ import { isPhone, enterFullscreen } from '../systems/screen.js';
 import { sfx } from '../systems/sfx.js';
 import { animSet, wait } from '../battle/anims.js';
 import { hitFeedback } from '../battle/feedback.js';
+import { music } from '../systems/music.js';
 
 // Title: the T-rex and a raptor trade blows forever behind the logo.
 export class Title extends Phaser.Scene {
@@ -17,6 +18,7 @@ export class Title extends Phaser.Scene {
 
   create() {
     syncLayout(this);
+    music.play('nest', { layer: 'full' });
     this.fx = new Fx(this);
     this.cameras.main.fadeIn(150);
     drawJungle(this);
