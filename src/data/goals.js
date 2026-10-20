@@ -9,7 +9,7 @@ import { SPECIES, HATCHABLE } from './species.js';
 //   { type: 'end', won }            the run is over
 //   { type: 'hatch' }               a new dino hatched (run is null)
 // run.stats holds the in-run counters (systems/battleState.js tally()).
-// reward: any of { amber, relic, mutation: 'move:id', unlock: key + label }
+// reward: any of { amber, relic, mutation: 'move:id', unlock: key + label, pull: free pulls, shards }
 const common = (run) => SPECIES[run.dino.species].rarity === 'common';
 const zoneClear = (ev, z) => ev.type === 'zone' && ev.zone === z;
 const n = (run, k) => run?.stats?.[k] ?? 0;
@@ -69,7 +69,16 @@ export const GOALS = {
   bloodRemembers: { name: 'Blood Remembers', desc: 'FINISH A BOSS WITH YOUR ANCESTOR', reward: { relic: 'spiritAmber' },
     test: (ev, run) => n(run, 'ancestorBoss') >= 1 },
   oneTurnWonder: { name: 'One-Turn Wonder', desc: 'KILL A 3-ENEMY PACK WITH ONE APEX STRIKE', reward: { amber: 150 },
-    test: (ev, run) => n(run, 'apexKills') >= 3 }
+    test: (ev, run) => n(run, 'apexKills') >= 3 },
+  // v2.6 Daily Hatchery (ev: { type: 'pull', results } after each pull)
+  firstPull:    { name: 'First Pull',    desc: 'PULL IN THE DAILY HATCHERY', reward: { pull: 1 },
+    test: (ev) => ev.type === 'pull' },
+  collector:    { name: 'Collector',     desc: 'OWN 3 DIFFERENT VARIANTS', reward: { shards: 300 },
+    test: (ev, run, meta) => Object.values(meta.gacha.variants).reduce((t, v) => t + Object.keys(v).length, 0) >= 3 },
+  goldRush:     { name: 'Gold Rush',     desc: 'PULL A GOLDEN VARIANT', reward: { amber: 200 },
+    test: (ev) => ev.type === 'pull' && ev.results.some((r) => r.variant === 'golden') },
+  rainbowRex:   { name: 'Rainbow Rex',   desc: 'OWN ALL 6 T-REX VARIANTS', reward: { unlock: 'flair:rainbow', label: 'RAINBOW REX NAME' },
+    test: (ev, run, meta) => Object.keys(meta.gacha.variants.rex ?? {}).length >= 6 }
 };
 
 export const GOAL_ORDER = Object.keys(GOALS);

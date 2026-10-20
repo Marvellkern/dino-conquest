@@ -26,6 +26,10 @@ import { menuLight } from '../render/menuLight.js';
 import { FocusNav } from '../ui/focus.js';
 import { roar, wait } from '../battle/anims.js';
 import { music } from '../systems/music.js';
+import { RANDOM_HATCH } from '../data/gacha.js';
+import { VARIANTS, HATCH_VARIANT_CHANCE } from '../data/variants.js';
+import { parseEgg, useEgg } from '../systems/gacha.js';
+import { eggPicker } from '../ui/eggPicker.js';
 
 // Layout: the nest (x, ground), the info panel (px, py: its top-left) and the
 // three buttons [x, y, w, h]. Landscape: side by side; portrait: stacked.
@@ -34,7 +38,7 @@ const LAYOUT = () => lp(
   { x: 90, ground: 118, px: 8, py: 128, btns: [[4, 250, 84, 32], [92, 250, 84, 32], [4, 286, 172, 30]] }
 );
 
-// Egg → species spin → trait spin → reroll or start a run.
+// Random Hatch or an egg From Collection → species spin → trait spin → reroll or start a run.
 export class Hatch extends Phaser.Scene {
   constructor() { super('Hatch'); }
 
@@ -48,6 +52,8 @@ export class Hatch extends Phaser.Scene {
     this.cameras.main.fadeIn(150);
     this.free = owned('whisper'); // Egg Whisper: free rerolls this hatch
     this.golden = false;
+    this.variant = null; // a color variant (owned ones roll 10% of random hatches; an egg can carry one)
+    this.eggKey = null;  // From Collection: the egg this hatch uses (spent at START RUN, not before)
     this.setup = runSetup();
 
     const L = this.L = LAYOUT(), PX = L.px + 6, PY = L.py;
@@ -166,9 +172,43 @@ export class Hatch extends Phaser.Scene {
   // Waits that end early once the player taps to skip the hatch.
   nap(ms) { return this.skipping ? Promise.resolve() : Promise.race([wait(this, ms), this.skipP]); }
 
+  // Random Hatch (the bonus) or From Collection, if there are eggs. Returns 'random' or an egg key.
+  async choosePath() {
+    const eggs = meta.gacha.eggs, n = Object.values(eggs).reduce((t, k) => t + k, 0);
+    if (!n) return 'random';
+    for (;;) {
+      const i = await choose(this, {
+        title: 'HOW TO HATCH?',
+        options: [
+          { label: 'RANDOM HATCH', sub: `+${Math.round((RANDOM_HATCH.amber - 1) * 100)}% AMBER, +${RANDOM_HATCH.rerolls} FREE REROLL` },
+          { label: 'FROM COLLECTION', sub: `${n} EGG${n > 1 ? 'S' : ''}: YOU PICK, THE TRAIT IS ROLLED` }
+        ]
+      });
+      if (i === 0) return 'random';
+      const key = await eggPicker(this, eggs);
+      if (key) return key;
+    }
+  }
+
+  // A random hatch of a species you own variants of: 10% chance of one of them.
+  rollVariant(species) {
+    const mine = Object.keys(meta.gacha.variants[species] ?? {}).filter((v) => VARIANTS[v]);
+    return mine.length && this.rng.chance(HATCH_VARIANT_CHANCE) ? this.rng.pick(mine) : null;
+  }
+
   async hatch() {
     this.hint.destroy();
-    this.species = (await this.chooseEgg()) ?? this.rollSpecies();
+    const path = await this.choosePath();
+    if (path === 'random') {
+      this.free += RANDOM_HATCH.rerolls;
+      this.species = (await this.chooseEgg()) ?? this.rollSpecies();
+      this.variant = this.rollVariant(this.species);
+    } else {
+      ({ species: this.species, variant: this.variant } = parseEgg(path));
+      this.eggKey = path;
+      this.egg.setTint(VARIANTS[this.variant]?.glow ?? 0xffffff);
+    }
+    this.refresh();
     this.skipping = false;
     this.skipP = new Promise((r) => {
       this.offSkip = onPress(this, () => {
@@ -224,7 +264,10 @@ export class Hatch extends Phaser.Scene {
   // New dino appears in the nest and roars; rarity is announced.
   async reveal() {
     const sp = SPECIES[this.species], rar = RARITIES[sp.rarity];
-    this.rig = createRig(this, this.species, this.L.x, this.L.ground - 4, 1, skinOf(this.species, 0, this.skin()));
+    this.rig = createRig(this, this.species, this.L.x, this.L.ground - 4, 1, skinOf(this.species, 0, this.skin(), this.variant));
+    this.vText?.destroy();
+    const v = VARIANTS[this.variant];
+    this.vText = v ? text(this, this.L.x, this.L.ground + 4, `${v.name}: ${v.desc}`, { origin: [0.5, 0], small: true, color: `#${v.glow.toString(16).padStart(6, '0')}` }).setDepth(12) : null;
     markHatched(this.species);
     this.speciesReel.setBorder(parseInt(rar.color.slice(1), 16));
     this.stats.setText(`HP ${sp.hp} ATK ${sp.atk} DEF ${sp.def} SPD ${sp.spd}`);
@@ -259,12 +302,13 @@ export class Hatch extends Phaser.Scene {
   }
 
   async rerollSpecies() {
-    if (!this.pay(REROLL_COST.species)) return;
+    if (this.eggKey || !this.pay(REROLL_COST.species)) return; // a collection egg is that dino
     const p = this.rig.center();
     this.rig.c.destroy();
     this.fx.sparks(p.x, p.y, { count: 14, big: true });
     sfx('whoosh');
     this.species = this.rollSpecies();
+    this.variant = this.rollVariant(this.species);
     this.stats.setText('');
     this.special.setText('');
     await this.speciesReel.spin(this.strip(hatchable(), this.species, 14), SPIN_MS.species);
@@ -288,7 +332,11 @@ export class Hatch extends Phaser.Scene {
   go() {
     if (this.busy) return;
     this.busy = true; // ignore repeat clicks during the fade
-    checkpoint(newRun({ ...runSetup(), species: this.species, trait: this.trait, seed: randomSeed(), skin: this.skin() }), { kind: 'map' });
+    checkpoint(newRun({
+      ...runSetup(), species: this.species, trait: this.trait, seed: randomSeed(), skin: this.skin(),
+      variant: this.variant, egg: this.eggKey, amberBonus: this.eggKey ? 1 : RANDOM_HATCH.amber
+    }), { kind: 'map' });
+    if (this.eggKey) useEgg(meta.gacha, this.eggKey); // the egg is spent now that the run has started
     meta.heir = null; // the heir's item is now in this run
     persist();
     this.cameras.main.fadeOut(150);
@@ -299,7 +347,7 @@ export class Hatch extends Phaser.Scene {
     this.amber.set(meta.amber);
     const [bs, bt, bg] = this.buttons;
     const price = (c) => (this.free > 0 ? `FREE (${this.free})` : `${c}${AMB}`);
-    bs.setText(null, price(REROLL_COST.species)).setEnabled(!this.busy && (this.free > 0 || meta.amber >= REROLL_COST.species));
+    bs.setText(null, this.eggKey ? 'FROM AN EGG' : price(REROLL_COST.species)).setEnabled(!this.eggKey && !this.busy && (this.free > 0 || meta.amber >= REROLL_COST.species));
     bt.setText(null, price(REROLL_COST.trait)).setEnabled(!this.busy && (this.free > 0 || meta.amber >= REROLL_COST.trait));
     bg.setEnabled(!this.busy);
   }

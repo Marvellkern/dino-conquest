@@ -37,5 +37,19 @@ export const ROTATION = {
   anyLegendary: ['rex', 'carno']
 };
 
+// Starting a run (scenes/Hatch.js): a Random Hatch gets +25% Amber for the run and one free
+// reroll, so rolling stays the efficient choice; From Collection uses up one of your eggs.
+export const RANDOM_HATCH = { amber: 1.25, rerolls: 1 };
+
 // Pull history kept in the save (for the history screen).
 export const HISTORY_MAX = 50;
+
+// The banner's backdrop: the featured dino's home zone (Sunday's Any Legendary: the Crater).
+export const HOME_ZONE = {
+  raptor: 'jungle', trike: 'jungle', rex: 'jungle', sarco: 'swamp', spino: 'swamp', stego: 'volcano', carno: 'volcano',
+  ptera: 'coast', dilo: 'coast', theri: 'crater', anyLegendary: 'crater'
+};
+
+// How each pull result shows: its light color and how it ranks (the 10-pull's best gets the
+// full reveal).
+export const RESULT_LOOK = { featured: { color: 0xffd040, rank: 10 }, refund: { color: 0xe8a030, rank: 1 }, shards: { color: 0xc0cbdc, rank: 0 } };

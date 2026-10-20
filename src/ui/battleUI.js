@@ -8,6 +8,7 @@ import { FocusNav } from './focus.js';
 import { panel } from './pixel.js';
 import { text } from './font.js';
 import { VARIANTS } from '../data/variants.js';
+import { meta } from '../systems/meta.js';
 
 // HUD panel width: landscape side by side, portrait full width (enemy top, player under the stage).
 const panelW = () => lp(120, W - 8);
@@ -56,6 +57,7 @@ export class Hud {
     const v = VARIANTS[f.variant], withV = v && `${name} · ${v.name}`; // a color variant: "T-REX · MAGMA" (or the name in its color)
     this.name.setText(withV && withV.length <= room ? withV : name.slice(0, room));
     this.name.label.setTint(elite ? 0xffd040 : v ? v.glow : tint(COLORS.text));
+    this.rainbow = f.side === 'player' && f.species === 'rex' && !!meta.unlocks['flair:rainbow']; // the Rainbow Rex goal
     this.lv.setText(lv);
     this.lv.label.setTint(f.levelLabel ? 0xff6040 : tint(COLORS.textDim));
     this.shown = this.trail = f.hp;
@@ -65,6 +67,7 @@ export class Hud {
   update(dt) {
     const f = this.f;
     if (!f) return;
+    if (this.rainbow) this.name.label.setTint(Phaser.Display.Color.HSVToRGB((Date.now() / 2500) % 1, 0.55, 1).color);
     if (f.hp !== this.shown) {
       if (f.hp < this.shown) this.delay = 280;
       this.shown = f.hp;

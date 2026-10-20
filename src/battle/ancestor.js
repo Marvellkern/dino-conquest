@@ -62,7 +62,8 @@ export async function ancestorAppear(s, ctx, cine, f) {
   a.homeY = rig.homeY;
   a.scale *= 1.1; // a little bigger than in life
   a.c.setScale(a.scale * dir, a.scale).setDepth(7.9).setAlpha(0);
-  for (const p of a.parts) { p.setTint(ANCESTOR.tint); p.preFX?.addGlow(0x7fe0ff, 2, 0, false, 0.1, 6); } // pale, see-through, a soft glowing edge
+  const bony = f.variant === 'fossil'; // a Fossil-variant ancestor comes back extra bony: bone-white, with bone dust
+  for (const p of a.parts) { p.setTint(bony ? 0xf2ead6 : ANCESTOR.tint); p.preFX?.addGlow(bony ? 0xe8dcb8 : 0x7fe0ff, 2, 0, false, 0.1, 6); } // pale, see-through, a soft glowing edge
   ctx.ancestor = a;
   ctx.ancLight = s.lighting?.steady(110, 0x9ae8ff, 0) ?? null;
   ctx.ancLight?.setPosition(x - dir * 10, rig.homeY - 30);
@@ -70,7 +71,7 @@ export async function ancestorAppear(s, ctx, cine, f) {
   else ctx.ancGlow = s.add.image(x - dir * 10, rig.homeY - 30, glowTexture(s)).setTint(0x9ae8ff).setBlendMode(Phaser.BlendModes.ADD).setDepth(7.85).setDisplaySize(140, 120).setAlpha(0.4); // Low: a glow instead
   sfx('shimmer');
   await tween(s, { targets: a.c, y: a.homeY, alpha: ANCESTOR.alpha, duration: 220, ease: 'Quad.Out' });
-  for (let i = 0; i < 3; i++) puff(s, x + (i - 1) * 10, a.homeY - 4, 0xcff4ff, 5, 10, 700);
+  for (let i = 0; i < 3; i++) puff(s, x + (i - 1) * 10, a.homeY - 4, bony ? 0xe8dcb8 : 0xcff4ff, bony ? 9 : 5, 10, 700);
   // Its card, in the family tree's words.
   const zone = ZONES[f.zone]?.name ?? '???';
   const fate = f.won ? 'CLEARED THE RUN' : `FELL IN THE ${zone}`;

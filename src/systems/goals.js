@@ -28,11 +28,15 @@ function grant(r) { // a reward can carry several things (Amber and a fossil)
   if (r.relic) meta.unlocks[`relic:${r.relic}`] = 1;
   if (r.mutation) meta.unlocks[`mut:${r.mutation}`] = 1;
   if (r.unlock) meta.unlocks[r.unlock] = 1;
+  if (r.pull) meta.gacha.credits = (meta.gacha.credits ?? 0) + r.pull; // Daily Hatchery free pulls
+  if (r.shards) meta.gacha.shards += r.shards;
 }
 
 export function rewardText(r) {
   if (r.amber && (r.relic || r.mutation || r.unlock)) return `+${r.amber}${AMB} + ${rewardText({ ...r, amber: 0 })}`;
   if (r.amber) return `+${r.amber}${AMB}`;
+  if (r.pull) return `${r.pull} FREE PULL${r.pull > 1 ? 'S' : ''}`;
+  if (r.shards) return `+${r.shards} BONE SHARDS`;
   if (r.relic) return `FOSSIL: ${RELICS[r.relic].name.toUpperCase()}`;
   if (r.mutation) { const [mv, id] = r.mutation.split(':'); return `MUTATION: ${MUTATIONS[mv][id].name.toUpperCase()}`; }
   return r.label;

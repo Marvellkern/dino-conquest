@@ -22,15 +22,17 @@ import { GFX_SETTINGS } from '../data/quality.js';
 import { sfx } from '../systems/sfx.js';
 import { music } from '../systems/music.js';
 import { variantDex } from '../ui/variantDex.js';
+import { freeReady } from '../systems/gacha.js';
 
 const DEX_ORDER = ['compy', 'raptor', 'trike', 'rex', 'pachy', 'sarco', 'spino', 'ankylo', 'ptera', 'stego', 'carno', 'dilo', 'theri'];
 const DEX_PAGE = 4;
 
 // Boxes [x, y, w, h] per layout: landscape side by side, portrait stacked.
 // With a run saved, CONTINUE RUN takes the hatch box; NEW EGG and SETTINGS share the settings box.
+// daily: the Daily Hatchery (scenes/Daily.js).
 const BOX = () => lp(
-  { dex: [4, 20, 152, 118], nest: [162, 20, 154, 118], hatch: [4, 142, 224, 34], settings: [232, 142, 84, 34], egg: [232, 142, 84, 16], set2: [232, 160, 84, 16] },
-  { dex: [4, 20, 172, 118], nest: [4, 142, 172, 108], hatch: [4, 254, 172, 34], settings: [4, 292, 172, 24], egg: [4, 292, 84, 24], set2: [92, 292, 84, 24] }
+  { dex: [4, 20, 152, 118], nest: [162, 20, 154, 118], hatch: [4, 142, 148, 34], daily: [156, 142, 72, 34], settings: [232, 142, 84, 34], egg: [232, 142, 84, 16], set2: [232, 160, 84, 16] },
+  { dex: [4, 20, 172, 118], nest: [4, 142, 172, 108], hatch: [4, 254, 112, 34], daily: [120, 254, 56, 34], settings: [4, 292, 172, 24], egg: [4, 292, 84, 24], set2: [92, 292, 84, 24] }
 );
 
 // Where a resumed run picks up, by its saved phase.
@@ -71,7 +73,9 @@ export class Home extends Phaser.Scene {
       this.refreshHatch();
       this.settingsBtn = new Button(this, ...BOX().settings, { key: 'S', label: 'SETTINGS', sub: 'SOUND, SHAKE', onClick: () => this.settings() });
     }
-    const navItems = [...Object.values(this.nestKeys), main, this.saved ? this.hatchBtn : null, this.settingsBtn].filter(Boolean);
+    const free = freeReady(meta.gacha);
+    this.dailyBtn = new Button(this, ...BOX().daily, { key: 'Y', label: 'DAILY', sub: free ? 'FREE PULL!' : 'HATCHERY', subColor: free ? '#ffd040' : '#c0cbdc', onClick: () => this.openDaily() });
+    const navItems = [...Object.values(this.nestKeys), main, this.dailyBtn, this.saved ? this.hatchBtn : null, this.settingsBtn].filter(Boolean);
     this.nav = new FocusNav(this, { items: () => navItems, start: navItems.indexOf(main) });
     this.onKey = (e) => {
       if (e.repeat || this.inMenu) return;
@@ -81,6 +85,7 @@ export class Home extends Phaser.Scene {
       else if (e.code === 'KeyS') this.settingsBtn.click();
       else if (e.code === 'KeyD') this.flipDex();
       else if (e.code === 'KeyV') this.openVariants();
+      else if (e.code === 'KeyY') this.dailyBtn.click();
       else if (this.nestKeys[e.code]) this.nestKeys[e.code].click();
     };
     this.input.keyboard.on('keydown', this.onKey);
@@ -350,6 +355,13 @@ export class Home extends Phaser.Scene {
       applySettings(this.registry);
       sfx('blip');
     }
+  }
+
+  openDaily() {
+    if (this.inMenu) return;
+    this.inMenu = true;
+    this.cameras.main.fadeOut(150);
+    this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Daily'));
   }
 
   go() {

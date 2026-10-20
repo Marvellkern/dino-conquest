@@ -104,7 +104,8 @@ export const pearlHeal = (st) => (has(st, 'pearlHeart') ? heal(st.player, RT.pea
 export const onDodge = (st) => (has(st, 'pteraBone') ? heal(st.player, RT.pteraHeal) : 0);
 
 // Banked Amber from fights (Amber Geode). build: a run build (works without a battle).
-export const amberMult = (build) => (build?.relics?.has('amberGeode') ? RT.geodeMult : 1) * (build?.variant === 'golden' ? VARIANTS.golden.perk.amber : 1);
+export const amberMult = (build) => (build?.relics?.has('amberGeode') ? RT.geodeMult : 1) * (build?.variant === 'golden' ? VARIANTS.golden.perk.amber : 1)
+  * (build?.run?.amberBonus ?? 1); // Random Hatch: +25%
 
 // Start of the player's turn. Returns HP lost to Volcanic Heart.
 export function onTurnStart(st, first) {

@@ -21,11 +21,12 @@ export const session = { run: null };
 //   heir: { kind, id, move? } inherited from the last dino. skin: 'alpha' look.
 export function newRun({
   species, trait, seed, zone = 'jungle', bonus = {}, lives = 3, ext = 0, pool = null, mutLock = [],
-  shopMult = 1, discount = 0, heir = null, skin = null, zones = ['jungle', 'swamp']
+  shopMult = 1, discount = 0, heir = null, skin = null, zones = ['jungle', 'swamp'],
+  variant = null, egg = null, amberBonus = 1 // variant: a color variant; egg: the collection egg it came from; amberBonus: Random Hatch
 }) {
   const rng = makeRng(seed);
   const dino = {
-    species, traits: [trait], level: 1, xp: 0, evo: 0, pendingEvo: 0, skin,
+    species, traits: [trait], level: 1, xp: 0, evo: 0, pendingEvo: 0, skin, variant,
     bonus: { hp: 0, atk: 0, def: 0, spd: 0, ...bonus }, moveUps: {}
   };
   dino.hp = dinoStats(dino).hp;
@@ -33,7 +34,7 @@ export function newRun({
   const run = {
     seed, rng, zone, dino, at: null, amber: 0, cause: null, lives, maxLives: lives,
     relics: [], perks: [], mutations: {}, eggUsed: false,
-    ext, mods, pool: pool ?? Object.keys(RELICS), mutLock, discount, heir, stats: {}, zones
+    ext, mods, pool: pool ?? Object.keys(RELICS), mutLock, discount, heir, stats: {}, zones, egg, amberBonus
   };
   run.map = generateMap(rng, zone, mods);
   if (heir?.kind === 'relic' && RELICS[heir.id]) addRelic(run, heir.id);

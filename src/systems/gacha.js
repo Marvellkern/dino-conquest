@@ -28,6 +28,7 @@ export const defaultGacha = () => ({
   shards: 0,        // Bone Shards
   pity: 0,          // pulls since the last featured hit (every banner)
   lastFree: null,   // UTC day of the last free pull
+  credits: 0,       // extra free pulls (goal rewards), used after the daily one
   count: 0,         // pulls made: seeds the next pull's RNG
   salt: (Math.random() * 2 ** 32) >>> 0,
   history: []       // last HISTORY_MAX: { day, banner, result }
@@ -35,7 +36,9 @@ export const defaultGacha = () => ({
 
 export const eggKey = (species, variant = null) => (variant ? `${species}:${variant}` : species);
 export const parseEgg = (key) => { const [species, variant = null] = key.split(':'); return { species, variant }; };
-export const freeReady = (g, day = utcDay()) => g.lastFree !== day;
+export const dailyReady = (g, day = utcDay()) => g.lastFree !== day;
+// A single pull is free now: today's daily one, or a free pull from a goal.
+export const freeReady = (g, day = utcDay()) => dailyReady(g, day) || (g.credits ?? 0) > 0;
 export const ownsVariant = (g, species, v) => !!g.variants[species]?.[v];
 
 /* ---------- one pull ---------- */
@@ -97,7 +100,7 @@ export function doPulls(meta, n, { now = Date.now(), eggPool }) {
   const g = meta.gacha, day = utcDay(now), banner = bannerFor(day), cost = pullCost(g, n, day);
   if (meta.amber < cost) return { error: 'NOT ENOUGH AMBER' };
   meta.amber -= cost;
-  if (n === 1 && cost === 0) g.lastFree = day;
+  if (n === 1 && cost === 0) { if (dailyReady(g, day)) g.lastFree = day; else g.credits--; }
   const results = [];
   for (let i = 0; i < n; i++) {
     const rng = makeRng((g.salt ^ Math.imul(g.count + 1, 0x9e3779b1)) >>> 0);
