@@ -97,9 +97,14 @@ export class Home extends Phaser.Scene {
   // The saved run's button: its dino, level, zone and lives.
   drawContinue() {
     const [x, y, w, h] = BOX().hatch, { run } = this.saved, d = run.dino;
-    const sub = `${lp(`${dinoName(d)} `, '')}LV${d.level}  ${ZONES[run.zone].name}  ${run.lives} ${run.lives === 1 ? 'LIFE' : 'LIVES'}`;
+    const skin = dinoSkin(d), icon = this.textures.exists(skin) ? this.textures.get(skin).getSourceImage() : null;
+    const iconW = icon ? (icon.height > h - 6 ? icon.width / 2 : icon.width) + 4 : 0;
+    // The longest line that fits beside the icon (small font: 4px a letter): name, level,
+    // zone and lives; then without the name; then without "LIVES".
+    const lives = `${run.lives} ${run.lives === 1 ? 'LIFE' : 'LIVES'}`, zone = ZONES[run.zone].name;
+    const sub = [`${dinoName(d).toUpperCase()}  LV${d.level}  ${zone}  ${lives}`, `LV${d.level}  ${zone}  ${lives}`, `LV${d.level}  ${zone}`]
+      .find((s) => s.length * 4 <= w - 10 - iconW) ?? `LV${d.level}`;
     const btn = new Button(this, x, y, w, h, { label: 'CONTINUE RUN', sub, onClick: () => this.continueRun() });
-    const skin = dinoSkin(d);
     if (this.textures.exists(skin)) {
       const img = this.add.image(x + 4, y + h - 3, skin).setOrigin(0, 1).setDepth(12);
       if (img.height > h - 6) img.setScale(0.5); // big dinos at half size so they fit the button
