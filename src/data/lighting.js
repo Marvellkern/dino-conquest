@@ -76,16 +76,16 @@ export const LIGHTING = {
     }
   },
   coast: {
-    ambient: 0x66717f, // stormy blue-grey
-    key: { side: 'left', dx: 16, dy: 150, radius: 520, color: 0xdfe8f2, intensity: 1.5 }, // pale sun behind clouds, top-left
+    ambient: 0x58636f, // stormy blue-grey (a bit darker, so the sun's rim reads)
+    key: { side: 'center', dx: 58, dy: 92, radius: 520, color: 0xe4ecf6, intensity: 1.8 }, // the pale sun in the art (226, 40): rims both fighters' facing sides
     bake: {
       sky: { grade: [0.72, 0.78, 0.9] },
       far: { grade: [0.6, 0.66, 0.78], fog: [0x5a6988, 0.35], blur: 2.2 },
       mid: { grade: [0.7, 0.75, 0.86], blur: 0.7, sharpBelow: 129 },
       near: { grade: [0.5, 0.55, 0.66], blur: 2.4 },
-      rays: { shafts: [40, 92, 146], slant: 0.5, width: 18, color: 0xe8f0ff, alpha: 0.55 },
+      rays: { shafts: [[196, -0.3], [226, 0], [256, 0.3]], width: 18, color: 0xe8f0ff, alpha: 0.55 }, // fanning down from the sun
       lightning: { every: [10000, 15000] },
-      shadow: { dx: 0.22, stretch: 1.35 }
+      shadow: { dx: -0.12, stretch: 1.3 } // the sun is high and a little right
     }
   },
   crater: {
