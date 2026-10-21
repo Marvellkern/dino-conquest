@@ -77,7 +77,7 @@ export const LIGHTING = {
   },
   coast: {
     ambient: 0x58636f, // stormy blue-grey (a bit darker, so the sun's rim reads)
-    key: { side: 'center', dx: 58, dy: 92, radius: 520, color: 0xe4ecf6, intensity: 1.8 }, // the pale sun in the art (226, 40): rims both fighters' facing sides
+    key: { side: 'center', dx: 58, dy: 92, radius: 520, color: 0xe4ecf6, intensity: 1.08 }, // the pale sun in the art (226, 40): rims both fighters' facing sides
     bake: {
       sky: { grade: [0.72, 0.78, 0.9] },
       far: { grade: [0.6, 0.66, 0.78], fog: [0x5a6988, 0.35], blur: 2.2 },
