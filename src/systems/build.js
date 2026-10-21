@@ -28,24 +28,26 @@ export function moveCost(st, id) {
   if (id === 'goreRush' && has(st, 'perkBullhorn')) return 1;
   if (id === 'crushingBite' && has(st, 'perkTyrant')) return 2;
   if (id === 'skullBash' && has(st, 'perkCrusher')) return 1;
+  if (id === 'abyssBreach' && has(st, 'perkTylo')) return 2;
   return MOVES[id].cost ?? 1;
 }
 
 export const streakNeed = (st) => (has(st, 'glowShard') ? 2 : STREAK.need);
 // Strikes in a move (Reaper: Scythe Claws gets a 4th).
-export const moveHits = (st, m) => (m.hits ?? 1) + (m.id === 'scytheClaws' && has(st, 'perkReaper') ? 1 : 0);
+export const moveHits = (st, m) => (m.hits ?? 1) + (m.id === 'scytheClaws' && has(st, 'perkReaper') ? 1 : 0) + (m.id === 'neckLash' && has(st, 'perkElasmo') ? 1 : 0);
 
-export const spreadCount = (st, m) => m.spread + (m.id === 'swarm' && has(st, 'perkSwarmlord') ? 1 : 0);
+export const spreadCount = (st, m) => m.spread + (m.id === 'swarm' && has(st, 'perkSwarmlord') ? 1 : 0) + (m.id === 'shoalRush' && has(st, 'perkShoal') ? 1 : 0);
 
 // Moves that hit every enemy at once (one QTE).
 export const hitsAll = (st, id) =>
   (id === 'tail' && mutation(st, 'tail') === 'sweep') || (id === 'hornCharge' && has(st, 'perkWarhorn'))
   || (id === 'swampSurge' && has(st, 'perkTidelord')) || (id === 'diveBomb' && has(st, 'perkStorm'))
-  || (id === 'thagomizer' && has(st, 'perkThago')) || (id === 'venomSpit' && has(st, 'perkFrillSpit'));
+  || (id === 'thagomizer' && has(st, 'perkThago')) || (id === 'venomSpit' && has(st, 'perkFrillSpit'))
+  || (id === 'abyssBreach' && has(st, 'perkAbyssKing'));
 
 export const counterMult = (st) => (has(st, 'raptorClaw') ? RT.raptorClawMult / MOVES.counter.power : 1) * (has(st, 'perkShadow') ? RT.shadowMult : 1);
 export const dodgeMult = (st) => (has(st, 'swiftFeather') ? RT.swiftMult : 1) * (has(st, 'perkFeathers') ? RT.feathersMult : 1)
-  * (has(st, 'perkSky') ? RT.skyMult : 1) * (vPerk(st, 'albino')?.dodge ?? 1);
+  * (has(st, 'perkSky') ? RT.skyMult : 1) * (has(st, 'perkOphthalmo') ? RT.feathersMult : 1) * (vPerk(st, 'albino')?.dodge ?? 1);
 
 // Damage taken by the player on a block.
 export function blockMult(st, m) {
@@ -101,7 +103,7 @@ export function kelpBlock(st) {
 export const pearlHeal = (st) => (has(st, 'pearlHeart') ? heal(st.player, RT.pearlHeal) : 0);
 
 // A perfect dodge: Ptera Bone heals.
-export const onDodge = (st) => (has(st, 'pteraBone') ? heal(st.player, RT.pteraHeal) : 0);
+export const onDodge = (st) => (has(st, 'pteraBone') ? heal(st.player, RT.pteraHeal) : 0) + (has(st, 'perkDeepwyrm') ? heal(st.player, RT.pteraHeal) : 0);
 
 // Banked Amber from fights (Amber Geode). build: a run build (works without a battle).
 export const amberMult = (build) => (build?.relics?.has('amberGeode') ? RT.geodeMult : 1) * (build?.variant === 'golden' ? VARIANTS.golden.perk.amber : 1)
@@ -135,7 +137,7 @@ export function onPlayerHit(st, id, target, qte, dmg) {
       || (id === 'deathRoll' && has(st, 'perkDeathjaw') ? 2 : 0) || (MOVES[id].poison ?? 0)
       || (crit && has(st, 'lavaFang') ? RT.lavaPoison : 0);
     if (poison) { applyPoison(st, target, poison); out.poisoned = true; }
-    if (crit && has(st, 'sharkTooth')) { target.status.bleed = RT.bleedTurns; target.bleedDmg = RT.bleedDmg; out.bled = true; }
+    if (crit && (has(st, 'sharkTooth') || (id === 'riverClaw' && has(st, 'perkSucho')))) { target.status.bleed = RT.bleedTurns; target.bleedDmg = RT.bleedDmg; out.bled = true; }
     const frost = crit && vPerk(st, 'frost'), magma = vPerk(st, 'magma');
     if (frost && st.rng.chance(frost.slowChance)) { target.status.slow = frost.slowTurns; out.slowed = true; }
     if (magma && st.rng.chance(magma.burnChance)) { target.status.burn = magma.burnTurns; target.burnDmg = magma.burnDmg; out.burned = true; }
@@ -156,7 +158,7 @@ export function onKill(st) {
   const out = { healed: 0, energy: 0 };
   if (has(st, 'bloodAmber')) out.healed = heal(st.player, RT.bloodAmberHeal);
   if (has(st, 'perkHarvest')) out.healed += heal(st.player, Math.round(st.player.maxHp * RT.harvestHeal));
-  if (has(st, 'perkAlpha') || has(st, 'perkDoom')) { out.energy = 1; st.energy = Math.min(maxEnergy(st), st.energy + 1); }
+  if (has(st, 'perkAlpha') || has(st, 'perkDoom') || has(st, 'perkRiverking')) { out.energy = 1; st.energy = Math.min(maxEnergy(st), st.energy + 1); }
   return out;
 }
 

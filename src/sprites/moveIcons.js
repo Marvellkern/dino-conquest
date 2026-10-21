@@ -68,7 +68,8 @@ const SPECIES_HEAD = {
   rex: ['G', 'L', null], raptor: ['R', 'C', null], compy: ['Y', 'N', null], trike: ['T', 'V', 'F'],
   pachy: ['p', 'n', 'd'], sarco: ['c', 'y', null], spino: ['s', 'u', 'f'],
   ankylo: ['a', 'h', 'e'], ptera: ['i', 'j', 'r'], stego: ['v', 'z', 'x'], carno: ['1', '3', 'W'],
-  dilo: ['7', 'L', '9'], theri: ['(', 'L', ')']
+  dilo: ['7', 'L', '9'], theri: ['(', 'L', ')'],
+  ichthy: ['*', 'V', null], plesio: ['+', '-', null], bary: ['&', 'h', '%'], mosa: ['@', '<', '?']
 };
 
 export function speciesIcon(species) {

@@ -19,6 +19,10 @@ export const UNLOCKS = {
   eggCarno:    { name: 'Carno Egg',       desc: 'LEGENDARY: GORE RUSH FINISHES THE WOUNDED', short: 'NEW SPECIES', cost: 150 },
   eggDilo:     { name: 'Dilopho Egg',     desc: 'RARE: CHEAP VENOM SPIT POISONS AND CALMS A FOE', short: 'NEW SPECIES', cost: 120 },
   eggTheri:    { name: 'Therizino Egg',   desc: 'EPIC: SCYTHE CLAWS, EACH CRIT ADDS DEF', short: 'NEW SPECIES', cost: 180 },
+  eggIchthy:   { name: 'Ichthyo Egg',     desc: 'COMMON: FAST SWIMMER, SHOAL RUSH SPREADS', short: 'NEW SPECIES', cost: 70, needs: 'zoneCoast' },
+  eggPlesio:   { name: 'Plesio Egg',      desc: 'RARE: LONG NECK, NECK LASH NEVER MISSES', short: 'NEW SPECIES', cost: 110, needs: 'zoneCoast' },
+  eggBary:     { name: 'Baryonyx Egg',    desc: 'EPIC: RIVER CLAW PIERCES TWICE', short: 'NEW SPECIES', cost: 160, needs: 'zoneCoast' },
+  eggMosa:     { name: 'Mosasaur Egg',    desc: 'LEGENDARY: ABYSS BREACH, A SURE BIG HIT', short: 'NEW SPECIES', cost: 220, needs: 'zoneCoast' },
   zoneVolcano: { name: 'The Volcano',     desc: 'ZONE 3 AFTER THE SWAMP: CINDER STEGO', short: 'ZONE 3', cost: 200 },
   zoneCoast:   { name: 'Tidal Coast',     desc: 'ZONE 4 AFTER THE VOLCANO: ABYSS MOSASAUR', short: 'ZONE 4', cost: 300, needs: 'zoneVolcano' },
   zoneCrater:  { name: 'Meteor Crater',   desc: 'ZONE 5: THE FINAL BOSS', short: 'ZONE 5', cost: 400, needs: 'zoneCoast' }

@@ -75,7 +75,15 @@ export const PERKS = {
   perkFrillSpit: { name: 'Frill Spitter', desc: 'VENOM SPIT HITS ALL' },
   perkToxic:     { name: 'Toxic Crown',   desc: 'POISONED FOES TAKE +25%' },
   perkReaper:    { name: 'Reaper',        desc: 'SCYTHE CLAWS HIT 4 TIMES' },
-  perkHarvest:   { name: 'Grim Harvester', desc: 'KILLS HEAL 15% HP' }
+  perkHarvest:   { name: 'Grim Harvester', desc: 'KILLS HEAL 15% HP' },
+  perkShoal:     { name: 'Shoalrunner',   desc: 'SHOAL RUSH HITS 4 TIMES' },
+  perkOphthalmo: { name: 'Ophthalmo',     desc: 'DODGE WINDOW +20%' },
+  perkElasmo:    { name: 'Elasmo',        desc: 'NECK LASH HITS 3 TIMES' },
+  perkDeepwyrm:  { name: 'Deepwyrm',      desc: 'PERFECT DODGES HEAL 4' },
+  perkSucho:     { name: 'Suchomimus',    desc: 'RIVER CLAW CRITS BLEED' },
+  perkRiverking: { name: 'Riverking',     desc: 'KILLS GIVE +1 ENERGY' },
+  perkTylo:      { name: 'Tylosaurus',    desc: 'ABYSS BREACH COSTS 2' },
+  perkAbyssKing: { name: 'Abyss King',    desc: 'ABYSS BREACH HITS ALL' }
 };
 
 export const RELIC_TUNING = {

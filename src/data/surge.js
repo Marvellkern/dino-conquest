@@ -62,7 +62,11 @@ export const APEX_STRIKES = {
   sarco:  { name: 'ABYSS ROLL',       aura: 0x0099db },
   ptera:  { name: 'SKY STRIKE',       aura: 0xc0cbdc },
   dilo:   { name: 'VENOM BLOOM',      aura: 0xb55088 },
-  theri:  { name: "REAPER'S HARVEST", aura: 0x9ae8ff }
+  theri:  { name: "REAPER'S HARVEST", aura: 0x9ae8ff },
+  ichthy: { name: 'SHOAL STORM',      aura: 0x0099db, aoe: true },
+  plesio: { name: 'LONG-NECK LASH',   aura: 0xc0cbdc },
+  bary:   { name: 'RIVERCLAW FRENZY', aura: 0x63c74d },
+  mosa:   { name: 'LEVIATHAN BREACH', aura: 0x2ce8f5 }
 };
 
 // Ancestor Call (systems/ancestors.js): during an Apex Strike, the family tree's strongest

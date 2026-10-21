@@ -129,6 +129,7 @@ export class Hatch extends Phaser.Scene {
   speciesCell(id, y) {
     const sp = SPECIES[id], rar = RARITIES[sp.rarity];
     const icon = this.add.image(20, y + 16, id).setOrigin(0.5); // x=20 keeps the 37px Spino inside the cell
+    if (icon.width > 40) icon.setScale(0.5); // the Mosasaur and Plesiosaur at half size
     return [
       icon,
       text(this, 40, y + 7, sp.name),

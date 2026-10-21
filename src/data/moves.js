@@ -25,6 +25,11 @@ export const MOVES = {
   // calm: the target's next attack loses its timing profile (plain 'steady'). critDef: +DEF per crit, for the fight.
   venomSpit:    { name: 'Venom Spit',    btn: 'SPIT',    desc: 'PSN+CLM',  cost: 1, power: 0.6, anim: 'spit', poison: 2, calm: true },
   apex:         { name: 'Apex Strike',   btn: 'APEX',    desc: '5 BEATS',  cost: 2, power: 0, anim: 'apex' }, // replaces the special in a Primal Surge (systems/surge.js)
+  // v2.7 Tidal Coast specials.
+  shoalRush:    { name: 'Shoal Rush',    btn: 'SHOAL',   desc: 'SPREAD',   cost: 2, power: 0.55, anim: 'swarm', spread: 3 },
+  neckLash:     { name: 'Neck Lash',     btn: 'LASH',    desc: 'SURE 2X',  cost: 2, power: 0.55, anim: 'bite', hits: 2, sure: true },
+  riverClaw:    { name: 'River Claw',    btn: 'CLAW',    desc: '2X PIERCE', cost: 2, power: 0.65, anim: 'claws', hits: 2, defIgnore: 0.3 },
+  abyssBreach:  { name: 'Abyss Breach',  btn: 'BREACH',  desc: 'SURE BIG', cost: 3, power: 1.8, anim: 'charge', sure: true, defIgnore: 0.2 },
   scytheClaws:  { name: 'Scythe Claws',  btn: 'SCYTHE',  desc: '3 HITS',   cost: 2, power: 0.5, anim: 'claws', hits: 3, critDef: 1 },
 
   // Enemy-only moves (picked by systems/brains.js).

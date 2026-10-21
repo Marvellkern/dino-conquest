@@ -2,6 +2,7 @@ import { W } from '../config.js';
 import { sfx } from '../systems/sfx.js';
 import { wait, tween, standX, cloneRig, slash, crack, beatHit } from './apexKit.js';
 import { MORE_APEX } from './apexMoves2.js';
+import { COAST_APEX } from './apexMoves3.js';
 
 // Apex Strike animations, one set per species (battle/apex.js runs them):
 //   start(ctx)     the wind-up before the beats (optional)
@@ -85,5 +86,6 @@ export const APEX_ANIMS = {
     }
   },
 
-  ...MORE_APEX
+  ...MORE_APEX,
+  ...COAST_APEX
 };

@@ -24,7 +24,7 @@ import { music } from '../systems/music.js';
 import { variantDex } from '../ui/variantDex.js';
 import { freeReady } from '../systems/gacha.js';
 
-const DEX_ORDER = ['compy', 'raptor', 'trike', 'rex', 'pachy', 'sarco', 'spino', 'ankylo', 'ptera', 'stego', 'carno', 'dilo', 'theri'];
+const DEX_ORDER = ['compy', 'raptor', 'trike', 'rex', 'pachy', 'sarco', 'spino', 'ankylo', 'ptera', 'stego', 'carno', 'dilo', 'theri', 'ichthy', 'plesio', 'bary', 'mosa'];
 const DEX_PAGE = 4;
 
 // Boxes [x, y, w, h] per layout: landscape side by side, portrait stacked.

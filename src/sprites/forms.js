@@ -191,9 +191,34 @@ export const FORM_ART = {
       stretch: { cols: [13, 14], rows: [14] },
       colors: { '(': '#3a4466', ')': '#262b44', L: '#8b9bb4', E: '#e43b44' } }
   ],
-  // Baryonyx is wildlife only; the elite uses form 1.
+  // Baryonyx: bone spikes down the back (Suchomimus, also the Coast elite), then a heavier
+  // river-green king with more of them (Riverking).
   bary: [
-    { spikes: [{ x0: 10, x1: 22, every: 2, key: 'W' }], stretch: { cols: [16] } }
+    { spikes: [{ x0: 10, x1: 22, every: 2, key: 'W' }], stretch: { cols: [16] } },
+    { pad: { top: 2 }, spikes: [{ x0: 7, x1: 25, every: 2, key: 'W' }], stretch: { cols: [15, 16], rows: [12] },
+      colors: { '&': '#1e6f50', '%': '#124e3a', h: '#0e3a2a', W: '#e8dcb8', E: '#feae34' } }
+  ],
+  // Ichthyosaur: a taller fin and a longer body (Shoalrunner), then the deep-water
+  // Ophthalmosaurus: dark, with a huge glowing eye (Ophthalmo).
+  ichthy: [
+    { pad: { top: 1 }, rays: [{ x: 16, y: 2, dx: 1, dy: -1, len: 2, key: '*' }], stretch: { cols: [13] } },
+    { pad: { top: 2 }, rays: [{ x: 16, y: 2, dx: 1, dy: -1, len: 3, key: '*' }], stretch: { cols: [12, 13] },
+      paint: [{ key: 'E', pts: [[20, 6], [21, 6], [20, 7], [21, 7]] }],
+      colors: { '*': '#262b44', '~': '#181425', V: '#5a6988', E: '#fee761' } }
+  ],
+  // Plesiosaur: a longer neck and a ridge (Elasmo), then longer still, deep blue with a
+  // glowing eye and bone spines (Deepwyrm).
+  plesio: [
+    { spikes: [{ x0: 10, x1: 22, every: 3, key: '=' }], stretch: { cols: [25, 27] } },
+    { pad: { top: 2 }, spikes: [{ x0: 8, x1: 24, every: 2, key: 'W' }], stretch: { cols: [24, 26, 28] },
+      colors: { '+': '#3a4466', '=': '#262b44', '-': '#5a6988', E: '#2ce8f5' } }
+  ],
+  // Mosasaur: a ridge of scales down the back (Tylosaurus), then a black Abyss King with a
+  // glowing cyan crest and eye.
+  mosa: [
+    { spikes: [{ x0: 14, x1: 40, every: 3, key: '!' }], stretch: { cols: [40] } },
+    { pad: { top: 3 }, grow: [{ x0: 14, x1: 38, h: 2, key: '!', topKey: '?' }], stretch: { cols: [30, 31] },
+      colors: { '@': '#181425', '!': '#3a4466', '<': '#262b44', '?': '#2ce8f5' } }
   ],
   spino: [
     { pad: { top: 4 }, grow: [{ x0: 6, x1: 17, h: 3, key: 'f', topKey: 'g' }], stretch: { cols: [14, 15], rows: [13] } },

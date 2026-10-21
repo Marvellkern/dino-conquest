@@ -295,6 +295,20 @@ There are 13 hatchable species: Compy, Pachy, Ankylo (Common); Raptor, Sarco, Pt
 
 All Nest-egg species: Ankylo, Pteranodon, Stego and Carno are Nest eggs (`unlock` in `data/species.js`; `hatchable()` in `systems/meta.js` filters the hatch pool). Their specials: Club Smash (a crit stuns), Dive Bomb (can't miss), Thagomizer (poisons 2), Gore Rush (+50% against targets under half HP). Each has two evolved forms with perks (`data/forms.js`, `sprites/forms.js`). Their sprites are built with a small shape builder (`sprites/shapes.js`, `sprites/grids2.js`). Dimetrodon is `enemyOnly`. The Dino-dex shows 4 species per page. The Swamp's wildlife and the Bog Spino have their own stat blocks (`enemyBase` and `boss.base` in `data/zones.js`), so the hatchable Pachy, Sarco and Spino can be tuned without moving the zone. Their specials are Skull Bash (pierces DEF), Death Roll (3 bites) and Swamp Surge (charges up, then hits with a tight dodge window).
 
+**Tidal Coast creatures (v2.7):** the Coast's four sea creatures are playable from Nest eggs, each needing the Tidal Coast unlocked. Their Coast wildlife and boss keep their own stat blocks (`enemyBase`, `boss.base`), so the zone doesn't change.
+
+| Creature | Rarity | Egg | Special | Forms (perk) | Apex Strike |
+|---|---|---|---|---|---|
+| Ichthyosaur | Common | 70 | Shoal Rush: 3 hits spread over the enemies | Shoalrunner (4 hits), Ophthalmo (dodge window +20%) | Shoal Storm (aoe): ghost ichthyosaurs leap through the enemies |
+| Plesiosaur | Rare | 110 | Neck Lash: 2 hits that can't miss | Elasmo (3 hits), Deepwyrm (perfect dodges heal 4) | Long-Neck Lash: the neck whips high and low |
+| Baryonyx | Epic | 160 | River Claw: 2 hits, pierce 30% | Suchomimus (crits bleed), Riverking (kills give +1 energy) | Riverclaw Frenzy: rakes, then lifts and slams |
+| Mosasaur | Legendary | 220 | Abyss Breach: a sure 1.8x hit, pierce 20% | Tylosaurus (costs 2), Abyss King (hits all) | Leviathan Breach: sinks, water spouts, breaches from below |
+
+- **Hatchery:** the Plesiosaur, Baryonyx and Mosasaur join the banner rotation (Rare, Epic and Legendary days), all with the Coast as their banner backdrop.
+- **Dino-dex:** shows 17 species over 5 pages.
+- **Mosasaur scale:** it's `big`, so on the player's side it's drawn one scale step smaller (`createRig`); otherwise it would fill half the screen. The boss keeps its size.
+- **Balance** (`ONLY=... node tools/sim.mjs`, skilled player): the Ichthyosaur sits a touch under the Compy, the Plesiosaur with the Raptor, the Baryonyx mid-pack among the Epics, the Mosasaur with the T-Rex.
+
 ### Content (v2 Phase 5)
 
 - 12 enemy types, each with a gimmick, and 4 bosses with 2 phases. New intent kinds: `bask` (heal), `spikes` (thorny guard); new move flags: `stunOnHit` (enemy), `critStun`, `poison`, `execute` (player).

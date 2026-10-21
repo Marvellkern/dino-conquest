@@ -1,5 +1,6 @@
 import { FILL_MAX } from './rexParts.js';
 import { ensureSkin } from './skinBuild.js';
+import { SPECIES } from '../data/species.js';
 
 // A rig is a container of grid-textured parts, anchored at feet-center.
 // Units for poses are grid pixels; the rig is drawn at integer `scale`.
@@ -217,6 +218,7 @@ export class SpriteRig extends Rig {
 // skin: texture key to draw with (e.g. 'raptor_e1', 'alpharex'); defaults to the species.
 export function createRig(scene, species, x, y, facing, skin = species, scale = 2) {
   skin = ensureSkin(scene, skin); // a variant skin is built the first time it's drawn
+  if (facing > 0 && SPECIES[species]?.big) scale = Math.max(1, scale - 1); // the player's side: a huge dino one step smaller
   if (species === 'rex') return new RexRig(scene, x, y, facing, skin, scale);
   const src = scene.textures.get(skin).getSourceImage();
   return new SpriteRig(scene, x, y, facing, skin, src.width, src.height, scale);

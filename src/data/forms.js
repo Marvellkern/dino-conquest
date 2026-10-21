@@ -13,5 +13,9 @@ export const FORMS = {
   stego:  [{ name: 'Stego' },  { name: 'Spikeback',  perk: 'perkSpikes' },    { name: 'Thunderspike',  perk: 'perkThago' }],
   carno:  [{ name: 'Carno' },  { name: 'Bullhorn',   perk: 'perkBullhorn' },  { name: 'Doomhorn',      perk: 'perkDoom' }],
   dilo:   [{ name: 'Dilopho' }, { name: 'Frill Spitter', perk: 'perkFrillSpit' }, { name: 'Toxic Crown', perk: 'perkToxic' }],
-  theri:  [{ name: 'Therizino' }, { name: 'Reaper',   perk: 'perkReaper' },    { name: 'Grim Harvester', perk: 'perkHarvest' }]
+  theri:  [{ name: 'Therizino' }, { name: 'Reaper',   perk: 'perkReaper' },    { name: 'Grim Harvester', perk: 'perkHarvest' }],
+  ichthy: [{ name: 'Ichthyo' }, { name: 'Shoalrunner', perk: 'perkShoal' },  { name: 'Ophthalmo',     perk: 'perkOphthalmo' }],
+  plesio: [{ name: 'Plesio' },  { name: 'Elasmo',     perk: 'perkElasmo' },    { name: 'Deepwyrm',      perk: 'perkDeepwyrm' }],
+  bary:   [{ name: 'Baryonyx' }, { name: 'Suchomimus', perk: 'perkSucho' },   { name: 'Riverking',     perk: 'perkRiverking' }],
+  mosa:   [{ name: 'Mosasaur' }, { name: 'Tylosaurus', perk: 'perkTylo' },    { name: 'Abyss King',    perk: 'perkAbyssKing' }]
 };

@@ -2,6 +2,7 @@
 // enemyOnly: true keeps a species out of the hatch spin and the Dino-dex (Dimetrodon).
 // unlock: a Nest unlock (data/unlocks.js) that has to be bought before it can hatch.
 // short: a shorter name for tight spots (Dino-dex cards).
+// big: drawn one scale step smaller on the player's side (the Mosasaur would fill the screen).
 export const SPECIES = {
   compy:  { name: 'Compy',  rarity: 'common',    hp: 52,  atk: 11, def: 4, spd: 9, special: 'swarm' },
   raptor: { name: 'Raptor', rarity: 'rare',      hp: 60,  atk: 13, def: 4, spd: 8, special: 'doubleSlash' },
@@ -18,11 +19,12 @@ export const SPECIES = {
   // v2.2 Nest eggs: a fast debuffer and a tanky bruiser.
   dilo:   { name: 'Dilophosaurus', short: 'Dilopho', rarity: 'rare', hp: 54, atk: 12, def: 3, spd: 9, special: 'venomSpit', unlock: 'eggDilo' },
   theri:  { name: 'Therizinosaurus', short: 'Therizino', rarity: 'epic', hp: 82, atk: 11, def: 7, spd: 3, special: 'scytheClaws', unlock: 'eggTheri' },
-  // Tidal Coast wildlife.
-  plesio: { name: 'Plesiosaur', rarity: 'rare', hp: 70,  atk: 12, def: 6, spd: 5, special: 'deathRoll', enemyOnly: true },
-  ichthy: { name: 'Ichthyosaur', rarity: 'common', hp: 44, atk: 10, def: 2, spd: 11, special: 'swarm', enemyOnly: true },
-  bary:   { name: 'Baryonyx', rarity: 'epic', hp: 78,    atk: 13, def: 5, spd: 5, special: 'deathRoll', enemyOnly: true },
-  mosa:   { name: 'Mosasaur', rarity: 'legendary', hp: 80, atk: 13, def: 6, spd: 4, special: 'crushingBite', enemyOnly: true }
+  // Tidal Coast creatures, playable since v2.7 from their Nest eggs (the Coast's own
+  // wildlife and boss keep their stat blocks in data/zones.js, so these don't move the zone).
+  plesio: { name: 'Plesiosaur', short: 'Plesio', rarity: 'rare', hp: 60, atk: 11, def: 5, spd: 5, special: 'neckLash', unlock: 'eggPlesio' },
+  ichthy: { name: 'Ichthyosaur', short: 'Ichthyo', rarity: 'common', hp: 54, atk: 11, def: 3, spd: 11, special: 'shoalRush', unlock: 'eggIchthy' },
+  bary:   { name: 'Baryonyx', rarity: 'epic', hp: 74, atk: 12, def: 5, spd: 5, special: 'riverClaw', unlock: 'eggBary' },
+  mosa:   { name: 'Mosasaur', rarity: 'legendary', hp: 80, atk: 13, def: 5, spd: 4, special: 'abyssBreach', unlock: 'eggMosa', big: true }
 };
 
 export const HATCHABLE = Object.keys(SPECIES).filter((id) => !SPECIES[id].enemyOnly);

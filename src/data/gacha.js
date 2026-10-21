@@ -34,10 +34,10 @@ export const CRAFT = { variant: 600 };
 // Legendaries every week); Sunday's banner rolls any Legendary.
 export const WEEK = ['anyLegendary', 'rare', 'legendary', 'epic', 'rare', 'legendary', 'epic'];
 export const ROTATION = {
-  rare: ['raptor', 'sarco', 'ptera', 'dilo'],
-  epic: ['trike', 'spino', 'stego', 'theri'],
-  legendary: ['rex', 'carno'],
-  anyLegendary: ['rex', 'carno']
+  rare: ['raptor', 'sarco', 'ptera', 'dilo', 'plesio'],
+  epic: ['trike', 'spino', 'stego', 'theri', 'bary'],
+  legendary: ['rex', 'carno', 'mosa'],
+  anyLegendary: ['rex', 'carno', 'mosa']
 };
 
 // Starting a run (scenes/Hatch.js): a Random Hatch gets +50% Amber for the run and one free
@@ -50,7 +50,7 @@ export const HISTORY_MAX = 50;
 // The banner's backdrop: the featured dino's home zone (Sunday's Any Legendary: the Crater).
 export const HOME_ZONE = {
   raptor: 'jungle', trike: 'jungle', rex: 'jungle', sarco: 'swamp', spino: 'swamp', stego: 'volcano', carno: 'volcano',
-  ptera: 'coast', dilo: 'coast', theri: 'crater', anyLegendary: 'crater'
+  ptera: 'coast', dilo: 'coast', theri: 'crater', plesio: 'coast', bary: 'coast', mosa: 'coast', anyLegendary: 'crater'
 };
 
 // How each pull result shows: its light color and how it ranks (the 10-pull's best gets the
