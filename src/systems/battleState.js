@@ -219,8 +219,8 @@ export function playerStrike(st, id, target, qte) {
   const fx = BLD.onPlayerHit(st, id, target, qte, dmg);
   const killed = target.hp <= 0;
   const calmed = !!m.calm && !killed && calm(target);
-  const defGain = m.critDef && qte === 'crit' ? m.critDef : 0; // Scythe Claws: lasts the fight
-  p.def += defGain;
+  const defGain = m.critDef && qte === 'crit' && (p.critDefGot ?? 0) < (m.critDefMax ?? 99) ? m.critDef : 0; // Scythe Claws: lasts the fight, up to critDefMax
+  p.def += defGain; p.critDefGot = (p.critDefGot ?? 0) + defGain;
   noteKill(st, killed);
   if (id === 'tail' && dmg > 0) tally(st, 'tailHits');
   // Spiky guard (Stego): the attacker is pricked, but never killed by it.

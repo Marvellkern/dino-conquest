@@ -75,7 +75,7 @@ export const PERKS = {
   perkFrillSpit: { name: 'Frill Spitter', desc: 'VENOM SPIT HITS ALL' },
   perkToxic:     { name: 'Toxic Crown',   desc: 'POISONED FOES TAKE +25%' },
   perkReaper:    { name: 'Reaper',        desc: 'SCYTHE CLAWS HIT 4 TIMES' },
-  perkHarvest:   { name: 'Grim Harvester', desc: 'KILLS HEAL 15% HP' },
+  perkHarvest:   { name: 'Grim Harvester', desc: 'KILLS HEAL 8% HP' },
   perkShoal:     { name: 'Shoalrunner',   desc: 'SHOAL RUSH HITS 4 TIMES' },
   perkOphthalmo: { name: 'Ophthalmo',     desc: 'DODGE WINDOW +20%' },
   perkElasmo:    { name: 'Elasmo',        desc: 'NECK LASH HITS 3 TIMES' },
@@ -93,6 +93,6 @@ export const RELIC_TUNING = {
   echoDmg: 4, feathersMult: 1.2, shadowMult: 1.5, frillBlock: 0.3, ghostBite: 3,
   emberDmg: 2, obsidianArmor: 2, lavaPoison: 2, starEvery: 3, crystalHp: 15, geodeMult: 1.5,
   twinHornMult: 1.6, pteraHeal: 4, bastionTurns: 2, spikesReflect: 0.3, skyMult: 1.2, thornsFrac: 0.3,
-  baskHeal: 0.2, toxicMult: 1.25, harvestHeal: 0.15, pearlHeal: 2, bleedDmg: 3, bleedTurns: 2,
+  baskHeal: 0.2, toxicMult: 1.25, harvestHeal: 0.08, pearlHeal: 2, bleedDmg: 3, bleedTurns: 2,
   primalFangMeter: 25, warDrumTurns: 3, rageHit: 10, rageHp: 0.1, spiritCalls: 2 // rageHit: double the normal hit gain
 };

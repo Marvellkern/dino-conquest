@@ -16,7 +16,7 @@ export const MOVES = {
   hornCharge:   { name: 'Horn Charge',   btn: 'HORN',    desc: 'DEF UP',   cost: 2, power: 1.4, anim: 'charge', self: { stat: 'defUp', turns: 2 } },
   skullBash:    { name: 'Skull Bash',    btn: 'SKULL',   desc: 'PIERCE',   cost: 2, power: 1.3, anim: 'charge', defIgnore: 0.5 },
   deathRoll:    { name: 'Death Roll',    btn: 'D.ROLL',  desc: '3 BITES',  cost: 2, power: 0.55, anim: 'bite', hits: 3 },
-  swampSurge:   { name: 'Swamp Surge',   btn: 'SURGE',   desc: 'BIG HIT',  cost: 3, power: 1.6, anim: 'charge', defIgnore: 0.3 },
+  swampSurge:   { name: 'Swamp Surge',   btn: 'SURGE',   desc: 'BIG HIT',  cost: 3, power: 1.4, anim: 'charge', defIgnore: 0.3 },
   // critStun: a crit stuns. poison: turns of poison on hit. execute: bonus vs targets below half HP.
   clubSmash:    { name: 'Club Smash',    btn: 'CLUB',    desc: 'CRIT ZZ',  cost: 2, power: 1.2, anim: 'tail', critStun: true },
   diveBomb:     { name: 'Dive Bomb',     btn: 'DIVE',    desc: 'SURE',     cost: 2, power: 1.3, anim: 'charge', sure: true },
@@ -30,7 +30,7 @@ export const MOVES = {
   neckLash:     { name: 'Neck Lash',     btn: 'LASH',    desc: 'SURE 2X',  cost: 2, power: 0.55, anim: 'bite', hits: 2, sure: true },
   riverClaw:    { name: 'River Claw',    btn: 'CLAW',    desc: '2X PIERCE', cost: 2, power: 0.65, anim: 'claws', hits: 2, defIgnore: 0.3 },
   abyssBreach:  { name: 'Abyss Breach',  btn: 'BREACH',  desc: 'SURE BIG', cost: 3, power: 1.8, anim: 'charge', sure: true, defIgnore: 0.2 },
-  scytheClaws:  { name: 'Scythe Claws',  btn: 'SCYTHE',  desc: '3 HITS',   cost: 2, power: 0.5, anim: 'claws', hits: 3, critDef: 1 },
+  scytheClaws:  { name: 'Scythe Claws',  btn: 'SCYTHE',  desc: '3 HITS',   cost: 2, power: 0.4, anim: 'claws', hits: 3, critDef: 1, critDefMax: 3 }, // critDefMax: the DEF it can stack in one fight
 
   // Enemy-only moves (picked by systems/brains.js).
   hornRam:      { name: 'Horn Ram',      power: 2.2, anim: 'charge', blockMult: 0.8 },

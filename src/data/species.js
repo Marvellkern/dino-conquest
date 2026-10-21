@@ -10,7 +10,7 @@ export const SPECIES = {
   rex:    { name: 'T-Rex',  rarity: 'legendary', hp: 78,  atk: 13, def: 4, spd: 3, special: 'crushingBite' },
   pachy:  { name: 'Pachy',  rarity: 'common',    hp: 50,  atk: 11, def: 4, spd: 5, special: 'skullBash' },
   sarco:  { name: 'Sarco',  rarity: 'rare',      hp: 62,  atk: 11, def: 5, spd: 6, special: 'deathRoll' },
-  spino:  { name: 'Spino',  rarity: 'epic',      hp: 64,  atk: 12, def: 4, spd: 5, special: 'swampSurge' },
+  spino:  { name: 'Spino',  rarity: 'epic',      hp: 52,  atk: 11, def: 3, spd: 5, special: 'swampSurge' },
   ankylo: { name: 'Ankylo', rarity: 'common',    hp: 60,  atk: 9,  def: 5, spd: 3, special: 'clubSmash', unlock: 'eggAnkylo' },
   ptera:  { name: 'Pteranodon', rarity: 'rare',  hp: 58,  atk: 12, def: 4, spd: 10, special: 'diveBomb', unlock: 'eggPtera' },
   stego:  { name: 'Stego',  rarity: 'epic',      hp: 74,  atk: 12, def: 7, spd: 3, special: 'thagomizer', unlock: 'eggStego' },
@@ -18,7 +18,7 @@ export const SPECIES = {
   dimetro: { name: 'Dimetrodon', rarity: 'rare', hp: 64,  atk: 12, def: 5, spd: 4, special: 'deathRoll', enemyOnly: true },
   // v2.2 Nest eggs: a fast debuffer and a tanky bruiser.
   dilo:   { name: 'Dilophosaurus', short: 'Dilopho', rarity: 'rare', hp: 54, atk: 12, def: 3, spd: 9, special: 'venomSpit', unlock: 'eggDilo' },
-  theri:  { name: 'Therizinosaurus', short: 'Therizino', rarity: 'epic', hp: 82, atk: 11, def: 7, spd: 3, special: 'scytheClaws', unlock: 'eggTheri' },
+  theri:  { name: 'Therizinosaurus', short: 'Therizino', rarity: 'epic', hp: 64, atk: 11, def: 4, spd: 3, special: 'scytheClaws', unlock: 'eggTheri' },
   // Tidal Coast creatures, playable since v2.7 from their Nest eggs (the Coast's own
   // wildlife and boss keep their stat blocks in data/zones.js, so these don't move the zone).
   plesio: { name: 'Plesiosaur', short: 'Plesio', rarity: 'rare', hp: 60, atk: 11, def: 5, spd: 5, special: 'neckLash', unlock: 'eggPlesio' },
