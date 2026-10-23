@@ -2,7 +2,8 @@
 // blocked storage or corrupt JSON fall back to a fresh save, never a crash.
 import { defaultGacha, upgradeGacha } from './gacha.js';
 
-const KEY = 'dino-conquest:save';
+export const SAVE_KEY = 'dino-conquest:save';
+const KEY = SAVE_KEY;
 export const SAVE_VERSION = 3;
 
 // v1 Lineage stacks are refunded at this much Amber each when a save moves to v2.

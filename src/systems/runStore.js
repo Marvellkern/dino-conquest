@@ -9,7 +9,8 @@ import { RUN_VERSION, serializeRun, deserializeRun, migrateRun } from '../run/ru
 // a reward, a shop or an event comes out exactly the same: no rerolls.
 // phase: where to resume. { kind: 'map' | 'node' (id) | 'battle' (node, seed) |
 //   'rewards' (elite, levels) | 'evolve' | 'end' (won) }
-const KEY = 'dino-conquest:run';
+export const RUN_KEY = 'dino-conquest:run';
+const KEY = RUN_KEY;
 let rec = null;      // { v, snap, phase, log }
 let replay = [];     // choices still to auto-answer after a resume
 let resumeAt = null; // the phase a resumed run should pick up, taken once

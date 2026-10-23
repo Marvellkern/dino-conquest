@@ -23,6 +23,7 @@ import { sfx } from '../systems/sfx.js';
 import { music } from '../systems/music.js';
 import { variantDex } from '../ui/variantDex.js';
 import { freeReady } from '../systems/gacha.js';
+import { saveMenu } from '../ui/saveMenu.js';
 
 const DEX_ORDER = ['compy', 'raptor', 'trike', 'rex', 'pachy', 'sarco', 'spino', 'ankylo', 'ptera', 'stego', 'carno', 'dilo', 'theri', 'ichthy', 'plesio', 'bary', 'mosa'];
 const DEX_PAGE = 4;
@@ -309,7 +310,7 @@ export class Home extends Phaser.Scene {
         ['aim', { label: `COUNTER AIM: ${s.aim === 'auto' ? 'AUTO' : 'MANUAL'}` }],
         ['gfx', { label: `GRAPHICS: ${gfxLabel(this.game)}` }],
         ...(canFullscreen() ? [['full', { label: `FULLSCREEN: ${isFullscreen() ? 'ON' : 'OFF'}` }]] : []),
-        ['reset', { label: 'RESET SAVE', sub: 'ERASES ALL PROGRESS' }],
+        ['save', { label: 'SAVE DATA', sub: 'MOVE TO ANOTHER DEVICE, RESET' }],
         ['back', { label: 'BACK' }]
       ];
       const pick = items[await choose(this, { title: 'SETTINGS', options: items.map(([, o]) => o), bh: 26 })][0];
@@ -318,7 +319,8 @@ export class Home extends Phaser.Scene {
       else if (pick === 'aim') s.aim = s.aim === 'auto' ? 'manual' : 'auto';
       else if (pick === 'gfx') { s.gfx = GFX_SETTINGS[(GFX_SETTINGS.indexOf(s.gfx ?? 'auto') + 1) % GFX_SETTINGS.length]; gfxChanged = true; }
       else if (pick === 'full') { if (isFullscreen()) exitFullscreen(); else enterFullscreen(); await new Promise((r) => setTimeout(r, 250)); }
-      else if (pick === 'reset') {
+      else if (pick === 'save') {
+        if (await saveMenu(this) !== 'reset') continue;
         const yes = await choose(this, {
           title: 'ERASE EVERYTHING?',
           lines: ['AMBER, UNLOCKS, GOALS, FAMILY', 'AND DINO-DEX WILL BE LOST.'],
