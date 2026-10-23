@@ -512,6 +512,24 @@ A rage meter that ends in a species-unique cinematic finisher. The numbers are i
     Decent players get the most help in the Jungle, from the hits they take, which is the comeback the brief asked for. The aimed head counter alone is worth +1–4.
   - **The trade-off:** a well-played Apex takes ~35% of a normal enemy and ~11% of a boss: the low end of the brief's 35–50%, and under its 15–20% for bosses. That's a deliberate middle between its damage targets and its clear-rate cap (+5–8), which experts now pass in the late zones.
 
+### Attack bar combos (v2.7)
+One tap is still a whole attack. After a **good or crit**, the marker bounces back for an optional extra pass, then once more (3 passes in all). Rules: `systems/combo.js` (Phaser-free, used by the sim); the bar: `attackBar` in `systems/qte.js`; numbers: `COMBO_MULT` and `COMBO` in `data/moves.js`.
+- **Each extra pass:** the marker rests 140ms where it turned (a tick flash, the new zones appear), then sweeps back 25% faster than the last pass, with zones 15% smaller and placed at least 30% of the bar ahead of the marker. A hit near the start of the bar, with no room to turn back, bounces off the far end instead. No zone is ever shorter than 40ms to hit. The first pass keeps its curve, drift, mud and venom cover; the extra passes are plain.
+- **Damage:** `base x QTE_MULT[first pass] x COMBO_MULT[passes landed]`, with `COMBO_MULT = [1, 1.2, 1.4, 1.6]` and +0.05 per extra pass in the sweet spot. QTE x combo is capped at x3.5. Crits (x1.75, the crit streak, the Perfect Moments freeze) only come from the first pass. A miss, or no tap, ends the combo and keeps what was earned: a soft "tuk" and the bar fades, no red X.
+- **Which moves:** single-hit attacks (Bite and its mutations, Tail Whip, Crushing Bite, Skull Bash, Club Smash, Dive Bomb, Gore Rush...), and only the first strike of a move (not a Chain Bite). Multi-hit and spread specials, Roar, Brace, perfect-dodge counters and the Apex Strike don't use it. "Can't miss" moves and a Primal Surge make only the first pass sure.
+- **Feel:** each landed extra pass rings the Perfect Moments chime a step higher (a crystal ting on a sweet spot), a "X1.2" / "X1.4!" counter pops next to the bar, and the frame warms (white, orange, gold). The swing plays after the combo: 2 passes at 1.3x speed with more sparks and shake; 3 and up at 1.6x with afterimages and speed lines, a second impact flash, a bigger light flash and a gold damage number.
+- **Meta:** +3 Primal meter per landed extra pass. **Fourth Strike** (Surge Fossils pack) allows a 4th pass (x1.6). **Rhythm Bone** (from the Perfect Rhythm goal) makes extra passes 15% faster instead of 25%. Goals: **Triple Threat** (ten 3-pass combos in one run, 120 Amber) and **Perfect Rhythm** (a 3-pass combo all in the sweet spot). `run.stats` counts `combo2` / `combo3` / `combo4` / `comboPerfect`; the run summary shows them.
+- **Balance** (`node tools/sim.mjs`; `COMBO=0` plays without combos, `CMULT=1.35,1.7`, `CCAP`, `CGAIN`, `CSWEET` try other numbers). The sim lands extra passes at the brief's rates (Expert 80% / 65%, Skilled 60% / 40%, Decent 35% / 15%, Average 15% / 5%; Decent and Average try half the time). The brief's x1.5 / x2 put Expert clears +25 points at the Crater and Skilled +13, so the multipliers came down to x1.2 / x1.4 and the meter gain to +3. Change in the weighted clear rate per zone (200 runs per species):
+
+    | Player | Jungle | Swamp | Volcano | Coast | Crater | Avg multiplier | Passes landed (1 / 2 / 3) |
+    |---|---|---|---|---|---|---|---|
+    | Expert | +1 | +8 | +12 | +13 | +15 | x1.29 | 20% / 28% / 52% |
+    | Skilled | +1 | +6 | +7 | +3 | +5 | x1.17 | 39% / 35% / 24% |
+    | Decent | -1 | +1 | +1 | 0 | 0 | x1.04 | 71% / 13% / 2% |
+    | Average | 0 | 0 | 0 | 0 | 0 | x1.01 | 36% / 3% / 0% |
+
+    Skilled is about at the brief's +5 target; Expert is over it in the late zones. Even x1.15 / x1.3 left Expert +12, since any extra damage compounds over a run, so cutting further would make combos barely worth chasing. The meter gain isn't the cause (with it off, Expert was still +12).
+
 ### Battle code (v2 combat)
 
 Each round: every enemy shows an **intent** (what it will do next, with exact damage) → you spend **energy** (max 3, +2 a turn) on as many moves as you can afford → **END TURN** → each enemy does what it showed. Brace (1 energy) turns missed dodges into blocks until your next turn. A perfect dodge earns a free counter-bite. 3 crits in a row empower your next attack. Roar hits every enemy; Swarm spreads its 3 hits across them.

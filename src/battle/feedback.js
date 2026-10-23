@@ -5,7 +5,7 @@ import { SPARK } from '../data/lighting.js';
 // Hit feedback for one impact. n = index within one QTE (Swarm lands 3):
 // labels show once and damage numbers fan out so they don't stack.
 // gold: empowered (crit-streak) hit — gold sparks.
-export function hitFeedback(scene, att, dfd, dmg, qte, defend, n = 0, { gold = false, move = null } = {}) {
+export function hitFeedback(scene, att, dfd, dmg, qte, defend, n = 0, { gold = false, move = null, combo = 1 } = {}) { // combo: attack bar combo passes landed (3+: a gold number)
   const fx = scene.fx, rig = dfd.rig, p = rig.hitPoint(), dir = att.rig.homeFacing;
   const nx = p.x + [0, -10, 10][n % 3];
   const pop = (...args) => n === 0 && fx.pop(...args);
@@ -29,7 +29,7 @@ export function hitFeedback(scene, att, dfd, dmg, qte, defend, n = 0, { gold = f
     fx.shake(3 + heavy, 260);
     fx.impactStar(p.x, p.y);
     fx.sparks(p.x, p.y, { count: 16, dir, big: true, gold });
-    num(p.y - 16, dmg, { crit: true });
+    num(p.y - 16, dmg, combo >= 3 ? { color: '#ffd040' } : { crit: true });
     pop(p.x, p.y - 38, 'CRIT!', '#fff096');
     sfx('crit');
   } else if (defend === 'block') {
@@ -49,7 +49,7 @@ export function hitFeedback(scene, att, dfd, dmg, qte, defend, n = 0, { gold = f
     fx.hitstop(60);
     fx.shake(1 + heavy, 150);
     fx.sparks(p.x, p.y, { count: gold ? 14 : 8, dir, gold, big: gold });
-    num(p.y - 16, dmg);
+    num(p.y - 16, dmg, combo >= 3 ? { color: '#ffd040' } : undefined);
     sfx('hit');
   }
 }

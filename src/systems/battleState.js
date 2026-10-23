@@ -205,12 +205,13 @@ export function finalQte(st, qte) {
 
 // Resolve one player strike on target. evaded: a Raptor dodged a missed QTE
 // and gets a free Pounce. fx: build effects (heal, poison, stun, chain).
-// kill: on-kill effects. phase: a boss just crossed into phase 2.
-export function playerStrike(st, id, target, qte) {
+// kill: on-kill effects. phase: a boss just crossed into phase 2. combo: the attack bar
+// combo multiplier (systems/combo.js).
+export function playerStrike(st, id, target, qte, combo = 1) {
   const m = MOVES[id], p = st.player;
   if (qte === 'miss' && target.brain.evadeMiss && !m.sure) return { dmg: 0, evaded: true };
   const mods = BLD.strikeMods(st, id, target);
-  const mult = (st.activeEmpower ? 1 + STREAK.bonus : 1) * mods.mult * takenMult(target) * (qte === 'crit' ? SG.critMult(st) : 1); // surge crits hit harder
+  const mult = (st.activeEmpower ? 1 + STREAK.bonus : 1) * mods.mult * takenMult(target) * (qte === 'crit' ? SG.critMult(st) : 1) * combo; // surge crits hit harder
   const dmg = Math.min(target.hp, computeDamage(p, target, m, st.rng, { qte, mult }) + mods.flat);
   target.hp -= dmg;
   tally(st, 'dmgDealt', dmg);

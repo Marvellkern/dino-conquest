@@ -4,6 +4,8 @@ export const RELIC_ICONS = {
   warDrumBone:   ['O......O', '.O....O.', '..OOOO..', '.OjjjjO.', 'OjWjjWjO', 'OjjjjjjO', '.OjjjjO.', '..OOOO..'],
   rageGland:     ['.OO..OO.', 'OxxOOxxO', 'OxEEEExO', 'OEEWEEEO', '.OEEEEO.', '..OEEO..', '...OO...', '........'],
   spiritAmber:   ['..OOOO..', '.OllllO.', 'OlWllllO', 'OllWWllO', 'OllWWllO', '.OllllO.', '..OOOO..', '........'],
+  rhythmBone:    ['O......O', 'OO....OO', '.OWOOWO.', '..OWWO..', '..OWWO..', '.OWOOWO.', 'OO....OO', 'O......O'],
+  fourthStrike:  ['OO.OO...', 'OxOOxO..', '.OxOOxO.', '..OxOOxO', '...OxOxO', '....OxxO', '.....OO.', '........'],
   pearlHeart:    ['.OO..OO.', 'OVVOOVVO', 'OVWVVVVO', 'OVVVVVVO', '.OVVVVO.', '..OVVO..', '...OO...', '........'],
   tideCharm:     ['...OO...', '..OQQO..', '.OQWWQO.', 'OQWQQWQO', 'OQQQQQQO', '.OQQQQO.', '..OFFO..', '...OO...'],
   kelpWrap:      ['..O..O..', '.OYOOYO.', '.OYHHYO.', 'OYHYYHYO', 'OHYHHYHO', '.OYHHYO.', '.OHYYHO.', '..OOOO..'],

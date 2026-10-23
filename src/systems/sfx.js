@@ -92,6 +92,8 @@ const SOUNDS = {
   blip: (c) => tone(c, { f0: 660, f1: 990, dur: 0.05, vol: 0.08 }),
   deny: (c) => tone(c, { f0: 160, f1: 120, dur: 0.1, vol: 0.1 }),
   tick: (c) => tone(c, { f0: 880, dur: 0.04, vol: 0.06 }),
+  bounce: (c, k = 1) => noise(c, { dur: 0.08, vol: 0.08, f: 1400 + 600 * k, f1: 4000 + 900 * k }), // combo pass: the marker turns, higher each pass
+  tuk: (c) => tone(c, { type: 'triangle', f0: 220, f1: 180, dur: 0.05, vol: 0.06 }), // combo pass missed: soft, no fail sound
   ding: (c) => { tone(c, { f0: 1320, dur: 0.06, vol: 0.08 }); tone(c, { f0: 1760, dur: 0.1, vol: 0.08, at: 0.05 }); },
   early: (c) => tone(c, { f0: 300, f1: 200, dur: 0.06, vol: 0.08 }),
   step: (c) => tone(c, { type: 'triangle', f0: 90, f1: 40, dur: 0.08, vol: 0.25 }),

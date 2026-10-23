@@ -5,6 +5,7 @@
 // env:   PLAYS=expert,skilled,decent,average   ONLY=compy,rex   ZONES=5 (default 5, all zones)
 //        VET=1 (veteran save: every fossil pack, Sturdy Blood 3, Nine Lives)   EXT=n
 //        SURGE=0 (play without v2.5: no Primal Surge / Apex / Ancestor Call, plain counters)
+//        COMBO=0 (play without v2.7 attack bar combos)   CMULT=1.35,1.7 (try other COMBO_MULT)   CCAP=3.5
 //
 // v2.5 policy: the meter fills like the game's (systems/surge.js); the surge goes off at 100
 // on the first turn an elite or boss is there or the dino is under half HP; the Apex Strike
@@ -35,6 +36,8 @@ import * as SG from '../src/systems/surge.js';
 import * as F from '../src/systems/flow.js';
 import { ancestorHit, callsLeft } from '../src/systems/ancestors.js';
 import { APEX_STRIKES, APEX, SURGE } from '../src/data/surge.js';
+import { COMBO, COMBO_MULT } from '../src/data/moves.js';
+import { comboEligible, comboPlan, comboMult, noteCombo } from '../src/systems/combo.js';
 // Tuning knobs (try numbers here before changing data/surge.js): GAIN_K scales every meter gain,
 // APEX_K the Apex share, CRIT the surge crit multiplier, FEAR the enemies' ATK under FEAR, SENERGY.
 if (process.env.GAIN_K) { for (const k in SURGE.gain) SURGE.gain[k] = Math.round(SURGE.gain[k] * +process.env.GAIN_K); SURGE.streakMax *= +process.env.GAIN_K; }
@@ -46,6 +49,19 @@ if (process.env.SENERGY) SURGE.energy = +process.env.SENERGY;
 if (process.env.SETURN) SURGE.energyTurn = +process.env.SETURN;
 if (process.env.ALLP) APEX.allPerfect = +process.env.ALLP;
 
+if (process.env.CMULT) process.env.CMULT.split(',').forEach((v, i) => { COMBO_MULT[i + 1] = +v; });
+if (process.env.CCAP) COMBO.cap = +process.env.CCAP;
+if (process.env.CGAIN) SURGE.gain.combo = +process.env.CGAIN; // meter per extra pass
+if (process.env.CSWEET) COMBO.sweetBonus = +process.env.CSWEET;
+const COMBO_ON = process.env.COMBO !== '0';
+// v2.7 combo passes: the chance to land each extra pass (2nd, 3rd; a 4th at 80% of the 3rd),
+// how often a profile tries them at all, and how often a landed extra pass is in the sweet spot.
+const COMBO_PLAY = {
+  expert: { p: [0.8, 0.65], tries: 1, sweet: 0.35 },
+  skilled: { p: [0.6, 0.4], tries: 1, sweet: 0.25 },
+  decent: { p: [0.35, 0.15], tries: 0.5, sweet: 0.12 },
+  average: { p: [0.15, 0.05], tries: 0.5, sweet: 0.05 }
+};
 const SURGE_ON = process.env.SURGE !== '0';
 const METER_ON = SURGE_ON && process.env.AIMONLY !== '1'; // AIMONLY=1: only the aimed counter (tuning)
 const APEX_PERFECT = { expert: 0.85, skilled: 0.65, decent: 0.4, average: 0.15 };
@@ -73,7 +89,28 @@ function gauss(rng) {
 
 // Stats per play profile and zone: rings, perfect dodges, bars, crits, damage, fights.
 const stats = {};
-const zstat = (play, zone) => ((stats[play] ??= {})[zone] ??= { rings: 0, dodges: 0, bars: 0, crits: 0, dmg: 0, fights: 0, surges: 0, apex: 0 });
+const zstat = (play, zone) => ((stats[play] ??= {})[zone] ??= { rings: 0, dodges: 0, bars: 0, crits: 0, dmg: 0, fights: 0, surges: 0, apex: 0, cbars: 0, cmult: 0, clen: [0, 0, 0, 0, 0] });
+
+// The extra passes after a landed first pass: returns the combo multiplier (1 without one).
+function comboPasses(st, play, q, S) {
+  S.cbars++; S.cmult++;
+  if (!COMBO_ON || q === 'miss') { S.clen[q === 'miss' ? 0 : 1]++; return 1; }
+  const cp = COMBO_PLAY[play], plan = comboPlan(st);
+  let landed = 1, sweets = 0;
+  if (st.rng.chance(cp.tries)) {
+    for (let k = 1; k < plan.passes; k++) {
+      const pk = cp.p[k - 1] ?? cp.p[cp.p.length - 1] * 0.8;
+      if (!st.rng.chance(pk)) break;
+      landed++;
+      if (st.rng.chance(cp.sweet)) sweets++;
+    }
+  }
+  S.clen[landed]++;
+  if (landed >= 2 && METER_ON) noteCombo(st, q, landed, sweets);
+  const m = comboMult(q, landed, sweets);
+  S.cmult += m - 1;
+  return m;
+}
 
 // The meter (and the perfect streak that adds to it), like battle/flow.js and battle/surge.js.
 function meter(st, ev) {
@@ -157,12 +194,13 @@ function playerTurn(st, play, S) {
       for (let h = 0; h < strikes && main && main.hp > 0; h++) {
         const q = B.finalQte(st, attackQte(st, play, m, muddy && h === 0, S, blind && h === 0)).qte;
         B.noteQte(st, q);
+        const cm = h === 0 && comboEligible(st, id) ? comboPasses(st, play, q, S) : 1;
         if (q === 'crit' || q === 'miss') meter(st, q);
         const tl = B.targetable(st);
         const victims = BLD.hitsAll(st, id) ? tl : m.spread ? Array.from({ length: BLD.spreadCount(st, m) }, (_, k) => tl[k % Math.max(1, tl.length)]) : [main];
         for (const t of victims) {
           if (!t || t.hp <= 0) continue;
-          const res = B.playerStrike(st, id, t, q);
+          const res = B.playerStrike(st, id, t, q, cm);
           if (res.killed) meter(st, 'kill');
           if (res.evaded && t.brain.noPounce) continue;
           if (res.evaded) { // raptor / ptera pounce back
@@ -317,5 +355,9 @@ for (const play of (process.env.PLAYS ?? 'expert,skilled,decent').split(',')) {
   console.log(`dodge%   ${zonesShown.map((z) => pct(zs[z]?.dodges, zs[z]?.rings).padStart(8)).join('')}   perfect dodges per enemy hit`);
   console.log(`crit%    ${zonesShown.map((z) => pct(zs[z]?.crits, zs[z]?.bars).padStart(8)).join('')}   crits per attack bar`);
   console.log(`dmg/fght ${zonesShown.map((z) => (zs[z]?.fights ? Math.round(zs[z].dmg / zs[z].fights) : '-').toString().padStart(8)).join('')}   damage taken per fight`);
+  if (COMBO_ON) {
+    const all = zonesShown.reduce((a, z) => { const x = zs[z]; if (x) { a.b += x.cbars; a.m += x.cmult; x.clen.forEach((v, i) => { a.l[i] += v; }); } return a; }, { b: 0, m: 0, l: [0, 0, 0, 0, 0] });
+    console.log(`combo    avg x${(all.m / Math.max(1, all.b)).toFixed(2)} per combo-able attack | passes landed: ${all.l.map((v, i) => `${i}:${pct(v, all.b).trim()}`).join(' ')}`);
+  }
   if (SURGE_ON) console.log(`surge/f  ${zonesShown.map((z) => (zs[z]?.fights ? (zs[z].surges / zs[z].fights).toFixed(2) : '-').padStart(8)).join('')}   Primal Surges per fight`);
 }

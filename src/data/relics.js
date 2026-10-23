@@ -45,7 +45,10 @@ export const RELICS = {
   primalFang:   { name: 'Primal Fang',     desc: 'START EVERY FIGHT WITH +25 SURGE' },
   warDrumBone:  { name: 'War Drum Bone',   desc: 'PRIMAL SURGE LASTS 3 TURNS' },
   rageGland:    { name: 'Rage Gland',      desc: 'HITS TAKEN GIVE 2X SURGE, -10% MAX HP' },
-  spiritAmber:  { name: 'Spirit Amber',    desc: 'CALL YOUR ANCESTOR TWICE A RUN' }
+  spiritAmber:  { name: 'Spirit Amber',    desc: 'CALL YOUR ANCESTOR TWICE A RUN' },
+  // v2.7 attack combos (systems/combo.js)
+  rhythmBone:   { name: 'Rhythm Bone',     desc: 'COMBO PASSES SPEED UP LESS' },
+  fourthStrike: { name: 'Fourth Strike',   desc: 'A 4TH COMBO PASS (X2.5)' }
 };
 
 // Evolution perks use the same hook system (see data/forms.js), but never drop.
@@ -94,5 +97,6 @@ export const RELIC_TUNING = {
   emberDmg: 2, obsidianArmor: 2, lavaPoison: 2, starEvery: 3, crystalHp: 15, geodeMult: 1.5,
   twinHornMult: 1.6, pteraHeal: 4, bastionTurns: 2, spikesReflect: 0.3, skyMult: 1.2, thornsFrac: 0.3,
   baskHeal: 0.2, toxicMult: 1.25, harvestHeal: 0.08, pearlHeal: 2, bleedDmg: 3, bleedTurns: 2,
-  primalFangMeter: 25, warDrumTurns: 3, rageHit: 10, rageHp: 0.1, spiritCalls: 2 // rageHit: double the normal hit gain
+  primalFangMeter: 25, warDrumTurns: 3, rageHit: 10, rageHp: 0.1, spiritCalls: 2, // rageHit: double the normal hit gain
+  rhythmSpeedUp: 0.15, fourthPasses: 4 // Rhythm Bone: extra passes 15% faster, not 25%
 };

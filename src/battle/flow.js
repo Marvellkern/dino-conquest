@@ -267,6 +267,47 @@ export class Flow {
     s.lighting?.burst(p.x, p.y, { ...SPARK.crit, radius: SPARK.crit.radius * 1.5, intensity: SPARK.crit.intensity * 1.3 });
   }
 
+  /* ---------- attack bar combos (systems/combo.js) ---------- */
+
+  // An extra pass landed: the chime a step higher each pass, a crystal ting on a sweet spot.
+  comboPass(k, res) {
+    const n = (this.st.flowStreak ?? 0) + k;
+    chime(n);
+    if (res === 'crit') ting(n);
+  }
+
+  // The combo is over and the swing starts: faster the more passes landed (n); 3 and up
+  // with afterimages and speed lines.
+  comboSwing(n) {
+    if (n < 2) return;
+    const s = this.s, rig = this.st.player.rig, big = n >= 3;
+    s.fx.setSpeed(Math.max(this.fast ? FLOW.critSpeed : 1, big ? FLOW.comboBigSpeed : FLOW.comboSpeed));
+    if (big && !this.fast) {
+      clearInterval(this.fastTimer);
+      this.fastTimer = setInterval(() => { if (!s.fx.frozen) rig.ghost(0.35, 160); }, 40);
+      s.fx.speedLines(rig.x, rig.y - rig.h * rig.scale * 0.5, rig.homeFacing);
+    }
+    this.fast = true;
+  }
+
+  // The combo's hit lands: more sparks and shake; 3 passes and up a second impact flash
+  // (one damage number, two hits) and a bigger flash of light.
+  comboImpact(v, n) {
+    if (n < 2) return;
+    const s = this.s, p = v.rig.hitPoint(), dir = this.st.player.rig.homeFacing, big = n >= 3;
+    s.fx.sparks(p.x, p.y, { count: big ? 14 : 8, dir, big, gold: big });
+    s.fx.shake(big ? 5 : 3, big ? 280 : 180);
+    if (!big) return;
+    s.lighting?.burst(p.x, p.y, { ...SPARK.crit, radius: SPARK.crit.radius * 1.6, intensity: SPARK.crit.intensity * 1.4 });
+    s.time.delayedCall(90, () => {
+      if (!v.rig.c.active) return;
+      v.rig.flash(50);
+      s.fx.impactStar(p.x + dir * 4, p.y - 4);
+      s.fx.sparks(p.x, p.y, { count: 10, dir, big: true, gold: true });
+      sfx('hit');
+    });
+  }
+
   // The edges of the screen pull in for a moment.
   vignette() {
     const s = this.s;

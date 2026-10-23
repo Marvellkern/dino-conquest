@@ -11,6 +11,7 @@ import './anims2.js'; // spit + claws sets
 import { braceAnim } from './gimmicks.js';
 import { apexStrike } from './apex.js';
 import * as SG from '../systems/surge.js';
+import { comboEligible, comboPlan, comboMult, noteCombo } from '../systems/combo.js';
 import { hitFeedback, traitFeedback, dodgeHop } from './feedback.js';
 
 // One player move, animated. Energy is spent here. Returns enemies that
@@ -52,7 +53,7 @@ export async function playerMove(scene, id) {
     for (let i = 0; i < strikes && target.hp > 0; i++) {
       const aoe = hitsAll(st, id);
       const victims = aoe ? B.targetable(st) : m.spread ? spread(st, target, spreadCount(st, m)) : [target];
-      const ctx = strikeCtx(scene, id, victims, aoe, muddy, evaders, blind);
+      const ctx = strikeCtx(scene, id, victims, aoe, muddy, evaders, blind, i === 0); // combo passes: the first strike only (not chain bites)
       muddy = false;
       blind = false;
       await set.strike(scene, rig, target.rig, ctx);
@@ -93,16 +94,24 @@ function spread(st, first, n) {
 
 // QTE + damage wiring for one strike of a player move. aoe: one impact hits
 // every victim. Otherwise impact i hits victims[i] (Swarm spreads its hits).
-function strikeCtx(scene, id, victims, aoe, muddy, evaders, blind = false) {
-  const st = scene.st;
+// first: the move's first strike, which can take combo passes (systems/combo.js).
+function strikeCtx(scene, id, victims, aoe, muddy, evaders, blind = false, first = false) {
+  const st = scene.st, combo = first && comboEligible(st, id) ? comboPlan(st) : null;
   let bar = null, n = 0, qte = null;
   const ctx = {
     isPlayer: true,
     hit: 0,
     chained: false,
     spread: victims.length,
-    open: () => { if (!bar) bar = attackBar(scene, { rng: st.rng, sure: !!MOVES[id].sure || SG.active(st), muddy, blind, shape: rollBar(st.rng, st.timing.bar) }); }, // a surge can't miss
-    result: () => bar && (ctx.flowBar ??= scene.flow ? scene.flow.bar(bar) : bar), // a crit: freeze, then a fast swing
+    combo: 1, landed: 1, // the combo multiplier and passes landed, known once the bar is done
+    open: () => { if (!bar) bar = attackBar(scene, { rng: st.rng, sure: !!MOVES[id].sure || SG.active(st), muddy, blind, shape: rollBar(st.rng, st.timing.bar), combo, onPass: (k, r) => scene.flow?.comboPass(k, r) }); }, // a surge can't miss
+    result: () => bar && (ctx.flowBar ??= (scene.flow ? scene.flow.bar(bar) : bar).then((res) => { // a crit: freeze, then a fast swing
+      const c = bar.combo;
+      ctx.combo = comboMult(res, c.landed, c.sweets);
+      ctx.landed = c.landed;
+      if (c.landed >= 2) { noteCombo(st, res, c.landed, c.sweets, (k) => scene.surge?.gain(k)); scene.flow?.comboSwing(c.landed); } // bigger combos swing faster
+      return res;
+    })),
     targetRig: (i) => victims[i % victims.length].rig,
     impact: (res) => {
       if (qte === null) { // first impact of this QTE: Meteor Chip, crit streak
@@ -123,7 +132,7 @@ function strikeCtx(scene, id, victims, aoe, muddy, evaders, blind = false) {
 }
 
 function strikeOne(scene, id, v, qte, k, evaders, ctx) {
-  const st = scene.st, r = B.playerStrike(st, id, v, qte);
+  const st = scene.st, r = B.playerStrike(st, id, v, qte, ctx.combo);
   if (r.evaded) {
     const t = v.rig.top();
     scene.fx.pop(t.x, t.y, 'EVADE!', '#ff6040', 1, 800);
@@ -132,8 +141,9 @@ function strikeOne(scene, id, v, qte, k, evaders, ctx) {
     if (!evaders.includes(v) && !v.brain.noPounce) evaders.push(v); // Ichthyosaurs just slip away
     return;
   }
-  hitFeedback(scene, st.player, v, r.dmg, qte, 'hit', k, { gold: st.activeEmpower, move: id });
+  hitFeedback(scene, st.player, v, r.dmg, qte, 'hit', k, { gold: st.activeEmpower, move: id, combo: ctx.landed });
   if (qte === 'crit' && k === 0) scene.flow?.critImpact(v);
+  if (k === 0) scene.flow?.comboImpact(v, ctx.landed);
   traitFeedback(scene, st.player, v, r.trait);
   const t = v.rig.top();
   if (r.fx.healed) healPop(scene, r.fx.healed);

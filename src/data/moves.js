@@ -95,3 +95,14 @@ export const QTE = {
   blockMs: 180,   // defend ring: ± window for a block
   tellMs: 520     // enemy "!" wind-up before its attack
 };
+
+// Attack bar combo passes (attack combo brief v2.7, rules in systems/combo.js). After a
+// good or crit, the marker bounces back for an optional extra pass, then once more.
+//   COMBO_MULT  damage x by passes landed (1, 2, 3; a 4th with Fourth Strike)
+//   sweetBonus  + per extra pass landed in the sweet spot. cap: QTE_MULT x combo, at most
+//   speedUp     each extra pass is this much faster; shrink: its zones shrink to this
+//   bounceMs    the marker rests at the turn (the new zones show up), then sweeps
+//   lead        the new zones sit at least this share of the bar ahead of the marker
+//   minWinMs    no zone is ever shorter than this to hit
+export const COMBO_MULT = [1, 1.2, 1.4, 1.6]; // brief: 1.5 / 2 / 2.5; the sim put Expert +25 points at the Crater with those
+export const COMBO = { sweetBonus: 0.05, cap: 3.5, speedUp: 0.25, shrink: 0.85, bounceMs: 140, lead: 0.3, minWinMs: 40 };

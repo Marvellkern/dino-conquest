@@ -12,7 +12,7 @@ export const SURGE = {
   max: 100,
   // Meter gains. Perfect dodges and crits also get streakBonus per streak step above
   // streakFrom (battle/flow.js streak), so skilled play gets there faster.
-  gain: { dodge: 10, crit: 8, kill: 5, hit: 5, block: 3 }, // crit: once per move (brief: 20/15/10/10/5)
+  gain: { dodge: 10, crit: 8, kill: 5, hit: 5, block: 3, combo: 3 }, // crit: once per move (brief: 20/15/10/10/5); combo: per extra attack-bar pass landed
   streakBonus: 5, streakFrom: 2, streakMax: 5, // the streak bonus tops out at +5
   bossMult: 0.5,   // every gain in a boss fight
   carry: 0.5,      // of the meter goes into the next fight; a new zone starts at 0

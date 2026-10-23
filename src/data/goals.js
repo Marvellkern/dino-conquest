@@ -70,6 +70,11 @@ export const GOALS = {
     test: (ev, run) => n(run, 'ancestorBoss') >= 1 },
   oneTurnWonder: { name: 'One-Turn Wonder', desc: 'KILL A 3-ENEMY PACK WITH ONE APEX STRIKE', reward: { amber: 150 },
     test: (ev, run) => n(run, 'apexKills') >= 3 },
+  // v2.7 attack bar combos (systems/combo.js)
+  tripleThreat: { name: 'Triple Threat', desc: 'LAND 10 3-PASS COMBOS IN ONE RUN', reward: { amber: 120 },
+    test: (ev, run) => n(run, 'combo3') + n(run, 'combo4') >= 10 },
+  perfectRhythm: { name: 'Perfect Rhythm', desc: 'LAND A 3-PASS COMBO ALL IN THE YELLOW', reward: { relic: 'rhythmBone' },
+    test: (ev, run) => n(run, 'comboPerfect') >= 1 },
   // v2.6 Daily Hatchery (ev: { type: 'pull', results } after each pull)
   firstPull:    { name: 'First Pull',    desc: 'PULL IN THE DAILY HATCHERY', reward: { pull: 1 },
     test: (ev) => ev.type === 'pull' },

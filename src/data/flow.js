@@ -17,6 +17,8 @@ export const FLOW = {
   // Crit on the attack bar: a freeze, then the attack plays fast.
   critFreezeMs: 150,
   critSpeed: 1.6,
+  comboSpeed: 1.3,     // an attack bar combo of 2 passes swings this fast; 3 and up at comboBigSpeed
+  comboBigSpeed: 1.6,
   // Music under a calm: ducked and muffled (systems/music.js calm()).
   musicLevel: 0.25,
   musicLowpass: 900
