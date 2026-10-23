@@ -28,6 +28,7 @@ export class ZoneIntro extends Phaser.Scene {
     music.setLayer('map');
     this.fx = new Fx(this);
     this.done = false;
+    this.skipped = false; // the scene object is reused: a tap on the last intro must not skip this one
     this.cameras.main.fadeIn(150);
     this.play(run);
   }
