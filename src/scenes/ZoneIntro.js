@@ -53,7 +53,7 @@ export class ZoneIntro extends Phaser.Scene {
 
     // The boss looms far off: a dark silhouette that lightning reveals.
     const b = zone.boss;
-    const boss = createRig(this, b.species, lp(W - 60, W - 40), GROUND_Y - lp(18, 30), -1, b.skin ?? b.species, lp(2, 1));
+    const boss = createRig(this, b.species, lp(W - 60, W - 40), GROUND_Y, -1, b.skin ?? b.species, lp(2, 1)); // standing on the same ground as the dino
     boss.c.setDepth(3).setAlpha(0);
     for (const p of boss.parts) p.setTintFill(0x0c0e12);
 
