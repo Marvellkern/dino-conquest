@@ -1,4 +1,5 @@
 import { syncLayout } from '../systems/screen.js';
+import { pauseButton } from '../ui/pauseButton.js';
 import { amberCount } from '../ui/amber.js';
 import { W, H, COLORS, PORTRAIT, lp } from '../config.js';
 import { NODE_INFO } from '../data/zones.js';
@@ -78,6 +79,7 @@ export class MapScene extends Phaser.Scene {
     }
 
     if (PORTRAIT) this.setupScroll(before);
+    pauseButton(this, W - 18, lp(162, H - 20), { can: () => !this.busy }); // at the end of the tooltip bar
 
     this.onKey = (e) => this.key(e);
     this.input.keyboard.on('keydown', this.onKey);

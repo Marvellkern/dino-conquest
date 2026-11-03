@@ -24,6 +24,7 @@ import { music } from '../systems/music.js';
 import { variantDex } from '../ui/variantDex.js';
 import { freeReady } from '../systems/gacha.js';
 import { saveMenu } from '../ui/saveMenu.js';
+import { soundMenu } from '../ui/soundMenu.js';
 
 const DEX_ORDER = ['compy', 'raptor', 'trike', 'rex', 'pachy', 'sarco', 'spino', 'ankylo', 'ptera', 'stego', 'carno', 'dilo', 'theri', 'ichthy', 'plesio', 'bary', 'mosa'];
 const DEX_PAGE = 4;
@@ -314,7 +315,7 @@ export class Home extends Phaser.Scene {
         ['back', { label: 'BACK' }]
       ];
       const pick = items[await choose(this, { title: 'SETTINGS', options: items.map(([, o]) => o), bh: 26 })][0];
-      if (pick === 'sound') await this.soundMenu();
+      if (pick === 'sound') await soundMenu(this);
       else if (pick === 'shake') s.shake = !s.shake;
       else if (pick === 'aim') s.aim = s.aim === 'auto' ? 'manual' : 'auto';
       else if (pick === 'gfx') { s.gfx = GFX_SETTINGS[(GFX_SETTINGS.indexOf(s.gfx ?? 'auto') + 1) % GFX_SETTINGS.length]; gfxChanged = true; }
@@ -342,26 +343,6 @@ export class Home extends Phaser.Scene {
     this.inMenu = false;
     music.setDim(false);
     if (gfxChanged) this.scene.restart(); // rebuild at the new render scale
-  }
-
-  // Sound sub-menu: Music and SFX volume (0-100, each tap +10, wrapping) and the mute toggle.
-  async soundMenu() {
-    const s = meta.settings, VOLS = ['music', 'sfxVol'];
-    for (;;) {
-      const items = [
-        ['music', { label: `MUSIC: ${s.music}`, sub: 'TAP TO CHANGE' }],
-        ['sfxVol', { label: `SFX: ${s.sfxVol}`, sub: 'TAP TO CHANGE' }],
-        ['sfx', { label: `SOUND: ${s.sfx ? 'ON' : 'OFF'}` }],
-        ['back', { label: 'BACK' }]
-      ];
-      const pick = items[await choose(this, { title: 'SOUND', options: items.map(([, o]) => o), bh: 26 })][0];
-      if (pick === 'back') return;
-      if (VOLS.includes(pick)) s[pick] = (s[pick] + 10) % 110;
-      else s.sfx = !s.sfx;
-      persist();
-      applySettings(this.registry);
-      sfx('blip');
-    }
   }
 
   openDaily() {

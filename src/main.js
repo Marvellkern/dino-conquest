@@ -12,6 +12,7 @@ import { Fossil } from './scenes/Fossil.js';
 import { Nest } from './scenes/Nest.js';
 import { ZoneIntro } from './scenes/ZoneIntro.js';
 import { Daily } from './scenes/Daily.js';
+import { Pause } from './scenes/Pause.js';
 import { fit, wantPortrait } from './systems/screen.js';
 import { quickSave } from './systems/runStore.js';
 import { fpsOverlay } from './render/fpsOverlay.js';
@@ -30,7 +31,7 @@ const game = new Phaser.Game({
   scale: { mode: Phaser.Scale.NONE, autoCenter: Phaser.Scale.CENTER_BOTH },
   input: { activePointers: 2 },
   audio: { noAudio: true }, // SFX are our own WebAudio synth (systems/sfx.js)
-  scene: [Boot, Title, Home, Hatch, MapScene, Battle, Evolution, RunEnd, Fossil, Nest, ZoneIntro, Daily]
+  scene: [Boot, Title, Home, Hatch, MapScene, Battle, Evolution, RunEnd, Fossil, Nest, ZoneIntro, Daily, Pause]
 });
 
 // A last save when the tab hides or closes (phones kill background tabs).

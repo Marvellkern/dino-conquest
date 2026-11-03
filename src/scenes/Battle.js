@@ -1,4 +1,5 @@
 import { syncLayout } from '../systems/screen.js';
+import { pauseButton } from '../ui/pauseButton.js';
 import { AMB } from '../ui/amber.js';
 import { W, GROUND_Y, COLORS, lp } from '../config.js';
 import { TRAITS } from '../data/traits.js';
@@ -108,8 +109,11 @@ export class Battle extends Phaser.Scene {
     for (const e of enemies) this.addEnemy(e);
     this.layout(false);
     B.startBattle(this.st);
-    // Fossils: between the HUDs (landscape), a row under the enemy HUD (portrait).
-    this.relicBar = new RelicBar(this, lp(129, 6), lp(6, 48), { cols: lp(7, 18), onInfo: (t) => this.say(t) }).set([...build.relics]);
+    // Fossils: between the HUDs (landscape), a row under the enemy HUD (portrait); the pause
+    // button sits before them (landscape) or at the end of the row (portrait). Pausing waits
+    // for the player's turn, so it never lands mid-QTE.
+    this.relicBar = new RelicBar(this, lp(142, 6), lp(6, 48), { cols: lp(6, 16), onInfo: (t) => this.say(t) }).set([...build.relics]);
+    pauseButton(this, lp(128, W - 16), lp(5, 46), { can: () => this.planning, onDeny: () => this.say('PAUSE ON YOUR TURN') });
 
     (this.playerHud = new Hud(this, 'player', this.st)).bind(player);
     this.targetHud = new Hud(this, 'enemy');
